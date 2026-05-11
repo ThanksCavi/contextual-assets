@@ -350,7 +350,7 @@
     }
 
     instance.scrollTrigger = ScrollTrigger.create({
-      trigger: instance.section,
+      trigger: instance.stage,
       start: 'top top',
       end: () => `+=${getPinDistance(instance)}`,
       scrub: true,
