@@ -381,9 +381,6 @@
       return;
     }
 
-    instance.stage.classList.add('is-cta-wipe-scrolltrigger');
-    instance.section.classList.add('is-cta-wipe-scrolltrigger');
-
     if (instance.scrollTrigger) {
       instance.scrollTrigger.refresh();
       return;
@@ -394,9 +391,6 @@
       start: 'top top',
       end: () => `+=${getPinDistance(instance)}`,
       scrub: true,
-      pin: instance.stage,
-      pinSpacing: true,
-      anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: self => {
         instance.scrollProgress = self.progress;
@@ -576,15 +570,6 @@ ${SECTION_SELECTOR} [data-cta-wipe-button] {
 
 ${STAGE_SELECTOR}[data-cta-wipe-static="true"] {
   min-height: auto;
-}
-
-${STAGE_SELECTOR}.is-cta-wipe-scrolltrigger {
-  min-height: var(--cta-stage-panel-height, 100vh);
-}
-
-${STAGE_SELECTOR}.is-cta-wipe-scrolltrigger ${SECTION_SELECTOR} {
-  position: relative;
-  top: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
