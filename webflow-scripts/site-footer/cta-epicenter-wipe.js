@@ -362,7 +362,7 @@
       start: 'top top',
       end: () => `+=${getPinDistance(instance)}`,
       scrub: true,
-      pin: instance.section,
+      pin: instance.stage,
       pinSpacing: true,
       anticipatePin: 1,
       invalidateOnRefresh: true,
