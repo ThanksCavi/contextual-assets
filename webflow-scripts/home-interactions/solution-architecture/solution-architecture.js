@@ -64,10 +64,18 @@
       return;
     }
 
+    const runWhenMotionStateIsKnown = () => {
+      if (window.ContextualHomeMotion?.ready) {
+        window.ContextualHomeMotion.ready.then(callback);
+      } else {
+        callback();
+      }
+    };
+
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', callback, { once: true });
+      document.addEventListener('DOMContentLoaded', runWhenMotionStateIsKnown, { once: true });
     } else {
-      callback();
+      requestAnimationFrame(runWhenMotionStateIsKnown);
     }
   }
 

@@ -11,7 +11,6 @@
   const EXCLUDE_SELECTOR = '.navbar, [data-smooth-exclude]';
   const INIT_FLAG = '__contextualHomeScrollSmootherInit';
   const READY_EVENT = 'contextual:smoother-ready';
-  const TOP_OFFSET_VAR = '--smooth-excluded-top';
 
   if (window[INIT_FLAG]) return;
   window[INIT_FLAG] = true;
@@ -87,7 +86,6 @@
       });
     }
 
-    syncExcludedTopOffset(elements.content);
     markReady(smoother);
 
     window.addEventListener(
@@ -99,7 +97,6 @@
     );
 
     window.addEventListener('resize', () => {
-      syncExcludedTopOffset(elements.content);
       scheduleSettledRefresh();
     });
   }
@@ -128,8 +125,6 @@
   }
 
   function refreshAll() {
-    syncExcludedTopOffset(document.getElementById(CONTENT_ID));
-
     if (window.ScrollTrigger) {
       window.ScrollTrigger.sort?.();
       window.ScrollTrigger.refresh(true);
@@ -145,6 +140,7 @@
 
     if (wrapper && content && wrapper.contains(content)) {
       keepExcludedElementsOutsideSmoothContent(body, wrapper);
+      clearSmoothContentOffset(content);
       return { wrapper, content };
     }
 
@@ -170,7 +166,7 @@
 
     const visualChildren = getVisualBodyChildren(body, wrapper);
     visualChildren.forEach((child) => content.appendChild(child));
-    syncExcludedTopOffset(content);
+    clearSmoothContentOffset(content);
 
     return { wrapper, content };
   }
@@ -202,29 +198,8 @@
     return element.matches(EXCLUDE_SELECTOR);
   }
 
-  function syncExcludedTopOffset(content) {
-    if (!content) return;
-
-    const topOffset = getExcludedTopOffset();
-    content.style.setProperty(TOP_OFFSET_VAR, `${topOffset}px`);
-    content.style.paddingTop = topOffset > 0 ? `var(${TOP_OFFSET_VAR})` : '';
-  }
-
-  function getExcludedTopOffset() {
-    return Array.from(document.body.children).reduce((offset, child) => {
-      if (!shouldExcludeFromSmoothContent(child) || !isNormalFlowTopElement(child)) return offset;
-
-      const rect = child.getBoundingClientRect();
-      return Math.max(offset, Math.round(rect.bottom));
-    }, 0);
-  }
-
-  function isNormalFlowTopElement(element) {
-    const styles = getComputedStyle(element);
-    if (styles.display === 'none' || styles.visibility === 'hidden') return false;
-    if (styles.position === 'fixed' || styles.position === 'absolute') return false;
-
-    const rect = element.getBoundingClientRect();
-    return rect.top <= 1 && rect.bottom > 0;
+  function clearSmoothContentOffset(content) {
+    content.style.removeProperty('--smooth-excluded-top');
+    content.style.paddingTop = '';
   }
 })();
