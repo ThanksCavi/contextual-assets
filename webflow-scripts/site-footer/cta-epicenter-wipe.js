@@ -349,6 +349,9 @@
       return;
     }
 
+    instance.stage.classList.add('is-epicenter-wipe-scrolltrigger');
+    instance.section.classList.add('is-epicenter-wipe-scrolltrigger');
+
     if (instance.scrollTrigger) {
       instance.scrollTrigger.refresh();
       return;
@@ -359,6 +362,9 @@
       start: 'top top',
       end: () => `+=${getPinDistance(instance)}`,
       scrub: true,
+      pin: instance.stage,
+      pinSpacing: true,
+      anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: self => {
         instance.scrollProgress = self.progress;
@@ -491,7 +497,7 @@ ${STAGE_SELECTOR} {
   --epicenter-wipe-yellow: ${DEFAULT_COLOR};
   position: relative;
   min-height: calc(var(--epicenter-stage-panel-height, 100vh) + var(--epicenter-stage-extra, ${DEFAULT_STAGE_EXTRA}));
-  background: var(--epicenter-wipe-yellow);
+  background: #fff;
 }
 
 ${SECTION_SELECTOR} {

@@ -381,6 +381,9 @@
       return;
     }
 
+    instance.stage.classList.add('is-cta-wipe-scrolltrigger');
+    instance.section.classList.add('is-cta-wipe-scrolltrigger');
+
     if (instance.scrollTrigger) {
       instance.scrollTrigger.refresh();
       return;
@@ -391,6 +394,9 @@
       start: 'top top',
       end: () => `+=${getPinDistance(instance)}`,
       scrub: true,
+      pin: instance.stage,
+      pinSpacing: true,
+      anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: self => {
         instance.scrollProgress = self.progress;
@@ -506,7 +512,7 @@ ${STAGE_SELECTOR} {
   --cta-wipe-yellow: ${DEFAULT_COLOR};
   position: relative;
   min-height: calc(var(--cta-stage-panel-height, 100vh) + var(--cta-stage-extra, ${DEFAULT_STAGE_EXTRA}));
-  background: var(--cta-wipe-yellow);
+  background: #fff;
 }
 
 ${SECTION_SELECTOR} {
