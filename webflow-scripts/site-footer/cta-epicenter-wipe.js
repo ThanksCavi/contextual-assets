@@ -362,8 +362,9 @@
       start: 'top top',
       end: () => `+=${getPinDistance(instance)}`,
       scrub: true,
-      pin: instance.section,
+      pin: instance.stage,
       pinSpacing: true,
+      pinType: getPinType(),
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate: self => {
@@ -420,6 +421,10 @@
 
     gsap.registerPlugin(ScrollTrigger);
     return ScrollTrigger;
+  }
+
+  function getPinType() {
+    return window.ScrollSmoother?.get?.() ? 'transform' : undefined;
   }
 
   function refreshScrollTrigger() {

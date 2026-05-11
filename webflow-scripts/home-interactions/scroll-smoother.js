@@ -140,6 +140,7 @@
 
     if (wrapper && content && wrapper.contains(content)) {
       keepExcludedElementsOutsideSmoothContent(body, wrapper);
+      getVisualBodyChildren(body, wrapper).forEach((child) => content.appendChild(child));
       clearSmoothContentOffset(content);
       return { wrapper, content };
     }

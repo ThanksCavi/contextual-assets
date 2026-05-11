@@ -211,6 +211,7 @@
         scrub: true,
         pin: pinTarget,
         pinSpacing: true,
+        pinType: getPinType(),
         anticipatePin: 1,
         invalidateOnRefresh: true,
         onUpdate: self => updatePhaseFromProgress(state, self.progress),
@@ -440,6 +441,10 @@
     const paddingTop = parseFloat(getComputedStyle(state.root).paddingTop);
 
     return Number.isFinite(paddingTop) ? paddingTop : 0;
+  }
+
+  function getPinType() {
+    return window.ScrollSmoother?.get?.() ? 'transform' : undefined;
   }
 
   function prepareLines(state, gsap) {
