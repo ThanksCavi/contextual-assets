@@ -22,9 +22,11 @@
 	var PRIMARY_REVEAL_DELAY = 2820;
 	var SECONDARY_REVEAL_DELAY = 3260;
 	var NAV_REVEAL_DELAY = 3220;
+	var AFTER_REVEAL_DELAY = 3660;
 	var PRIMARY_REVEAL_DURATION = 1650;
 	var SECONDARY_REVEAL_DURATION = 1500;
 	var NAV_REVEAL_DURATION = 1350;
+	var AFTER_REVEAL_DURATION = 1450;
 	var PRIMARY_STAGGER = 115;
 	var SECONDARY_STAGGER = 105;
 	var MOVE_EASE = 'cubic-bezier(0.19, 1, 0.22, 1)';
@@ -180,6 +182,7 @@
 	function getRevealGroups(hero) {
 		var nav = document.querySelector('.navbar.w-nav');
 		var markedItems = Array.prototype.slice.call(hero.querySelectorAll('[data-hero-intro-reveal]'));
+		var after = Array.prototype.slice.call(document.querySelectorAll('[data-hero-intro-after]'));
 		var primary = [];
 		var secondary = [];
 
@@ -207,7 +210,8 @@
 			nav: nav,
 			primary: primary,
 			secondary: secondary,
-			all: uniqueElements((nav ? [nav] : []).concat(primary, secondary))
+			after: after,
+			all: uniqueElements((nav ? [nav] : []).concat(primary, secondary, after))
 		};
 	}
 
@@ -248,8 +252,52 @@
 		hero.classList.add('is-hero-intro-static');
 		hero.classList.add('is-hero-intro-field-visible');
 		hero.setAttribute('data-hero-intro-ready', 'static');
+		showHeroLottieStaticFallback(hero);
 		if (lottieShell) clearInlineStyles(lottieShell, revealElements || []);
 		dispatchHeroReady(hero, 'static');
+	}
+
+	function showHeroLottieStaticFallback(hero) {
+		var heroLottie = hero.querySelector('[data-hero-intro-lottie]');
+		var lottieEl = null;
+		var placeholder = null;
+		var placeholderImage = null;
+		var fallbackUrl = '';
+		var animatedLayers = null;
+
+		if (!heroLottie) return;
+
+		lottieEl = heroLottie.matches('[data-lottie-mask]') ? heroLottie : heroLottie.querySelector('[data-lottie-mask]');
+		if (!lottieEl) return;
+
+		fallbackUrl = lottieEl.getAttribute('data-lottie-img-3') || '';
+		placeholder = lottieEl.querySelector('.lottie-builder-placeholder');
+
+		if (!placeholder && fallbackUrl) {
+			placeholder = document.createElement('img');
+			placeholder.className = 'lottie-builder-placeholder';
+			placeholder.alt = '';
+			placeholder.loading = 'lazy';
+			lottieEl.insertBefore(placeholder, lottieEl.firstChild);
+		}
+
+		if (placeholder) {
+			placeholderImage = placeholder.tagName === 'IMG' ? placeholder : placeholder.querySelector('img');
+
+			if (placeholderImage && fallbackUrl && !placeholderImage.getAttribute('src')) {
+				placeholderImage.setAttribute('src', fallbackUrl);
+			}
+
+			placeholder.style.display = 'block';
+			placeholder.style.visibility = 'visible';
+		}
+
+		animatedLayers = lottieEl.querySelectorAll('.lm-stage, .lm-visible');
+		animatedLayers.forEach(function(layer) {
+			layer.style.display = 'none';
+		});
+
+		lottieEl.setAttribute('data-lottie-mask-ready', 'static');
 	}
 
 	function dispatchHeroReady(hero, mode) {
@@ -498,6 +546,16 @@
 					easing: NAV_REVEAL_EASE
 				});
 			}
+
+			revealGroups.after.forEach(function(el, index) {
+				addRevealAnimation(animations, el, {
+					fromTransform: 'translate3d(0, 36px, 0)',
+					settleTransform: 'translate3d(0, -2px, 0)',
+					duration: AFTER_REVEAL_DURATION,
+					delay: AFTER_REVEAL_DELAY + index * SECONDARY_STAGGER,
+					easing: REVEAL_EASE
+				});
+			});
 
 			return Promise.all(animations);
 		}).then(function() {

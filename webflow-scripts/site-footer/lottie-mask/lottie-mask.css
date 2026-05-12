@@ -10,6 +10,7 @@
   position: relative;
   aspect-ratio: 1 / 1;
   height: auto;
+  width: 100%;
 }
 
 [data-lottie-mask]:has(.lm-stage) {
