@@ -23,12 +23,17 @@
     key1: 0.24,
     key2: 0.57,
     key3: 0.81,
+    revealStart: 0.04,
+    revealEnd: 0.26,
+    revealSpread: 0.14,
+    revealDuration: 0.08,
+    animationEnd: 0.9,
     expandStart: 0.8,
     expandEnd: 0.98,
     expandAmount: 1.36,
     expandWave: 0.18,
-    solidStart: 0.985,
-    solidEnd: 0.995,
+    solidStart: 0.9,
+    solidEnd: 0.94,
     scrollStart: 0,
     scrollEnd: 0.12,
   };
@@ -206,10 +211,10 @@
     buildShapes(instance, config);
 
     const progress = getRenderProgress(instance, config, progressOverride);
-    const visualProgress = lerp(config.key1, 1, progress);
-    const solid = smooth(config.solidStart, config.solidEnd, visualProgress);
+    const visualProgress = getVisualProgress(config, progress);
+    const solid = smooth(config.solidStart, config.solidEnd, progress);
     const rect = section.getBoundingClientRect();
-    const titleScale = lerp(1.18, 1, smooth(0.82, 0.98, progress));
+    const titleScale = lerp(1.18, 1, smooth(0.72, config.solidEnd, progress));
     const description = section.querySelector('[data-cta-wipe-description]');
     const button = section.querySelector('[data-cta-wipe-button]');
 
@@ -242,7 +247,7 @@
     context.fillStyle = color;
 
     instance.shapes.forEach(shape => {
-      const angle = getShapeAngle(shape, config, visualProgress);
+      const angle = getShapeAngle(shape, config, progress, visualProgress);
       if (angle <= 0) return;
 
       const fromDeg = getShapeFrom(shape, angle);
@@ -324,6 +329,7 @@
           a1: source.a1,
           a2: source.a2,
           dir: source.dir || 1,
+          revealOrder: getRevealOrder(row, column),
           x: x + cell / 2,
           y: y + cell / 2,
           size: cell
@@ -335,20 +341,43 @@
     instance.buildKey = key;
   }
 
-  function getShapeAngle(shape, config, progress) {
-    if (progress <= config.key1) {
-      return lerp(0, shape.a1, smooth(0, config.key1, progress));
+  function getVisualProgress(config, progress) {
+    const animationEnd = Math.max(config.revealEnd + 0.01, config.animationEnd);
+
+    if (progress <= config.revealEnd) return 0;
+
+    return lerp(config.key1, 1, smooth(config.revealEnd, animationEnd, progress));
+  }
+
+  function getShapeAngle(shape, config, progress, visualProgress) {
+    if (progress <= config.revealEnd) {
+      const revealStart = config.revealStart + shape.revealOrder * config.revealSpread;
+      const revealEnd = Math.min(config.revealEnd, revealStart + config.revealDuration);
+      return lerp(0, shape.a1, smooth(revealStart, revealEnd, progress));
     }
 
-    if (progress <= config.key2) {
-      return lerp(shape.a1, shape.a2, smooth(config.key1, config.key2, progress));
+    if (visualProgress <= config.key1) {
+      return lerp(0, shape.a1, smooth(0, config.key1, visualProgress));
     }
 
-    if (progress <= config.key3) {
-      return lerp(shape.a2, 360, smooth(config.key2, config.key3, progress));
+    if (visualProgress <= config.key2) {
+      return lerp(shape.a1, shape.a2, smooth(config.key1, config.key2, visualProgress));
+    }
+
+    if (visualProgress <= config.key3) {
+      return lerp(shape.a2, 360, smooth(config.key2, config.key3, visualProgress));
     }
 
     return 360;
+  }
+
+  function getRevealOrder(row, column) {
+    let hash = ((row + 4096) * 73856093) ^ ((column + 4096) * 19349663);
+    hash ^= hash << 13;
+    hash ^= hash >>> 17;
+    hash ^= hash << 5;
+
+    return (hash >>> 0) / 4294967295;
   }
 
   function getShapeFrom(shape, angle) {
@@ -473,6 +502,11 @@
       key1: getNumber(section, 'wipeKey1', CONFIG.key1),
       key2: getNumber(section, 'wipeKey2', CONFIG.key2),
       key3: getNumber(section, 'wipeKey3', CONFIG.key3),
+      revealStart: getNumber(section, 'wipeRevealStart', CONFIG.revealStart),
+      revealEnd: getNumber(section, 'wipeRevealEnd', CONFIG.revealEnd),
+      revealSpread: getNumber(section, 'wipeRevealSpread', CONFIG.revealSpread),
+      revealDuration: getNumber(section, 'wipeRevealDuration', CONFIG.revealDuration),
+      animationEnd: getNumber(section, 'wipeAnimationEnd', CONFIG.animationEnd),
       expandStart: getNumber(section, 'wipeExpandStart', CONFIG.expandStart),
       expandEnd: getNumber(section, 'wipeExpandEnd', CONFIG.expandEnd),
       expandAmount: getNumber(section, 'wipeExpandAmount', CONFIG.expandAmount),
