@@ -24,16 +24,22 @@
     key2: 0.57,
     key3: 0.81,
     revealStart: 0.04,
-    revealEnd: 0.26,
+    revealEnd: 0.3,
     revealSpread: 0.14,
     revealDuration: 0.08,
-    animationEnd: 0.9,
+    animationEnd: 0.92,
     expandStart: 0.8,
     expandEnd: 0.98,
     expandAmount: 1.36,
     expandWave: 0.18,
-    solidStart: 0.9,
-    solidEnd: 0.94,
+    solidStart: 0.91,
+    solidEnd: 0.95,
+    descriptionStart: 0.34,
+    descriptionEnd: 0.7,
+    descriptionY: 32,
+    buttonStart: 0.44,
+    buttonEnd: 0.82,
+    buttonY: 44,
     scrollStart: 0,
     scrollEnd: 0.12,
   };
@@ -220,16 +226,16 @@
 
     section.style.setProperty('--cta-wipe-yellow', color);
     section.style.setProperty('--cta-wipe-title-scale', titleScale.toFixed(4));
-    const descriptionProgress = smooth(0.18, 0.42, progress);
-    const buttonProgress = smooth(0.28, 0.52, progress);
+    const descriptionProgress = smooth(config.descriptionStart, config.descriptionEnd, progress);
+    const buttonProgress = smooth(config.buttonStart, config.buttonEnd, progress);
 
     section.style.setProperty('--cta-wipe-description-progress', descriptionProgress.toFixed(4));
-    section.style.setProperty('--cta-wipe-description-y', `${((1 - descriptionProgress) * 12).toFixed(2)}px`);
+    section.style.setProperty('--cta-wipe-description-y', `${((1 - descriptionProgress) * config.descriptionY).toFixed(2)}px`);
     section.style.setProperty('--cta-wipe-button-progress', buttonProgress.toFixed(4));
-    section.style.setProperty('--cta-wipe-button-y', `${((1 - buttonProgress) * 14).toFixed(2)}px`);
+    section.style.setProperty('--cta-wipe-button-y', `${((1 - buttonProgress) * config.buttonY).toFixed(2)}px`);
 
-    description?.style.setProperty('pointer-events', progress > 0.18 ? '' : 'none');
-    button?.style.setProperty('pointer-events', progress > 0.28 ? '' : 'none');
+    description?.style.setProperty('pointer-events', progress > config.descriptionStart ? '' : 'none');
+    button?.style.setProperty('pointer-events', progress > config.buttonStart ? '' : 'none');
 
     context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -513,6 +519,12 @@
       expandWave: getNumber(section, 'wipeExpandWave', CONFIG.expandWave),
       solidStart: getNumber(section, 'wipeSolidStart', CONFIG.solidStart),
       solidEnd: getNumber(section, 'wipeSolidEnd', CONFIG.solidEnd),
+      descriptionStart: getNumber(section, 'wipeDescriptionStart', CONFIG.descriptionStart),
+      descriptionEnd: getNumber(section, 'wipeDescriptionEnd', CONFIG.descriptionEnd),
+      descriptionY: getNumber(section, 'wipeDescriptionY', CONFIG.descriptionY),
+      buttonStart: getNumber(section, 'wipeButtonStart', CONFIG.buttonStart),
+      buttonEnd: getNumber(section, 'wipeButtonEnd', CONFIG.buttonEnd),
+      buttonY: getNumber(section, 'wipeButtonY', CONFIG.buttonY),
       scrollStart: getNumber(section, 'wipeStart', CONFIG.scrollStart),
       scrollEnd: getNumber(section, 'wipeEnd', CONFIG.scrollEnd),
     };
