@@ -37,6 +37,7 @@
   const SECTION_EDGE_FADE = 90;
 
   // Edge behavior.
+  const LIMIT_FOCUS_TO_SAFE_AREA = true;
   const FOCUS_SAFE_ZONE = 1;
   const EDGE_JOIN_TOLERANCE = 2;
 
@@ -46,10 +47,10 @@
   const fields = new Map();
 
   const manager = {
-    cursorDocX: 0,
-    cursorDocY: 0,
-    targetDocX: 0,
-    targetDocY: 0,
+    cursorClientX: 0,
+    cursorClientY: 0,
+    targetClientX: 0,
+    targetClientY: 0,
     lastClientX: 0,
     lastClientY: 0,
     hasPointer: false,
@@ -91,6 +92,7 @@
       pageTop: 0,
       pageRight: 0,
       pageBottom: 0,
+      viewportLeft: 0,
       viewportTop: 0,
       viewportBottom: 0,
       points: [],
@@ -168,17 +170,14 @@
     manager.lastClientY = event.clientY;
     manager.hasClientPosition = true;
 
-    const docX = event.clientX + window.scrollX;
-    const docY = event.clientY + window.scrollY;
-
     if (!manager.hasPointer) {
-      manager.cursorDocX = docX;
-      manager.cursorDocY = docY;
+      manager.cursorClientX = event.clientX;
+      manager.cursorClientY = event.clientY;
     }
 
     manager.hasPointer = true;
-    manager.targetDocX = docX;
-    manager.targetDocY = docY;
+    manager.targetClientX = event.clientX;
+    manager.targetClientY = event.clientY;
     requestFrame();
   }
 
@@ -193,8 +192,8 @@
     updateViewportPositions();
 
     if (manager.hasClientPosition && canAnimate()) {
-      manager.targetDocX = manager.lastClientX + window.scrollX;
-      manager.targetDocY = manager.lastClientY + window.scrollY;
+      manager.targetClientX = manager.lastClientX;
+      manager.targetClientY = manager.lastClientY;
       requestFrame();
     }
   }
@@ -248,6 +247,7 @@
     state.pageTop = rect.top + window.scrollY;
     state.pageRight = state.pageLeft + rect.width;
     state.pageBottom = state.pageTop + rect.height;
+    state.viewportLeft = rect.left;
     state.viewportTop = rect.top;
     state.viewportBottom = rect.bottom;
 
@@ -263,6 +263,7 @@
   function updateViewportPositions() {
     fields.forEach(state => {
       const rect = state.section.getBoundingClientRect();
+      state.viewportLeft = rect.left;
       state.viewportTop = rect.top;
       state.viewportBottom = rect.bottom;
     });
@@ -388,8 +389,8 @@
       return;
     }
 
-    manager.cursorDocX += (manager.targetDocX - manager.cursorDocX) * CURSOR_ENTER_EASE;
-    manager.cursorDocY += (manager.targetDocY - manager.cursorDocY) * CURSOR_ENTER_EASE;
+    manager.cursorClientX += (manager.targetClientX - manager.cursorClientX) * CURSOR_ENTER_EASE;
+    manager.cursorClientY += (manager.targetClientY - manager.cursorClientY) * CURSOR_ENTER_EASE;
 
     drawAll();
 
@@ -401,6 +402,8 @@
   function drawAll() {
     if (manager.layoutDirty) {
       refreshLayouts();
+    } else {
+      updateViewportPositions();
     }
 
     fields.forEach(draw);
@@ -465,10 +468,12 @@
   }
 
   function getDynamicFocus(state) {
-    return {
-      x: manager.cursorDocX - state.pageLeft,
-      y: manager.cursorDocY - state.pageTop,
+    const focus = {
+      x: manager.cursorClientX - state.viewportLeft,
+      y: manager.cursorClientY - state.viewportTop,
     };
+
+    return LIMIT_FOCUS_TO_SAFE_AREA ? getSafeFocusFromPoint(state, focus) : focus;
   }
 
   function getNormalizedSpotlightDistance(field, point, focusX, focusY) {
@@ -538,7 +543,10 @@
   }
 
   function getCursorDistanceToTarget() {
-    return Math.hypot(manager.targetDocX - manager.cursorDocX, manager.targetDocY - manager.cursorDocY);
+    return Math.hypot(
+      manager.targetClientX - manager.cursorClientX,
+      manager.targetClientY - manager.cursorClientY,
+    );
   }
 
   function clamp(value, min, max) {
