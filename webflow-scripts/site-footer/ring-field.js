@@ -473,7 +473,7 @@
       y: manager.cursorClientY - state.viewportTop,
     };
 
-    return LIMIT_FOCUS_TO_SAFE_AREA ? getSafeFocusFromPoint(state, focus) : focus;
+    return LIMIT_FOCUS_TO_SAFE_AREA ? getSafeFocusX(state, focus) : focus;
   }
 
   function getNormalizedSpotlightDistance(field, point, focusX, focusY) {
@@ -500,6 +500,20 @@
 
   function getSafeFocusFromPoint(state, point) {
     return getSafeFocus(state, point.x, point.y);
+  }
+
+  function getSafeFocusX(state, point) {
+    if (!state.field || FOCUS_SAFE_ZONE <= 0) return point;
+
+    const insetX = state.field.radiusX * FOCUS_SAFE_ZONE;
+    const boundsWidth = Math.min(state.width, MAX_FOCUS_WIDTH);
+    const boundsLeft = (state.width - boundsWidth) / 2;
+    const boundsRight = boundsLeft + boundsWidth;
+
+    return {
+      x: clamp(point.x, boundsLeft + insetX, boundsRight - insetX),
+      y: point.y,
+    };
   }
 
   function getSafeFocus(state, x, y) {
