@@ -1,7 +1,8 @@
 // Circle Canvas
 (() => {
-  // Public selectors: [data-circle-zone] for site-wide light areas,
-  // [data-circle] remains supported for existing section-level usage.
+  // Use [data-circle-zone] on a single light section or on a shared wrapper
+  // around multiple light sections that should render as one seamless field.
+  // [data-circle] remains supported as a legacy alias.
   const FIELD_SELECTOR = '[data-circle-zone], [data-circle]';
   const CANVAS_CLASS = 'circle-field-canvas';
   const INITIALIZED_CLASS = 'is-circle-field-ready';
@@ -12,7 +13,7 @@
   const MOBILE_GRID_SPACING = 22;
   const SPOTLIGHT_RADIUS = 304;
   const MOBILE_SPOTLIGHT_RADIUS = 210;
-  const MAX_FOCUS_WIDTH = 1968;
+  const MAX_FOCUS_WIDTH = 2000;
 
   // Motion.
   const CURSOR_ENTER_EASE = 0.085;
@@ -39,12 +40,11 @@
   // Edge behavior.
   const LIMIT_FOCUS_TO_SAFE_AREA = true;
   const FOCUS_SAFE_ZONE = 1;
-  const EDGE_JOIN_TOLERANCE = 2;
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   const touchOnly = window.matchMedia('(hover: none) and (pointer: coarse)');
-  const fields = new Map();
+  const zones = new Map();
 
   const manager = {
     cursorClientX: 0,
@@ -55,6 +55,7 @@
     lastClientY: 0,
     hasPointer: false,
     hasClientPosition: false,
+    activeZone: null,
     layoutDirty: true,
     rafId: null,
     eventsBound: false,
@@ -72,7 +73,7 @@
   }
 
   function initField(section) {
-    if (fields.has(section)) return;
+    if (zones.has(section)) return;
 
     const canvas = getOrCreateCanvas(section);
     const context = canvas.getContext('2d');
@@ -90,22 +91,15 @@
       dpr: 1,
       pageLeft: 0,
       pageTop: 0,
-      pageRight: 0,
-      pageBottom: 0,
       viewportLeft: 0,
+      viewportRight: 0,
       viewportTop: 0,
       viewportBottom: 0,
       points: [],
       field: null,
-      connectedEdges: {
-        top: false,
-        right: false,
-        bottom: false,
-        left: false,
-      },
     };
 
-    fields.set(section, state);
+    zones.set(section, state);
     section.classList.add(INITIALIZED_CLASS);
 
     resizeField(state);
@@ -149,7 +143,7 @@
   }
 
   function bindGlobalEvents() {
-    if (manager.eventsBound || !fields.size) return;
+    if (manager.eventsBound || !zones.size) return;
     manager.eventsBound = true;
 
     const moveEvent = 'PointerEvent' in window ? 'pointermove' : 'mousemove';
@@ -170,12 +164,17 @@
     manager.lastClientY = event.clientY;
     manager.hasClientPosition = true;
 
-    if (!manager.hasPointer) {
+    updateViewportPositions();
+
+    const activeZone = getZoneAtPoint(event.clientX, event.clientY);
+
+    if (!manager.hasPointer || manager.activeZone !== activeZone) {
       manager.cursorClientX = event.clientX;
       manager.cursorClientY = event.clientY;
     }
 
-    manager.hasPointer = true;
+    manager.activeZone = activeZone;
+    manager.hasPointer = !!activeZone;
     manager.targetClientX = event.clientX;
     manager.targetClientY = event.clientY;
     requestFrame();
@@ -185,11 +184,13 @@
     if (!manager.hasPointer) return;
 
     manager.hasPointer = false;
+    manager.activeZone = null;
     requestFrame();
   }
 
   function handleScroll() {
     updateViewportPositions();
+    refreshActiveZone();
 
     if (manager.hasClientPosition && canAnimate()) {
       manager.targetClientX = manager.lastClientX;
@@ -199,13 +200,14 @@
   }
 
   function handleWindowResize() {
-    fields.forEach(resizeField);
+    zones.forEach(resizeField);
     manager.layoutDirty = true;
+    refreshActiveZone();
     requestFrame();
   }
 
   function handleResizeEntry(entry) {
-    const state = fields.get(entry.target);
+    const state = zones.get(entry.target);
     if (state) resizeField(state);
   }
 
@@ -245,9 +247,8 @@
     const rect = state.section.getBoundingClientRect();
     state.pageLeft = rect.left + window.scrollX;
     state.pageTop = rect.top + window.scrollY;
-    state.pageRight = state.pageLeft + rect.width;
-    state.pageBottom = state.pageTop + rect.height;
     state.viewportLeft = rect.left;
+    state.viewportRight = rect.right;
     state.viewportTop = rect.top;
     state.viewportBottom = rect.bottom;
 
@@ -255,78 +256,43 @@
   }
 
   function refreshLayouts() {
-    fields.forEach(updateLayout);
-    updateZoneConnections();
+    zones.forEach(updateLayout);
     manager.layoutDirty = false;
   }
 
   function updateViewportPositions() {
-    fields.forEach(state => {
+    zones.forEach(state => {
       const rect = state.section.getBoundingClientRect();
       state.viewportLeft = rect.left;
+      state.viewportRight = rect.right;
       state.viewportTop = rect.top;
       state.viewportBottom = rect.bottom;
     });
   }
 
-  function updateZoneConnections() {
-    const states = Array.from(fields.values());
+  function getZoneAtPoint(clientX, clientY) {
+    const matches = Array.from(zones.values()).filter(state => (
+      clientX >= state.viewportLeft &&
+      clientX <= state.viewportRight &&
+      clientY >= state.viewportTop &&
+      clientY <= state.viewportBottom
+    ));
 
-    states.forEach(state => {
-      state.connectedEdges.top = false;
-      state.connectedEdges.right = false;
-      state.connectedEdges.bottom = false;
-      state.connectedEdges.left = false;
-    });
+    if (!matches.length) return null;
 
-    states.forEach((state, index) => {
-      states.slice(index + 1).forEach(otherState => {
-        connectTouchingEdges(state, otherState);
-      });
+    return matches.reduce((smallest, state) => {
+      const smallestArea = smallest.width * smallest.height;
+      const stateArea = state.width * state.height;
+
+      return stateArea < smallestArea ? state : smallest;
     });
   }
 
-  function connectTouchingEdges(state, otherState) {
-    const horizontalOverlap = getOverlap(
-      state.pageLeft,
-      state.pageRight,
-      otherState.pageLeft,
-      otherState.pageRight,
-    );
-    const verticalOverlap = getOverlap(
-      state.pageTop,
-      state.pageBottom,
-      otherState.pageTop,
-      otherState.pageBottom,
-    );
+  function refreshActiveZone() {
+    if (!manager.hasClientPosition) return;
 
-    if (horizontalOverlap > 1) {
-      if (Math.abs(state.pageBottom - otherState.pageTop) <= EDGE_JOIN_TOLERANCE) {
-        state.connectedEdges.bottom = true;
-        otherState.connectedEdges.top = true;
-      }
-
-      if (Math.abs(otherState.pageBottom - state.pageTop) <= EDGE_JOIN_TOLERANCE) {
-        otherState.connectedEdges.bottom = true;
-        state.connectedEdges.top = true;
-      }
-    }
-
-    if (verticalOverlap > 1) {
-      if (Math.abs(state.pageRight - otherState.pageLeft) <= EDGE_JOIN_TOLERANCE) {
-        state.connectedEdges.right = true;
-        otherState.connectedEdges.left = true;
-      }
-
-      if (Math.abs(otherState.pageRight - state.pageLeft) <= EDGE_JOIN_TOLERANCE) {
-        otherState.connectedEdges.right = true;
-        state.connectedEdges.left = true;
-      }
-    }
-  }
-
-  function getOverlap(startA, endA, startB, endB) {
-    return Math.max(0, Math.min(endA, endB) - Math.max(startA, startB));
+    manager.activeZone = getZoneAtPoint(manager.lastClientX, manager.lastClientY);
+    manager.hasPointer = !!manager.activeZone;
   }
 
   function getAccentField(section, width, height) {
@@ -373,14 +339,14 @@
     }
 
     if (!canShowField()) {
-      fields.forEach(state => {
+      zones.forEach(state => {
         state.canvas.style.display = 'none';
         state.context.clearRect(0, 0, state.width, state.height);
       });
       return;
     }
 
-    fields.forEach(state => {
+    zones.forEach(state => {
       state.canvas.style.display = 'block';
     });
 
@@ -406,7 +372,8 @@
       updateViewportPositions();
     }
 
-    fields.forEach(draw);
+    refreshActiveZone();
+    zones.forEach(draw);
   }
 
   function draw(state) {
@@ -425,7 +392,7 @@
 
     context.lineWidth = STROKE_WIDTH;
 
-    const isDynamic = canAnimate() && manager.hasPointer;
+    const isDynamic = canAnimate() && manager.hasPointer && state === manager.activeZone;
     const focus = isDynamic
       ? getDynamicFocus(state)
       : getSafeFocusFromPoint(state, getFieldCenter(state));
@@ -527,15 +494,15 @@
   }
 
   function getSectionEdgeFade(state, point, radius) {
-    // Avoid hard clipping at real light/dark boundaries while allowing marked
-    // neighboring light zones to read as one continuous surface.
+    // Avoid hard clipping at real zone edges. Use one shared [data-circle-zone]
+    // wrapper when multiple light sections should render without an internal seam.
     if (SECTION_EDGE_FADE <= 0) return 1;
 
     const edgeDistance = Math.min(
-      state.connectedEdges.left ? Infinity : point.x,
-      state.connectedEdges.top ? Infinity : point.y,
-      state.connectedEdges.right ? Infinity : state.width - point.x,
-      state.connectedEdges.bottom ? Infinity : state.height - point.y,
+      point.x,
+      point.y,
+      state.width - point.x,
+      state.height - point.y,
     );
     const visibleDistance = edgeDistance - radius;
 
@@ -575,8 +542,9 @@
   function refreshMotionMode() {
     stop();
     manager.hasPointer = false;
+    manager.activeZone = null;
 
-    fields.forEach(state => {
+    zones.forEach(state => {
       state.canvas.style.display = canShowField() ? 'block' : 'none';
     });
 
