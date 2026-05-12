@@ -1,7 +1,8 @@
 // Circle Canvas
 (() => {
-  // Public selector [data-circle].
-  const FIELD_SELECTOR = '[data-circle]';
+  // Public selectors: [data-circle-zone] for site-wide light areas,
+  // [data-circle] remains supported for existing section-level usage.
+  const FIELD_SELECTOR = '[data-circle-zone], [data-circle]';
   const CANVAS_CLASS = 'circle-field-canvas';
   const INITIALIZED_CLASS = 'is-circle-field-ready';
 
@@ -15,9 +16,8 @@
 
   // Motion.
   const CURSOR_ENTER_EASE = 0.085;
-  const CURSOR_LEAVE_EASE = 0.04;
   const SETTLE_DISTANCE = 0.2;
-  const STROKE_COLOR = '224, 222, 232';
+  const STROKE_COLOR = '196, 194, 206';
 
   // Resting position.
   const DEFAULT_FIELD_X = '45%';
@@ -38,10 +38,26 @@
 
   // Edge behavior.
   const FOCUS_SAFE_ZONE = 1;
+  const EDGE_JOIN_TOLERANCE = 2;
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  const touchOnly = window.matchMedia('(hover: none) and (pointer: coarse)');
   const fields = new Map();
+
+  const manager = {
+    cursorDocX: 0,
+    cursorDocY: 0,
+    targetDocX: 0,
+    targetDocY: 0,
+    lastClientX: 0,
+    lastClientY: 0,
+    hasPointer: false,
+    hasClientPosition: false,
+    layoutDirty: true,
+    rafId: null,
+    eventsBound: false,
+  };
 
   const resizeObserver = 'ResizeObserver' in window
     ? new ResizeObserver(entries => entries.forEach(handleResizeEntry))
@@ -49,6 +65,9 @@
 
   function initAll() {
     document.querySelectorAll(FIELD_SELECTOR).forEach(initField);
+    bindGlobalEvents();
+    refreshLayouts();
+    drawAll();
   }
 
   function initField(section) {
@@ -68,20 +87,25 @@
       width: 0,
       height: 0,
       dpr: 1,
+      pageLeft: 0,
+      pageTop: 0,
+      pageRight: 0,
+      pageBottom: 0,
+      viewportTop: 0,
+      viewportBottom: 0,
       points: [],
       field: null,
-      cursorX: 0,
-      cursorY: 0,
-      targetX: 0,
-      targetY: 0,
-      pointerInside: false,
-      rafId: null,
+      connectedEdges: {
+        top: false,
+        right: false,
+        bottom: false,
+        left: false,
+      },
     };
 
     fields.set(section, state);
     section.classList.add(INITIALIZED_CLASS);
 
-    bindPointerEvents(state);
     resizeField(state);
 
     if (resizeObserver) resizeObserver.observe(section);
@@ -116,40 +140,69 @@
       inset: '0',
       width: '100%',
       height: '100%',
-      display: 'block',
+      display: canShowField() ? 'block' : 'none',
       pointerEvents: 'none',
       zIndex: '0',
     });
   }
 
-  function bindPointerEvents(state) {
-    const enterEvent = 'PointerEvent' in window ? 'pointerenter' : 'mouseenter';
+  function bindGlobalEvents() {
+    if (manager.eventsBound || !fields.size) return;
+    manager.eventsBound = true;
+
     const moveEvent = 'PointerEvent' in window ? 'pointermove' : 'mousemove';
     const leaveEvent = 'PointerEvent' in window ? 'pointerleave' : 'mouseleave';
 
-    state.section.addEventListener(enterEvent, event => {
-      if (!canAnimate()) return;
+    document.addEventListener(moveEvent, handlePointerMove, { passive: true });
+    document.documentElement.addEventListener(leaveEvent, handlePointerLeave, { passive: true });
+    window.addEventListener('blur', handlePointerLeave, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleWindowResize, { passive: true });
+  }
 
-      state.pointerInside = true;
-      updatePointerTarget(state, event);
-      requestFrame(state);
-    }, { passive: true });
+  function handlePointerMove(event) {
+    if (!canAnimate()) return;
+    if (event.pointerType && event.pointerType !== 'mouse') return;
 
-    state.section.addEventListener(moveEvent, event => {
-      if (!canAnimate()) return;
+    manager.lastClientX = event.clientX;
+    manager.lastClientY = event.clientY;
+    manager.hasClientPosition = true;
 
-      state.pointerInside = true;
-      updatePointerTarget(state, event);
-      requestFrame(state);
-    }, { passive: true });
+    const docX = event.clientX + window.scrollX;
+    const docY = event.clientY + window.scrollY;
 
-    state.section.addEventListener(leaveEvent, () => {
-      if (!canAnimate()) return;
+    if (!manager.hasPointer) {
+      manager.cursorDocX = docX;
+      manager.cursorDocY = docY;
+    }
 
-      state.pointerInside = false;
-      setTargetToFieldCenter(state);
-      requestFrame(state);
-    }, { passive: true });
+    manager.hasPointer = true;
+    manager.targetDocX = docX;
+    manager.targetDocY = docY;
+    requestFrame();
+  }
+
+  function handlePointerLeave() {
+    if (!manager.hasPointer) return;
+
+    manager.hasPointer = false;
+    requestFrame();
+  }
+
+  function handleScroll() {
+    updateViewportPositions();
+
+    if (manager.hasClientPosition && canAnimate()) {
+      manager.targetDocX = manager.lastClientX + window.scrollX;
+      manager.targetDocY = manager.lastClientY + window.scrollY;
+      requestFrame();
+    }
+  }
+
+  function handleWindowResize() {
+    fields.forEach(resizeField);
+    manager.layoutDirty = true;
+    requestFrame();
   }
 
   function handleResizeEntry(entry) {
@@ -158,12 +211,18 @@
   }
 
   function resizeField(state) {
-    const rect = state.section.getBoundingClientRect();
+    const previousPageLeft = state.pageLeft;
+    const previousPageTop = state.pageTop;
+    const rect = updateLayout(state);
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const positionChanged = (
+      Math.abs(previousPageLeft - state.pageLeft) > 0.5 ||
+      Math.abs(previousPageTop - state.pageTop) > 0.5
+    );
 
-    if (state.width === width && state.height === height && state.dpr === dpr) {
+    if (state.width === width && state.height === height && state.dpr === dpr && !positionChanged) {
       draw(state);
       return;
     }
@@ -178,14 +237,95 @@
 
     state.field = getAccentField(state.section, width, height);
     state.points = buildGridPoints(state);
-
-    if (!state.pointerInside) {
-      setTargetToFieldCenter(state);
-      state.cursorX = state.targetX;
-      state.cursorY = state.targetY;
-    }
+    manager.layoutDirty = true;
 
     draw(state);
+  }
+
+  function updateLayout(state) {
+    const rect = state.section.getBoundingClientRect();
+    state.pageLeft = rect.left + window.scrollX;
+    state.pageTop = rect.top + window.scrollY;
+    state.pageRight = state.pageLeft + rect.width;
+    state.pageBottom = state.pageTop + rect.height;
+    state.viewportTop = rect.top;
+    state.viewportBottom = rect.bottom;
+
+    return rect;
+  }
+
+  function refreshLayouts() {
+    fields.forEach(updateLayout);
+    updateZoneConnections();
+    manager.layoutDirty = false;
+  }
+
+  function updateViewportPositions() {
+    fields.forEach(state => {
+      const rect = state.section.getBoundingClientRect();
+      state.viewportTop = rect.top;
+      state.viewportBottom = rect.bottom;
+    });
+  }
+
+  function updateZoneConnections() {
+    const states = Array.from(fields.values());
+
+    states.forEach(state => {
+      state.connectedEdges.top = false;
+      state.connectedEdges.right = false;
+      state.connectedEdges.bottom = false;
+      state.connectedEdges.left = false;
+    });
+
+    states.forEach((state, index) => {
+      states.slice(index + 1).forEach(otherState => {
+        connectTouchingEdges(state, otherState);
+      });
+    });
+  }
+
+  function connectTouchingEdges(state, otherState) {
+    const horizontalOverlap = getOverlap(
+      state.pageLeft,
+      state.pageRight,
+      otherState.pageLeft,
+      otherState.pageRight,
+    );
+    const verticalOverlap = getOverlap(
+      state.pageTop,
+      state.pageBottom,
+      otherState.pageTop,
+      otherState.pageBottom,
+    );
+
+    if (horizontalOverlap > 1) {
+      if (Math.abs(state.pageBottom - otherState.pageTop) <= EDGE_JOIN_TOLERANCE) {
+        state.connectedEdges.bottom = true;
+        otherState.connectedEdges.top = true;
+      }
+
+      if (Math.abs(otherState.pageBottom - state.pageTop) <= EDGE_JOIN_TOLERANCE) {
+        otherState.connectedEdges.bottom = true;
+        state.connectedEdges.top = true;
+      }
+    }
+
+    if (verticalOverlap > 1) {
+      if (Math.abs(state.pageRight - otherState.pageLeft) <= EDGE_JOIN_TOLERANCE) {
+        state.connectedEdges.right = true;
+        otherState.connectedEdges.left = true;
+      }
+
+      if (Math.abs(otherState.pageRight - state.pageLeft) <= EDGE_JOIN_TOLERANCE) {
+        otherState.connectedEdges.right = true;
+        state.connectedEdges.left = true;
+      }
+    }
+  }
+
+  function getOverlap(startA, endA, startB, endB) {
+    return Math.max(0, Math.min(endA, endB) - Math.max(startA, startB));
   }
 
   function getAccentField(section, width, height) {
@@ -205,8 +345,8 @@
 
   function buildGridPoints(state) {
     const { field } = state;
-    const startX = field.x % field.spacing;
-    const startY = field.y % field.spacing;
+    const startX = positiveModulo(-state.pageLeft, field.spacing);
+    const startY = positiveModulo(-state.pageTop, field.spacing);
     const points = [];
 
     for (let x = startX; x <= state.width; x += field.spacing) {
@@ -218,67 +358,73 @@
     return points;
   }
 
-  function updatePointerTarget(state, event) {
-    const rect = state.section.getBoundingClientRect();
-    const focus = getSafeFocus(state, event.clientX - rect.left, event.clientY - rect.top);
+  function requestFrame() {
+    if (manager.rafId) return;
 
-    state.targetX = focus.x;
-    state.targetY = focus.y;
+    manager.rafId = requestAnimationFrame(tick);
   }
 
-  function setTargetToFieldCenter(state) {
-    const center = getSafeFocusFromPoint(state, getFieldCenter(state));
-    state.targetX = center.x;
-    state.targetY = center.y;
-  }
+  function tick() {
+    manager.rafId = null;
 
-  function getFieldCenter(state) {
-    if (!state.field) return { x: state.width / 2, y: state.height / 2 };
+    if (manager.layoutDirty) {
+      refreshLayouts();
+    }
 
-    return {
-      x: state.field.x,
-      y: state.field.y,
-    };
-  }
-
-  function requestFrame(state) {
-    if (state.rafId) return;
-
-    state.rafId = requestAnimationFrame(() => tick(state));
-  }
-
-  function tick(state) {
-    state.rafId = null;
-
-    if (!canAnimate()) {
-      setTargetToFieldCenter(state);
-      state.cursorX = state.targetX;
-      state.cursorY = state.targetY;
-      draw(state);
+    if (!canShowField()) {
+      fields.forEach(state => {
+        state.canvas.style.display = 'none';
+        state.context.clearRect(0, 0, state.width, state.height);
+      });
       return;
     }
 
-    const ease = state.pointerInside ? CURSOR_ENTER_EASE : CURSOR_LEAVE_EASE;
-    state.cursorX += (state.targetX - state.cursorX) * ease;
-    state.cursorY += (state.targetY - state.cursorY) * ease;
+    fields.forEach(state => {
+      state.canvas.style.display = 'block';
+    });
 
-    draw(state);
-
-    if (getCursorDistanceToTarget(state) > SETTLE_DISTANCE) {
-      requestFrame(state);
+    if (!canAnimate() || !manager.hasPointer) {
+      drawAll();
+      return;
     }
+
+    manager.cursorDocX += (manager.targetDocX - manager.cursorDocX) * CURSOR_ENTER_EASE;
+    manager.cursorDocY += (manager.targetDocY - manager.cursorDocY) * CURSOR_ENTER_EASE;
+
+    drawAll();
+
+    if (getCursorDistanceToTarget() > SETTLE_DISTANCE) {
+      requestFrame();
+    }
+  }
+
+  function drawAll() {
+    if (manager.layoutDirty) {
+      refreshLayouts();
+    }
+
+    fields.forEach(draw);
   }
 
   function draw(state) {
     const { context, width, height, points } = state;
     if (!width || !height || !state.field) return;
 
+    if (!canShowField()) {
+      state.canvas.style.display = 'none';
+      context.clearRect(0, 0, width, height);
+      return;
+    }
+
     context.clearRect(0, 0, width, height);
+
+    if (!isNearViewport(state)) return;
+
     context.lineWidth = STROKE_WIDTH;
 
-    const isDynamic = canAnimate();
+    const isDynamic = canAnimate() && manager.hasPointer;
     const focus = isDynamic
-      ? getSafeFocus(state, state.cursorX, state.cursorY)
+      ? getDynamicFocus(state)
       : getSafeFocusFromPoint(state, getFieldCenter(state));
 
     points.forEach(point => {
@@ -311,6 +457,18 @@
       context.arc(point.x, point.y, radius, 0, Math.PI * 2);
       context.stroke();
     });
+  }
+
+  function isNearViewport(state) {
+    const radius = state.field ? state.field.radiusY : SPOTLIGHT_RADIUS;
+    return state.viewportBottom >= -radius && state.viewportTop <= window.innerHeight + radius;
+  }
+
+  function getDynamicFocus(state) {
+    return {
+      x: manager.cursorDocX - state.pageLeft,
+      y: manager.cursorDocY - state.pageTop,
+    };
   }
 
   function getNormalizedSpotlightDistance(field, point, focusX, focusY) {
@@ -354,28 +512,42 @@
     };
   }
 
+  function getFieldCenter(state) {
+    if (!state.field) return { x: state.width / 2, y: state.height / 2 };
+
+    return {
+      x: state.field.x,
+      y: state.field.y,
+    };
+  }
+
   function getSectionEdgeFade(state, point, radius) {
-    // Avoid hard clipping at section edges.
+    // Avoid hard clipping at real light/dark boundaries while allowing marked
+    // neighboring light zones to read as one continuous surface.
     if (SECTION_EDGE_FADE <= 0) return 1;
 
     const edgeDistance = Math.min(
-      point.x,
-      point.y,
-      state.width - point.x,
-      state.height - point.y,
+      state.connectedEdges.left ? Infinity : point.x,
+      state.connectedEdges.top ? Infinity : point.y,
+      state.connectedEdges.right ? Infinity : state.width - point.x,
+      state.connectedEdges.bottom ? Infinity : state.height - point.y,
     );
     const visibleDistance = edgeDistance - radius;
 
     return smoothstep(0, SECTION_EDGE_FADE, visibleDistance);
   }
 
-  function getCursorDistanceToTarget(state) {
-    return Math.hypot(state.targetX - state.cursorX, state.targetY - state.cursorY);
+  function getCursorDistanceToTarget() {
+    return Math.hypot(manager.targetDocX - manager.cursorDocX, manager.targetDocY - manager.cursorDocY);
   }
 
   function clamp(value, min, max) {
     if (max < min) return (min + max) / 2;
     return Math.min(Math.max(value, min), max);
+  }
+
+  function positiveModulo(value, divisor) {
+    return ((value % divisor) + divisor) % divisor;
   }
 
   function smoothstep(edge0, edge1, value) {
@@ -384,27 +556,30 @@
     return x * x * (3 - 2 * x);
   }
 
+  function canShowField() {
+    return !touchOnly.matches;
+  }
+
   function canAnimate() {
-    // Static mode for touch and reduced motion.
-    return finePointer.matches && !prefersReducedMotion.matches;
+    return canShowField() && finePointer.matches && !prefersReducedMotion.matches;
   }
 
   function refreshMotionMode() {
+    stop();
+    manager.hasPointer = false;
+
     fields.forEach(state => {
-      stop(state);
-      state.pointerInside = false;
-      setTargetToFieldCenter(state);
-      state.cursorX = state.targetX;
-      state.cursorY = state.targetY;
-      draw(state);
+      state.canvas.style.display = canShowField() ? 'block' : 'none';
     });
+
+    drawAll();
   }
 
-  function stop(state) {
-    if (!state.rafId) return;
+  function stop() {
+    if (!manager.rafId) return;
 
-    cancelAnimationFrame(state.rafId);
-    state.rafId = null;
+    cancelAnimationFrame(manager.rafId);
+    manager.rafId = null;
   }
 
   function addMediaListener(query, handler) {
@@ -418,11 +593,12 @@
 
   addMediaListener(prefersReducedMotion, refreshMotionMode);
   addMediaListener(finePointer, refreshMotionMode);
+  addMediaListener(touchOnly, refreshMotionMode);
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) return;
 
-    fields.forEach(stop);
+    stop();
   });
 
   if (document.readyState === 'loading') {

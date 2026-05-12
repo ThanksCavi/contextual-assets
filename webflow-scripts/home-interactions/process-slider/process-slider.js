@@ -9,6 +9,7 @@
   const CARD_SELECTOR = '[data-steps-card]';
   const TOGGLE_SELECTOR = '[data-steps-toggle]';
   const REVEAL_SELECTOR = '[data-steps-reveal]';
+  const INTERACTIVE_SELECTOR = 'a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
   const OPEN_CLASS = 'is-open';
   const DESKTOP_QUERY = '(min-width: 992px) and (prefers-reduced-motion: no-preference)';
@@ -104,6 +105,17 @@
     if (!step.reveal.id) {
       step.reveal.id = `process-step-reveal-${step.index + 1}`;
     }
+
+    if (!step.reveal.hasAttribute('role')) {
+      step.reveal.setAttribute('role', 'button');
+    }
+
+    if (!step.reveal.hasAttribute('aria-label')) {
+      step.reveal.setAttribute('aria-label', 'Close process step details');
+    }
+
+    step.reveal.addEventListener('click', (event) => handleRevealClick(event, step));
+    step.reveal.addEventListener('keydown', (event) => handleRevealKeydown(event, step));
   }
 
   function prepareToggle(step, state) {
@@ -124,6 +136,20 @@
     } else {
       closeStep(step);
     }
+  }
+
+  function handleRevealClick(event, step) {
+    if (!step.card.classList.contains(OPEN_CLASS) || isInteractiveElement(event.target, step.reveal)) return;
+
+    closeStep(step);
+  }
+
+  function handleRevealKeydown(event, step) {
+    if (!step.card.classList.contains(OPEN_CLASS) || !isActivationKey(event)) return;
+
+    event.preventDefault();
+    closeStep(step);
+    step.toggle.focus({ preventScroll: true });
   }
 
   function openStep(step) {
@@ -147,14 +173,26 @@
     step.toggle.classList.toggle(OPEN_CLASS, isOpen);
     step.toggle.setAttribute('aria-expanded', String(isOpen));
     step.toggle.toggleAttribute('hidden', isOpen);
+    step.reveal.tabIndex = isOpen ? 0 : -1;
     step.reveal.setAttribute('aria-hidden', String(!isOpen));
   }
 
   function preserveKeyboardFocus(event, step) {
     if (event.detail !== 0) return;
 
-    step.reveal.tabIndex = -1;
     step.reveal.focus({ preventScroll: true });
+  }
+
+  function isInteractiveElement(target, container) {
+    if (!(target instanceof Element)) return false;
+
+    const interactiveElement = target.closest(INTERACTIVE_SELECTOR);
+
+    return Boolean(interactiveElement && interactiveElement !== container && container.contains(interactiveElement));
+  }
+
+  function isActivationKey(event) {
+    return event.key === 'Enter' || event.key === ' ';
   }
 
   function requestRevealVisibilityCheck(step, state) {
