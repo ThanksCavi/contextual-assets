@@ -13,33 +13,6 @@
   width: 100%;
 }
 
-[data-lottie-mask]:has(.lm-stage) {
-  width: 889px;
-  max-width: 205%;
-}
-
-[data-lottie-mask] .lm-stage,
-[data-lottie-mask] .lm-visible {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-[data-lottie-mask] .lm-visible {
-  z-index: 1;
-}
-
-[data-lottie-mask] .lm-stage {
-  z-index: 2;
-}
-
-[data-lottie-mask] .lm-stage,
-[data-lottie-mask] .lm-visible svg {
-  display: block;
-}
-
 [data-lottie-mask] .lm-mask-source {
   position: absolute;
   width: 0;
@@ -58,7 +31,6 @@
   height: 100%;
   border-radius: 50%;
   overflow: hidden;
-  background-color: #6881ff;
   background-position: center;
   background-size: cover;
 }
@@ -73,6 +45,35 @@
 
 html:not(.wf-design-mode) [data-lottie-mask]:not([data-lottie-mask-ready="static"]):not([data-lottie-mask-ready="error"]) > .lottie-builder-placeholder {
   visibility: hidden;
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  [data-lottie-mask]:has(.lm-stage) {
+    width: 889px;
+    max-width: 205%;
+  }
+
+  [data-lottie-mask] .lm-stage,
+  [data-lottie-mask] .lm-visible {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  [data-lottie-mask] .lm-visible {
+    z-index: 1;
+  }
+
+  [data-lottie-mask] .lm-stage {
+    z-index: 2;
+  }
+
+  [data-lottie-mask] .lm-stage,
+  [data-lottie-mask] .lm-visible svg {
+    display: block;
+  }
 }
 
 @media (max-width: 767px), (prefers-reduced-motion: reduce) {
