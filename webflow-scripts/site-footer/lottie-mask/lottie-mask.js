@@ -113,13 +113,30 @@
   }
 
   function showStaticFallback(container, config, state) {
-    ensurePlaceholder(container, config.fallbackUrl);
+    var placeholder = ensurePlaceholder(container, config.fallbackUrl);
+    var animatedLayers = container.querySelectorAll('.lm-stage, .lm-visible');
+
+    if (placeholder) {
+      placeholder.style.display = 'block';
+      placeholder.style.visibility = 'visible';
+    }
+
+    animatedLayers.forEach(function(layer) {
+      layer.style.display = 'none';
+    });
+
     container.setAttribute('data-lottie-mask-ready', state || 'static');
   }
 
   function hideStaticFallback(container) {
     var placeholder = getPlaceholder(container);
+    var animatedLayers = container.querySelectorAll('.lm-stage, .lm-visible');
+
     if (placeholder) placeholder.style.display = 'none';
+
+    animatedLayers.forEach(function(layer) {
+      layer.style.display = '';
+    });
   }
 
   function fetchJson(url) {

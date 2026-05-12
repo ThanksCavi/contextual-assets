@@ -74,6 +74,18 @@ html:not(.wf-design-mode) [data-lottie-mask]:not([data-lottie-mask-ready="static
   visibility: hidden;
 }
 
+@media (max-width: 767px), (prefers-reduced-motion: reduce) {
+  html:not(.wf-design-mode) [data-lottie-mask] > .lottie-builder-placeholder {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  html:not(.wf-design-mode) [data-lottie-mask] .lm-stage,
+  html:not(.wf-design-mode) [data-lottie-mask] .lm-visible {
+    display: none !important;
+  }
+}
+
 [data-lottie-mask] .lm-mask-alpha * {
   fill: #fff !important;
   stroke: #fff !important;
