@@ -2,10 +2,10 @@
 (() => {
   // Use [data-circle-zone] on a single light section or on a shared wrapper
   // around multiple light sections that should render as one seamless field.
-  // [data-circle] remains supported as a legacy alias.
-  const FIELD_SELECTOR = '[data-circle-zone], [data-circle]';
+  const FIELD_SELECTOR = '[data-circle-zone]';
   const CANVAS_CLASS = 'circle-field-canvas';
   const INITIALIZED_CLASS = 'is-circle-field-ready';
+  const STYLE_ID = 'circle-field-layering-styles';
 
   // Geometry.
   const MAX_DPR = 2;
@@ -66,6 +66,7 @@
     : null;
 
   function initAll() {
+    injectLayeringStyles();
     document.querySelectorAll(FIELD_SELECTOR).forEach(initField);
     bindGlobalEvents();
     refreshLayouts();
@@ -140,6 +141,21 @@
       pointerEvents: 'none',
       zIndex: '0',
     });
+  }
+
+  function injectLayeringStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+    ${FIELD_SELECTOR} > :not(.${CANVAS_CLASS}) {
+      position: relative;
+      z-index: 1;
+    }
+    `;
+
+    document.head.appendChild(style);
   }
 
   function bindGlobalEvents() {
