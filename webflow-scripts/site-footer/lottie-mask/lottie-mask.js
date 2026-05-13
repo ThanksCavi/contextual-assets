@@ -29,9 +29,9 @@
     height: '443.5'
   };
   var FADE_RULES = [
-    { idx: 0, inStart:  79, inEnd:  90, outStart: 120, outEnd: 140 },
-    { idx: 1, inStart: 140, inEnd: 165, outStart: 207, outEnd: 234 },
-    { idx: 2, inStart: 234, inEnd: 256, outStart: Infinity, outEnd: Infinity }
+    { idx: 0, inStart:  79, inEnd:  90, holdEnd: 140 },
+    { idx: 1, inStart: 120, inEnd: 140, holdEnd: 234 },
+    { idx: 2, inStart: 207, inEnd: 234, holdEnd: Infinity }
   ];
 
   var IO_THRESHOLD = 0.15;
@@ -43,8 +43,7 @@
   function getOpacity(frame, rule) {
     if (frame < rule.inStart)  return 0;
     if (frame < rule.inEnd)    return (frame - rule.inStart) / (rule.inEnd - rule.inStart);
-    if (frame < rule.outStart) return 1;
-    if (frame < rule.outEnd)   return 1 - (frame - rule.outStart) / (rule.outEnd - rule.outStart);
+    if (frame < rule.holdEnd)  return 1;
     return 0;
   }
 
