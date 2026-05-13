@@ -30,8 +30,8 @@
   };
   var FADE_RULES = [
     { idx: 0, inStart:  79, inEnd:  90, outStart: 120, outEnd: 140 },
-    { idx: 1, inStart: 120, inEnd: 140, outStart: 207, outEnd: 234 },
-    { idx: 2, inStart: 207, inEnd: 234, outStart: Infinity, outEnd: Infinity }
+    { idx: 1, inStart: 140, inEnd: 165, outStart: 207, outEnd: 234 },
+    { idx: 2, inStart: 234, inEnd: 256, outStart: Infinity, outEnd: Infinity }
   ];
 
   var IO_THRESHOLD = 0.15;
