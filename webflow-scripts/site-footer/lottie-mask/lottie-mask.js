@@ -28,7 +28,6 @@
     width: '443.5',
     height: '443.5'
   };
-  var IMAGE_MAX_OPACITY = 0.72;
   var FADE_RULES = [
     { idx: 0, inStart:  79, inEnd:  90, outStart: 120, outEnd: 140 },
     { idx: 1, inStart: 120, inEnd: 140, outStart: 207, outEnd: 234 },
@@ -43,9 +42,9 @@
 
   function getOpacity(frame, rule) {
     if (frame < rule.inStart)  return 0;
-    if (frame < rule.inEnd)    return IMAGE_MAX_OPACITY * ((frame - rule.inStart) / (rule.inEnd - rule.inStart));
-    if (frame < rule.outStart) return IMAGE_MAX_OPACITY;
-    if (frame < rule.outEnd)   return IMAGE_MAX_OPACITY * (1 - (frame - rule.outStart) / (rule.outEnd - rule.outStart));
+    if (frame < rule.inEnd)    return (frame - rule.inStart) / (rule.inEnd - rule.inStart);
+    if (frame < rule.outStart) return 1;
+    if (frame < rule.outEnd)   return 1 - (frame - rule.outStart) / (rule.outEnd - rule.outStart);
     return 0;
   }
 
@@ -193,16 +192,6 @@
     });
     defs.appendChild(mask);
     svgStage.appendChild(defs);
-
-    var matte = createSvgElement('rect', {
-      'x': '0',
-      'y': '0',
-      'width': '900',
-      'height': '900',
-      'fill': '#fff',
-      'mask': 'url(#' + maskId + ')'
-    });
-    svgStage.appendChild(matte);
 
     var imageEls = [];
     for (var i = 0; i < 3; i++) {
