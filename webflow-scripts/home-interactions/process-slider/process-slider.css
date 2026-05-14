@@ -150,7 +150,6 @@
 
   .steps-item {
     flex-basis: auto;
-    width: 100%;
   }
 
   [data-steps-card],
