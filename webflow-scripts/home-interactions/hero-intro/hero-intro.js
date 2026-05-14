@@ -307,7 +307,9 @@
 				mode: mode
 			}
 		}));
-		if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.refreshAll === 'function') {
+		if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.requestRefresh === 'function') {
+			window.ContextualHomeMotion.requestRefresh({ delay: 0 });
+		} else if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.refreshAll === 'function') {
 			window.ContextualHomeMotion.refreshAll();
 		}
 	}

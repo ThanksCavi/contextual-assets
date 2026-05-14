@@ -8,12 +8,15 @@
   const CONTENT_SELECTOR = '#smooth-content';
   const INIT_FLAG = '__contextualHomeScrollSmootherInit';
   const READY_EVENT = 'contextual:smoother-ready';
+  const REQUEST_REFRESH_DELAY_MS = 80;
   const RESIZE_REFRESH_DELAY_MS = 160;
 
   if (window[INIT_FLAG]) return;
   window[INIT_FLAG] = true;
 
   let resolveReady;
+  let refreshTimer = null;
+  let refreshToken = 0;
   let resizeTimer = null;
   const ready = new Promise((resolve) => {
     resolveReady = resolve;
@@ -23,6 +26,11 @@
   Object.assign(window.ContextualHomeMotion, {
     ready,
     refreshAll,
+    requestRefresh,
+    getSmoother,
+    scrollBy,
+    scrollTo,
+    getScrollTop,
   });
 
   if (document.readyState === 'loading') {
@@ -59,8 +67,10 @@
         wrapper,
         content,
         smooth: 2,
-        effects: false,
+        effects: true,
+        effectsPrefix: 'smoother-',
         smoothTouch: false,
+        normalizeScroll: true,
       });
     }
 
@@ -83,25 +93,121 @@
 
   function queueSettledRefresh() {
     clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(scheduleSettledRefresh, RESIZE_REFRESH_DELAY_MS);
+    resizeTimer = window.setTimeout(() => requestRefresh(), RESIZE_REFRESH_DELAY_MS);
   }
 
-  function scheduleSettledRefresh() {
-    const fontReady = document.fonts?.ready || Promise.resolve();
+  function requestRefresh(options = {}) {
+    const delay = Number.isFinite(options.delay) ? Math.max(0, options.delay) : REQUEST_REFRESH_DELAY_MS;
+
+    clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => scheduleSettledRefresh(options), delay);
+  }
+
+  function scheduleSettledRefresh(options = {}) {
+    const token = ++refreshToken;
+    const shouldWaitForFonts = options.waitForFonts !== false;
+    const fontReady = shouldWaitForFonts ? document.fonts?.ready || Promise.resolve() : Promise.resolve();
 
     Promise.resolve(fontReady)
       .catch(() => null)
       .then(() => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(refreshAll);
+          requestAnimationFrame(() => {
+            if (token === refreshToken) {
+              refreshAll();
+            }
+          });
         });
       });
   }
 
   function refreshAll() {
+    clearTimeout(refreshTimer);
+
     if (window.ScrollTrigger) {
       window.ScrollTrigger.sort?.();
       window.ScrollTrigger.refresh(true);
     }
+  }
+
+  function scrollBy(options = {}) {
+    const top = Number(options.top) || 0;
+    const left = Number(options.left) || 0;
+
+    if (left) {
+      window.scrollBy({
+        top,
+        left,
+        behavior: options.behavior || 'auto',
+      });
+      return;
+    }
+
+    scrollTo(getScrollTop() + top, options);
+  }
+
+  function scrollTo(target, options = {}) {
+    const smoother = getSmoother();
+    const behavior = options.behavior || 'auto';
+    const shouldSmooth = behavior === 'smooth';
+    const scrollTarget = typeof target === 'number' ? clampScrollTop(target) : target;
+
+    if (smoother && typeof smoother.scrollTo === 'function') {
+      smoother.scrollTo(scrollTarget, shouldSmooth, options.position);
+      return;
+    }
+
+    if (typeof target === 'number') {
+      window.scrollTo({
+        top: scrollTarget,
+        left: 0,
+        behavior,
+      });
+      return;
+    }
+
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({
+        behavior,
+        block: options.block || 'start',
+        inline: options.inline || 'nearest',
+      });
+    }
+  }
+
+  function getScrollTop() {
+    const smoother = getSmoother();
+
+    try {
+      if (smoother && typeof smoother.scrollTop === 'function') {
+        return Number(smoother.scrollTop()) || 0;
+      }
+    } catch (error) {
+      return window.scrollY || window.pageYOffset || 0;
+    }
+
+    return window.scrollY || window.pageYOffset || 0;
+  }
+
+  function getSmoother() {
+    if (window.ContextualHomeMotion?.smoother) {
+      return window.ContextualHomeMotion.smoother;
+    }
+
+    if (window.ScrollSmoother && typeof window.ScrollSmoother.get === 'function') {
+      return window.ScrollSmoother.get();
+    }
+
+    return null;
+  }
+
+  function clampScrollTop(value) {
+    const maxScroll = Math.max(
+      0,
+      document.documentElement.scrollHeight - window.innerHeight,
+      document.body.scrollHeight - window.innerHeight,
+    );
+
+    return Math.max(0, Math.min(maxScroll, value));
   }
 })();

@@ -1,7 +1,7 @@
 // Process Slider
 (() => {
   const ROOT_SELECTOR = '[data-steps-slider]';
-  const PIN_SELECTOR = '[data-steps-pin]';
+  const PIN_SELECTOR = '[data-steps-pin], [data-steps-sticky]';
   const SLIDER_SELECTOR = '.steps-slider';
   const VIEWPORT_SELECTOR = '[data-steps-viewport]';
   const TRACK_SELECTOR = '[data-steps-track]';
@@ -209,11 +209,20 @@
 
     if (scrollDelta === 0) return;
 
-    window.scrollBy({
+    scrollBy({
       top: scrollDelta,
       left: 0,
       behavior: getScrollBehavior(),
     });
+  }
+
+  function scrollBy(options) {
+    if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.scrollBy === 'function') {
+      window.ContextualHomeMotion.scrollBy(options);
+      return;
+    }
+
+    window.scrollBy(options);
   }
 
   function getScrollBehavior() {
@@ -329,13 +338,25 @@
       setupHorizontalScroll(state);
     }
 
-    if (!options.skipGlobalRefresh && window.ScrollTrigger) {
-      window.ScrollTrigger.refresh(true);
+    if (!options.skipGlobalRefresh) {
+      requestGlobalRefresh();
     }
   }
 
   function queueRefresh() {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(refreshProcessSlider, RESIZE_REFRESH_DELAY_MS);
+  }
+
+  function requestGlobalRefresh() {
+    if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.requestRefresh === 'function') {
+      window.ContextualHomeMotion.requestRefresh();
+      return;
+    }
+
+    if (window.ScrollTrigger) {
+      window.ScrollTrigger.sort?.();
+      window.ScrollTrigger.refresh(true);
+    }
   }
 })();

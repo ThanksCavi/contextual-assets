@@ -5,12 +5,14 @@
 
 .pin-spacer:has(> [data-steps-slider]),
 [data-steps-slider] .pin-spacer:has(> [data-steps-pin]),
+[data-steps-slider] .pin-spacer:has(> [data-steps-sticky]),
 [data-steps-slider] .pin-spacer:has(> .steps-slider) {
   background: var(--_system-colors---dark);
   box-shadow: 0 1px 0 var(--_system-colors---dark);
 }
 
-[data-steps-pin] {
+[data-steps-pin],
+[data-steps-sticky] {
   box-sizing: border-box;
   position: relative;
 }

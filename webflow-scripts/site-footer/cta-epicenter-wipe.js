@@ -34,7 +34,7 @@
   injectStyles();
   onMotionReady(initAll);
 
-  window.addEventListener('scroll', queueRender, { passive: true });
+  window.addEventListener('scroll', queueFallbackRender, { passive: true });
   window.addEventListener('resize', handleResize);
   window.addEventListener('load', handleResize, { once: true });
   prefersReducedMotion.addEventListener?.('change', handleResize);
@@ -48,7 +48,7 @@
         setupScrollTrigger(instance);
       });
       if (!options.skipGlobalRefresh) {
-        refreshScrollTrigger();
+        requestGlobalRefresh();
       }
     },
     instances: instances
@@ -111,7 +111,7 @@
       instances.set(section, instance);
       render(instance);
       setupScrollTrigger(instance);
-      queueRender();
+      queueFallbackRender();
     });
   }
 
@@ -132,16 +132,34 @@
       render(instance);
       setupScrollTrigger(instance);
     });
-    refreshScrollTrigger();
+    requestGlobalRefresh();
   }
 
-  function queueRender() {
+  function queueFallbackRender() {
+    if (!hasScrollFallbackInstances()) return;
     if (ticking) return;
+
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
-      instances.forEach(render);
+      instances.forEach(instance => {
+        if (shouldUseScrollFallbackRender(instance)) {
+          render(instance);
+        }
+      });
     });
+  }
+
+  function hasScrollFallbackInstances() {
+    for (const instance of instances.values()) {
+      if (shouldUseScrollFallbackRender(instance)) return true;
+    }
+
+    return false;
+  }
+
+  function shouldUseScrollFallbackRender(instance) {
+    return !instance.scrollTrigger && !shouldUseStaticFallback(instance.section) && instance.playgroundProgress === undefined;
   }
 
   function render(instance, progressOverride) {
@@ -200,8 +218,9 @@
 
   function drawCanvas(instance, config, progress, color) {
     const { canvas, context, points, cx, cy, centerIndex1, centerIndex2 } = instance;
-    const width = canvas.width / (window.devicePixelRatio || 1);
-    const height = canvas.height / (window.devicePixelRatio || 1);
+    const dpr = getDevicePixelRatio();
+    const width = canvas.width / dpr;
+    const height = canvas.height / dpr;
 
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, width, height);
@@ -278,7 +297,7 @@
     const rect = section.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = getDevicePixelRatio();
 
     stage.style.setProperty('--epicenter-stage-panel-height', `${height}px`);
 
@@ -422,8 +441,14 @@
     return ScrollTrigger;
   }
 
-  function refreshScrollTrigger() {
+  function requestGlobalRefresh() {
+    if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.requestRefresh === 'function') {
+      window.ContextualHomeMotion.requestRefresh();
+      return;
+    }
+
     if (window.ScrollTrigger) {
+      window.ScrollTrigger.sort?.();
       window.ScrollTrigger.refresh(true);
     }
   }
@@ -466,6 +491,10 @@
 
   function getColor(section) {
     return section.dataset.wipeColor || DEFAULT_COLOR;
+  }
+
+  function getDevicePixelRatio() {
+    return Math.min(window.devicePixelRatio || 1, 2);
   }
 
   function shouldUseStaticFallback(section) {

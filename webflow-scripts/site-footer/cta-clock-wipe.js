@@ -90,7 +90,7 @@
   injectStyles();
   onMotionReady(initAll);
 
-  window.addEventListener('scroll', queueRender, { passive: true });
+  window.addEventListener('scroll', queueFallbackRender, { passive: true });
   window.addEventListener('resize', handleResize);
   window.addEventListener('load', handleResize, { once: true });
   prefersReducedMotion.addEventListener?.('change', handleResize);
@@ -104,7 +104,7 @@
         setupScrollTrigger(instance);
       });
       if (!options.skipGlobalRefresh) {
-        refreshScrollTrigger();
+        requestGlobalRefresh();
       }
     },
   };
@@ -156,7 +156,7 @@
       instances.set(section, instance);
       render(instance);
       setupScrollTrigger(instance);
-      queueRender();
+      queueFallbackRender();
     });
   }
 
@@ -178,16 +178,34 @@
       render(instance);
       setupScrollTrigger(instance);
     });
-    refreshScrollTrigger();
+    requestGlobalRefresh();
   }
 
-  function queueRender() {
+  function queueFallbackRender() {
+    if (!hasScrollFallbackInstances()) return;
     if (ticking) return;
+
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
-      instances.forEach(render);
+      instances.forEach(instance => {
+        if (shouldUseScrollFallbackRender(instance)) {
+          render(instance);
+        }
+      });
     });
+  }
+
+  function hasScrollFallbackInstances() {
+    for (const instance of instances.values()) {
+      if (shouldUseScrollFallbackRender(instance)) return true;
+    }
+
+    return false;
+  }
+
+  function shouldUseScrollFallbackRender(instance) {
+    return !instance.scrollTrigger && !shouldUseStaticFallback(instance.section);
   }
 
   function render(instance, progressOverride) {
@@ -246,7 +264,7 @@
 
     if (solid >= 1) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getDevicePixelRatio();
 
     context.save();
     context.scale(dpr, dpr);
@@ -305,13 +323,13 @@
     const height = Math.max(1, Math.round(section.getBoundingClientRect().height));
     stage.style.setProperty('--cta-stage-panel-height', `${height}px`);
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getDevicePixelRatio();
     const key = [width, height, cell, config.columns, config.cellMin, config.cellMax, config.heightMin, config.heightMax, config.heightRatio, config.anchorX, config.anchorY, patternName, dpr].join(':');
 
     if (key === instance.buildKey) return;
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
@@ -489,8 +507,14 @@
     return ScrollTrigger;
   }
 
-  function refreshScrollTrigger() {
+  function requestGlobalRefresh() {
+    if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.requestRefresh === 'function') {
+      window.ContextualHomeMotion.requestRefresh();
+      return;
+    }
+
     if (window.ScrollTrigger) {
+      window.ScrollTrigger.sort?.();
       window.ScrollTrigger.refresh(true);
     }
   }
@@ -541,6 +565,10 @@
 
   function getPattern(section) {
     return PATTERNS[section.dataset.wipePattern] || PATTERNS.primary;
+  }
+
+  function getDevicePixelRatio() {
+    return Math.min(window.devicePixelRatio || 1, 2);
   }
 
   function shouldUseStaticFallback(section) {

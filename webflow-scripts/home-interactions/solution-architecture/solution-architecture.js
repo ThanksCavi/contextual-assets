@@ -873,13 +873,25 @@
       setupResponsiveAnimation(state);
     });
 
-    if (!options.skipGlobalRefresh && window.ScrollTrigger) {
-      window.ScrollTrigger.refresh(true);
+    if (!options.skipGlobalRefresh) {
+      requestGlobalRefresh();
     }
   }
 
   function queueRefresh() {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(refreshAll, RESIZE_REFRESH_DELAY_MS);
+  }
+
+  function requestGlobalRefresh() {
+    if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.requestRefresh === 'function') {
+      window.ContextualHomeMotion.requestRefresh();
+      return;
+    }
+
+    if (window.ScrollTrigger) {
+      window.ScrollTrigger.sort?.();
+      window.ScrollTrigger.refresh(true);
+    }
   }
 })();
