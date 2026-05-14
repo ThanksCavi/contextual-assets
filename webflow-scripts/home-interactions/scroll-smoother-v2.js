@@ -67,10 +67,10 @@
         wrapper,
         content,
         smooth: 2,
-        effects: true,
-        effectsPrefix: 'smoother-',
+        effects: false,
+        // effectsPrefix: 'smoother-',
         smoothTouch: false,
-        normalizeScroll: true,
+        normalizeScroll: false,
       });
     }
 
