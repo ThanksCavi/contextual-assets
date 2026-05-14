@@ -219,10 +219,7 @@
 @media (max-width: 991px),
 (prefers-reduced-motion: reduce) {
 
-  [data-sa-mobile-hidden],
-  .sa-mobile-hidden,
-  .sa-intro-arrow-embed,
-  .sa-intro-arrow {
+  [data-sa-mobile-hidden] {
     display: none !important;
   }
 
@@ -244,17 +241,17 @@
     min-height: 0;
   }
 
-  [data-sa-root] [data-sa-panel],
-  [data-sa-root].is-sa-ready [data-sa-panel] {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto !important;
-    grid-auto-columns: minmax(0, 1fr) !important;
-    grid-auto-flow: row !important;
-    gap: var(--sa-stack-gap, 24px);
-    aspect-ratio: auto;
-    overflow: visible;
-  }
+  /*[data-sa-root] [data-sa-panel],*/
+  /*[data-sa-root].is-sa-ready [data-sa-panel] {*/
+  /*  display: grid;*/
+  /*  grid-template-columns: minmax(0, 1fr) !important;*/
+  /*  grid-template-rows: auto !important;*/
+  /*  grid-auto-columns: minmax(0, 1fr) !important;*/
+  /*  grid-auto-flow: row !important;*/
+  /*  gap: var(--sa-stack-gap, 24px);*/
+  /*  aspect-ratio: auto;*/
+  /*  overflow: visible;*/
+  /*}*/
 
   [data-sa-root] [data-sa-panel]>[data-sa-card],
   [data-sa-root].is-sa-ready [data-sa-panel]>[data-sa-card] {
