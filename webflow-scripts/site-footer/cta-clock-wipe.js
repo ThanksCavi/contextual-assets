@@ -27,7 +27,6 @@
     revealEnd: 0.43,
     revealSpread: 0.36,
     revealBatches: 11,
-    revealDuration: 0.08,
     animationEnd: 0.855,
     expandStart: 0.76,
     expandEnd: 0.94,
@@ -36,6 +35,7 @@
     solidStart: 0.81,
     solidEnd: 0.9,
     solidWave: 0.045,
+    titleScaleStart: 1.18,
     titleStart: 0.42,
     titleEnd: 0.78,
     descriptionStart: 0.48,
@@ -82,10 +82,6 @@
       { from: 180, a1: 180, a2: 300 },
     ],
   ];
-  const PATTERNS = {
-    primary: PRIMARY_PATTERN,
-  };
-
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const mobileViewport = window.matchMedia(MOBILE_QUERY);
   const instances = new Map();
@@ -138,17 +134,21 @@
     document.querySelectorAll(SECTION_SELECTOR).forEach(section => {
       if (instances.has(section)) return;
 
-      const stage = section.closest(STAGE_SELECTOR) || section.parentElement || section;
+      const stage = section.closest(STAGE_SELECTOR);
+      if (!stage) return;
+
       syncStageExtraOverride(stage, section);
 
       const bg = getOrCreateBackground(section);
-      const canvas = bg.querySelector(`.${CANVAS_CLASS}`);
+      const canvas = getOrCreateCanvas(bg);
       const instance = {
         section,
         stage,
         bg,
         canvas,
-        context: canvas.getContext('2d'),
+        context: canvas.getContext('2d', { alpha: false }),
+        description: section.querySelector('[data-cta-wipe-description]'),
+        button: section.querySelector('[data-cta-wipe-button]'),
         shapes: [],
         buildKey: '',
         scrollProgress: 0,
@@ -169,9 +169,18 @@
     const bg = document.createElement('div');
     bg.className = BG_CLASS;
     bg.setAttribute('aria-hidden', 'true');
-    bg.innerHTML = `<canvas class="${CANVAS_CLASS}"></canvas>`;
     section.insertBefore(bg, section.firstChild);
     return bg;
+  }
+
+  function getOrCreateCanvas(bg) {
+    const existing = bg.querySelector(`.${CANVAS_CLASS}`);
+    if (existing) return existing;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = CANVAS_CLASS;
+    bg.appendChild(canvas);
+    return canvas;
   }
 
   function handleResize() {
@@ -207,16 +216,16 @@
   }
 
   function shouldUseScrollFallbackRender(instance) {
-    return !instance.scrollTrigger && !shouldUseStaticFallback(instance.section);
+    return !instance.scrollTrigger && !shouldUseStaticMode(instance.section);
   }
 
   function render(instance, progressOverride) {
-    const { section, stage, canvas, context } = instance;
+    const { section, stage, canvas, context, description, button } = instance;
     const color = getColor(section);
 
     stage.style.setProperty('--cta-wipe-yellow', color);
 
-    if (shouldUseStaticFallback(section)) {
+    if (shouldUseStaticMode(section)) {
       destroyScrollTrigger(instance);
       stage.setAttribute('data-cta-wipe-static', 'true');
       section.style.setProperty('--cta-wipe-yellow', color);
@@ -240,9 +249,7 @@
     const visualProgress = getVisualProgress(config, progress);
     const solid = smooth(config.solidEnd, Math.min(1, config.solidEnd + config.solidWave), progress);
     const rect = section.getBoundingClientRect();
-    const titleScale = lerp(1.18, 1, smooth(config.titleStart, config.titleEnd, progress));
-    const description = section.querySelector('[data-cta-wipe-description]');
-    const button = section.querySelector('[data-cta-wipe-button]');
+    const titleScale = lerp(config.titleScaleStart, 1, smooth(config.titleStart, config.titleEnd, progress));
 
     section.style.setProperty('--cta-wipe-yellow', color);
     section.style.setProperty('--cta-wipe-title-scale', titleScale.toFixed(4));
@@ -330,8 +337,7 @@
     const targetHeight = Math.round(cell * 3.5);
     const designHeight = Math.round(Math.max(config.heightMin, Math.min(config.heightMax, width * config.heightRatio)));
     const sectionMinHeight = Math.max(targetHeight, designHeight);
-    const patternName = section.dataset.wipePattern || 'primary';
-    const tile = getPattern(section);
+    const tile = PRIMARY_PATTERN;
 
     section.style.setProperty('--cta-wipe-min-height', `${sectionMinHeight}px`);
 
@@ -339,7 +345,7 @@
     stage.style.setProperty('--cta-stage-panel-height', `${height}px`);
 
     const dpr = getDevicePixelRatio();
-    const key = [width, height, cell, config.columns, config.cellMin, config.cellMax, config.heightMin, config.heightMax, config.heightRatio, config.anchorX, config.anchorY, patternName, dpr].join(':');
+    const key = [width, height, cell, config.columns, config.cellMin, config.cellMax, config.heightMin, config.heightMax, config.heightRatio, config.anchorX, config.anchorY, dpr].join(':');
 
     if (key === instance.buildKey) return;
 
@@ -465,7 +471,7 @@
 
   function setupScrollTrigger(instance) {
     const ScrollTrigger = getScrollTrigger();
-    if (!ScrollTrigger || shouldUseStaticFallback(instance.section)) {
+    if (!ScrollTrigger || shouldUseStaticMode(instance.section)) {
       destroyScrollTrigger(instance);
       return;
     }
@@ -604,7 +610,6 @@
       revealEnd: getNumber(section, 'wipeRevealEnd', CONFIG.revealEnd),
       revealSpread: getNumber(section, 'wipeRevealSpread', CONFIG.revealSpread),
       revealBatches: getNumber(section, 'wipeRevealBatches', CONFIG.revealBatches),
-      revealDuration: getNumber(section, 'wipeRevealDuration', CONFIG.revealDuration),
       animationEnd: getNumber(section, 'wipeAnimationEnd', CONFIG.animationEnd),
       expandStart: getNumber(section, 'wipeExpandStart', CONFIG.expandStart),
       expandEnd: getNumber(section, 'wipeExpandEnd', CONFIG.expandEnd),
@@ -613,6 +618,7 @@
       solidStart: getNumber(section, 'wipeSolidStart', CONFIG.solidStart),
       solidEnd: getNumber(section, 'wipeSolidEnd', CONFIG.solidEnd),
       solidWave: getNumber(section, 'wipeSolidWave', CONFIG.solidWave),
+      titleScaleStart: getNumber(section, 'wipeTitleScaleStart', CONFIG.titleScaleStart),
       titleStart: getNumber(section, 'wipeTitleStart', CONFIG.titleStart),
       titleEnd: getNumber(section, 'wipeTitleEnd', CONFIG.titleEnd),
       descriptionStart: getNumber(section, 'wipeDescriptionStart', CONFIG.descriptionStart),
@@ -635,15 +641,11 @@
     return section.dataset.wipeColor || DEFAULT_COLOR;
   }
 
-  function getPattern(section) {
-    return PATTERNS[section.dataset.wipePattern] || PATTERNS.primary;
-  }
-
   function getDevicePixelRatio() {
     return Math.min(window.devicePixelRatio || 1, 2);
   }
 
-  function shouldUseStaticFallback(section) {
+  function shouldUseStaticMode(section) {
     return prefersReducedMotion.matches || (mobileViewport.matches && section.dataset.wipeMobile !== 'scrub');
   }
 

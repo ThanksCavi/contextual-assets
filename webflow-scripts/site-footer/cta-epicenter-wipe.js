@@ -2,7 +2,9 @@
 (() => {
   const SECTION_SELECTOR = '[data-epicenter-wipe]';
   const STAGE_SELECTOR = '[data-epicenter-wipe-stage]';
+  const ORIGIN_SELECTOR = '[data-epicenter-wipe-origin]';
   const BG_CLASS = 'epicenter-wipe__bg';
+  const CANVAS_CLASS = 'epicenter-wipe__canvas';
 
   const DEFAULT_COLOR = '#ecf071';
   const DEFAULT_STAGE_EXTRA = '136vh';
@@ -25,8 +27,11 @@
     strokeColor: '#ecf071',
     scrollStart: 0,
     scrollEnd: 0.12,
+    titleScaleStart: 1.18,
     descRange: [0.34, 0.72],
+    descY: 12,
     btnRange: [0.48, 0.86],
+    btnY: 14,
     titleRange: [0.76, 0.98]
   };
 
@@ -55,7 +60,6 @@
         requestGlobalRefresh();
       }
     },
-    instances: instances
   };
 
   function onMotionReady(callback) {
@@ -80,17 +84,16 @@
   }
 
   function initAll() {
-    document.querySelectorAll('[data-epicenter-wipe][data-wipe-pattern="epicenter"], [data-epicenter-wipe]').forEach(section => {
+    document.querySelectorAll(SECTION_SELECTOR).forEach(section => {
       if (instances.has(section)) return;
 
-      const stage = section.closest(STAGE_SELECTOR) || section.parentElement || section;
+      const stage = section.closest(STAGE_SELECTOR);
+      if (!stage) return;
+
       syncStageExtraOverride(stage, section);
 
       const bg = getOrCreateBackground(section);
-      const canvas = document.createElement('canvas');
-      canvas.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;';
-      bg.innerHTML = '';
-      bg.appendChild(canvas);
+      const canvas = getOrCreateCanvas(bg);
 
       const context = canvas.getContext('2d', { alpha: false });
 
@@ -100,6 +103,8 @@
         bg,
         canvas,
         context,
+        description: section.querySelector('[data-epicenter-wipe-description]'),
+        button: section.querySelector('[data-epicenter-wipe-button]'),
         points: [],
         cx: 0,
         cy: 0,
@@ -126,6 +131,16 @@
     bg.setAttribute('aria-hidden', 'true');
     section.insertBefore(bg, section.firstChild);
     return bg;
+  }
+
+  function getOrCreateCanvas(bg) {
+    const existing = bg.querySelector(`.${CANVAS_CLASS}`);
+    if (existing) return existing;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = CANVAS_CLASS;
+    bg.appendChild(canvas);
+    return canvas;
   }
 
   function handleResize() {
@@ -161,20 +176,19 @@
   }
 
   function shouldUseScrollFallbackRender(instance) {
-    return !instance.scrollTrigger && !shouldUseStaticFallback(instance.section) && instance.playgroundProgress === undefined;
+    return !instance.scrollTrigger && !shouldUseStaticMode(instance.section);
   }
 
   function render(instance, progressOverride) {
-    const { section, stage, canvas, context } = instance;
+    const { section, stage, canvas, context, description, button } = instance;
     const color = getColor(section);
 
     stage.style.setProperty('--epicenter-wipe-yellow', color);
 
-    if (shouldUseStaticFallback(section)) {
+    if (shouldUseStaticMode(section)) {
       destroyScrollTrigger(instance);
       stage.setAttribute('data-epicenter-wipe-static', 'true');
       section.style.setProperty('--epicenter-wipe-yellow', color);
-      section.style.setProperty('--epicenter-wipe-solid', '1');
       section.style.setProperty('--epicenter-wipe-title-scale', '1');
       section.style.setProperty('--epicenter-wipe-description-progress', '1');
       section.style.setProperty('--epicenter-wipe-description-y', '0px');
@@ -198,20 +212,17 @@
 
     const progress = getRenderProgress(instance, config, progressOverride);
 
-    const titleScale = lerp(1.18, 1, smooth(config.titleRange[0], config.titleRange[1], progress));
+    const titleScale = lerp(config.titleScaleStart, 1, smooth(config.titleRange[0], config.titleRange[1], progress));
     const descriptionProgress = smooth(config.descRange[0], config.descRange[1], progress);
     const buttonProgress = smooth(config.btnRange[0], config.btnRange[1], progress);
 
     section.style.setProperty('--epicenter-wipe-yellow', color);
-    section.style.setProperty('--epicenter-wipe-solid', progress >= 1 ? '1' : '0');
     section.style.setProperty('--epicenter-wipe-title-scale', titleScale.toFixed(4));
     section.style.setProperty('--epicenter-wipe-description-progress', descriptionProgress.toFixed(4));
-    section.style.setProperty('--epicenter-wipe-description-y', `${((1 - descriptionProgress) * 12).toFixed(2)}px`);
+    section.style.setProperty('--epicenter-wipe-description-y', `${((1 - descriptionProgress) * config.descY).toFixed(2)}px`);
     section.style.setProperty('--epicenter-wipe-button-progress', buttonProgress.toFixed(4));
-    section.style.setProperty('--epicenter-wipe-button-y', `${((1 - buttonProgress) * 14).toFixed(2)}px`);
+    section.style.setProperty('--epicenter-wipe-button-y', `${((1 - buttonProgress) * config.btnY).toFixed(2)}px`);
 
-    const description = section.querySelector('[data-epicenter-wipe-description]');
-    const button = section.querySelector('[data-epicenter-wipe-button]');
     description?.style.setProperty('pointer-events', progress > config.descRange[0] ? '' : 'none');
     button?.style.setProperty('pointer-events', progress > config.btnRange[0] ? '' : 'none');
 
@@ -314,7 +325,7 @@
     const cx = width / 2;
 
     let cy = 240;
-    const target = section.querySelector('#epicenterTarget');
+    const target = section.querySelector(ORIGIN_SELECTOR);
     if (target) {
       const targetRect = target.getBoundingClientRect();
       const stageRect = section.getBoundingClientRect();
@@ -360,8 +371,6 @@
 
     if (Number.isFinite(progressOverride)) {
       rawProgress = progressOverride;
-    } else if (instance.playgroundProgress !== undefined) {
-      rawProgress = instance.playgroundProgress;
     } else if (instance.scrollTrigger) {
       rawProgress = instance.scrollProgress || 0;
     } else {
@@ -373,7 +382,7 @@
 
   function setupScrollTrigger(instance) {
     const ScrollTrigger = getScrollTrigger();
-    if (!ScrollTrigger || shouldUseStaticFallback(instance.section) || instance.playgroundProgress !== undefined) {
+    if (!ScrollTrigger || shouldUseStaticMode(instance.section)) {
       destroyScrollTrigger(instance);
       return;
     }
@@ -513,8 +522,11 @@
       strokeColor: section.dataset.wipeStrokeColor || CONFIG.strokeColor,
       scrollStart: getNumber(section, 'wipeStart', CONFIG.scrollStart),
       scrollEnd: getNumber(section, 'wipeEnd', CONFIG.scrollEnd),
+      titleScaleStart: getNumber(section, 'wipeTitleScaleStart', CONFIG.titleScaleStart),
       descRange: getArray(section, 'wipeDescRange', CONFIG.descRange),
+      descY: getNumber(section, 'wipeDescY', CONFIG.descY),
       btnRange: getArray(section, 'wipeBtnRange', CONFIG.btnRange),
+      btnY: getNumber(section, 'wipeBtnY', CONFIG.btnY),
       titleRange: getArray(section, 'wipeTitleRange', CONFIG.titleRange),
     };
   }
@@ -543,7 +555,7 @@
     return Math.min(window.devicePixelRatio || 1, 2);
   }
 
-  function shouldUseStaticFallback(section) {
+  function shouldUseStaticMode(section) {
     return prefersReducedMotion.matches || (mobileViewport.matches && section.dataset.wipeMobile !== 'scrub');
   }
 
@@ -598,7 +610,6 @@ ${STAGE_SELECTOR} {
 
 ${SECTION_SELECTOR} {
   --epicenter-wipe-yellow: ${DEFAULT_COLOR};
-  --epicenter-wipe-solid: 0;
   --epicenter-wipe-title-scale: 1;
   --epicenter-wipe-description-progress: 1;
   --epicenter-wipe-description-y: 0px;
@@ -626,6 +637,15 @@ ${SECTION_SELECTOR} > :not(.${BG_CLASS}) {
   overflow: hidden;
   pointer-events: none;
   contain: paint;
+}
+
+.${CANVAS_CLASS} {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
 }
 
 ${SECTION_SELECTOR} [data-epicenter-wipe-title] {
