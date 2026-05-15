@@ -44,8 +44,8 @@
   };
 
   const INTRO_FADE = {
-    start: 'top 72%',
-    end: 'top 8%',
+    start: 'top 58%',
+    end: 'top 0%',
     yMin: 56,
     yVh: 0.08,
     yMax: 88,
