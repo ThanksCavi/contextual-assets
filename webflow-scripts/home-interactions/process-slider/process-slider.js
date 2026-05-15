@@ -286,6 +286,8 @@
       state.matchMedia.revert();
     }
 
+    setStaticState(state);
+
     state.matchMedia = gsap.matchMedia();
     state.matchMedia.add(DESKTOP_QUERY, () => createDesktopAnimation(state, gsap));
   }
@@ -360,6 +362,7 @@
 
   function setStaticState(state) {
     state.root.classList.remove(READY_CLASS);
+    state.track.style.transform = '';
   }
 
   function clearDesktopState(state, gsap) {
