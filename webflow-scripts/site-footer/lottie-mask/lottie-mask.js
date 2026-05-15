@@ -35,7 +35,6 @@
   ];
 
   var IO_THRESHOLD = 0.15;
-  var MOBILE_MEDIA_QUERY = '(max-width: 767px)';
 
   var jsonCache = {};
   var instanceCount = 0;
@@ -328,7 +327,6 @@
     if (!containers.length) return;
 
     var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var isMobileViewport = window.matchMedia && window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 
     containers.forEach(function(container, index) {
       if (container.hasAttribute('data-lottie-mask-ready')) return;
@@ -337,7 +335,7 @@
       if (!config) return;
       ensurePlaceholder(container, config.fallbackUrl);
 
-      if (prefersReducedMotion || isMobileViewport) {
+      if (prefersReducedMotion) {
         showStaticFallback(container, config, 'static');
         return;
       }

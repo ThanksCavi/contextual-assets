@@ -43,8 +43,15 @@
     minimum: 1500,
   };
 
+  const INTRO_FADE = {
+    start: 'top 88%',
+    end: 'top 32%',
+    yMin: 56,
+    yVh: 0.08,
+    yMax: 88,
+  };
+
   const TIMING = {
-    introFade: { start: 'top 70%', end: 'top 18%', y: -10 },
     branchDraw: { start: 0.04, duration: 0.24, arrowheadStart: 0.24, arrowheadDuration: 0.10 },
     blueCardsExit: { start: 0.36, duration: 0.46 },
     branchFade: { start: 0.72, duration: 0.16 },
@@ -494,6 +501,18 @@
     return Number.isFinite(value) ? value : fallback;
   }
 
+  function getIntroFadeY() {
+    return -clamp(
+      window.innerHeight * INTRO_FADE.yVh,
+      INTRO_FADE.yMin,
+      INTRO_FADE.yMax
+    );
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
   function prepareLines(state, gsap) {
     state.lines.forEach(line => {
       const length = getLineLength(line);
@@ -553,12 +572,12 @@
 
     const tween = gsap.to(state.intro, {
       autoAlpha: 0,
-      y: TIMING.introFade.y,
+      y: () => getIntroFadeY(),
       ease: 'power1.out',
       scrollTrigger: {
         trigger: state.pinFrame,
-        start: TIMING.introFade.start,
-        end: TIMING.introFade.end,
+        start: INTRO_FADE.start,
+        end: INTRO_FADE.end,
         scrub: true,
         invalidateOnRefresh: true,
       },

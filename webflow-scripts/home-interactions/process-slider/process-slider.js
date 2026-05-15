@@ -34,6 +34,14 @@
     finalMax: 320,
   };
 
+  const INTRO_FADE = {
+    start: 'top 88%',
+    end: 'top 32%',
+    yMin: 56,
+    yVh: 0.08,
+    yMax: 88,
+  };
+
   let resizeTimer = null;
   let warnedMissingStructure = false;
   let state = null;
@@ -106,6 +114,7 @@
       matchMedia: null,
       timeline: null,
       scrollTrigger: null,
+      introTween: null,
     };
   }
 
@@ -301,6 +310,8 @@
       return () => clearDesktopState(state, gsap);
     }
 
+    createIntroFade(state, gsap);
+
     const introHold = getIntroHoldDistance();
     const finalHold = getFinalHoldDistance();
     const scrollDistance = introHold + horizontalDistance + finalHold;
@@ -338,6 +349,8 @@
     const scrollTrigger = timeline.scrollTrigger;
 
     return () => {
+      killIntroFade(state);
+
       if (scrollTrigger) {
         scrollTrigger.kill();
       }
@@ -363,11 +376,53 @@
   function setStaticState(state) {
     state.root.classList.remove(READY_CLASS);
     state.track.style.transform = '';
+
+    if (state.intro) {
+      state.intro.style.transform = '';
+      state.intro.style.opacity = '';
+      state.intro.style.visibility = '';
+    }
   }
 
   function clearDesktopState(state, gsap) {
     state.root.classList.remove(READY_CLASS);
-    gsap.set(state.track, { clearProps: 'transform' });
+    killIntroFade(state);
+    gsap.set([
+      state.track,
+      ...(state.intro ? [state.intro] : []),
+    ], {
+      clearProps: 'transform,opacity,visibility',
+    });
+  }
+
+  function createIntroFade(state, gsap) {
+    if (!state.intro) return;
+
+    const tween = gsap.to(state.intro, {
+      autoAlpha: 0,
+      y: () => getIntroFadeY(),
+      ease: 'power1.out',
+      scrollTrigger: {
+        trigger: state.pin,
+        start: INTRO_FADE.start,
+        end: INTRO_FADE.end,
+        scrub: true,
+        invalidateOnRefresh: true,
+      },
+    });
+
+    state.introTween = tween;
+  }
+
+  function killIntroFade(state) {
+    if (!state.introTween) return;
+
+    if (state.introTween.scrollTrigger) {
+      state.introTween.scrollTrigger.kill();
+    }
+
+    state.introTween.kill();
+    state.introTween = null;
   }
 
   function getHorizontalDistance(state) {
@@ -412,6 +467,14 @@
       window.innerHeight * HOLD_DISTANCE.finalVh,
       HOLD_DISTANCE.finalMin,
       HOLD_DISTANCE.finalMax
+    );
+  }
+
+  function getIntroFadeY() {
+    return -clamp(
+      window.innerHeight * INTRO_FADE.yVh,
+      INTRO_FADE.yMin,
+      INTRO_FADE.yMax
     );
   }
 

@@ -683,6 +683,7 @@ ${STAGE_SELECTOR}.is-epicenter-wipe-scrolltrigger ${SECTION_SELECTOR} {
 @media (prefers-reduced-motion: reduce) {
   ${SECTION_SELECTOR} {
     position: relative;
+    min-height: auto;
     background: var(--epicenter-wipe-yellow);
   }
 
@@ -694,6 +695,7 @@ ${STAGE_SELECTOR}.is-epicenter-wipe-scrolltrigger ${SECTION_SELECTOR} {
 @media ${MOBILE_QUERY} {
   ${SECTION_SELECTOR}:not([data-wipe-mobile="scrub"]) {
     position: relative;
+    min-height: auto;
     background: var(--epicenter-wipe-yellow);
   }
 

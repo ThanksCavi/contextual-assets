@@ -118,6 +118,10 @@
 
 /* Keep this breakpoint in sync with MOTION_BREAKPOINT_PX in process-slider.js. */
 @media (min-width: 992px) and (prefers-reduced-motion: no-preference) {
+  [data-steps-slider].is-steps-ready [data-steps-intro] {
+    will-change: transform, opacity;
+  }
+
   [data-steps-slider].is-steps-ready [data-steps-pin] {
     min-height: var(--steps-card-height);
   }
