@@ -247,12 +247,14 @@
 		});
 	}
 
-	function revealStatic(hero, lottieShell, revealElements) {
+	function revealStatic(hero, lottieShell, revealElements, options) {
 		hero.classList.remove('is-hero-intro-running');
 		hero.classList.add('is-hero-intro-static');
 		hero.classList.add('is-hero-intro-field-visible');
 		hero.setAttribute('data-hero-intro-ready', 'static');
-		showHeroLottieStaticFallback(hero);
+		if (!options || !options.keepLottieActive) {
+			showHeroLottieStaticFallback(hero);
+		}
 		if (lottieShell) clearInlineStyles(lottieShell, revealElements || []);
 		dispatchHeroReady(hero, 'static');
 	}
@@ -585,8 +587,13 @@
 			return;
 		}
 
-		if (!lottieEl || !lottieShell || prefersReducedMotion() || isMobileViewport()) {
+		if (!lottieEl || !lottieShell || prefersReducedMotion()) {
 			revealStatic(hero, lottieShell, revealGroups.all);
+			return;
+		}
+
+		if (isMobileViewport()) {
+			revealStatic(hero, lottieShell, revealGroups.all, { keepLottieActive: true });
 			return;
 		}
 
