@@ -8,7 +8,7 @@
   const TILE_ROWS = 4;
   const TILE_COLUMNS = 6;
   const DEFAULT_COLOR = '#ecf071';
-  const DEFAULT_STAGE_EXTRA = '88vh';
+  const DEFAULT_STAGE_EXTRA = '176vh';
   const MOBILE_QUERY = '(max-width: 767px)';
 
   const CONFIG = {
@@ -23,23 +23,23 @@
     key1: 0.24,
     key2: 0.57,
     key3: 0.81,
-    revealStart: 0.04,
-    revealEnd: 0.3,
-    revealSpread: 0.14,
+    revealStart: 0.06,
+    revealEnd: 0.34,
+    revealSpread: 0.22,
     revealDuration: 0.08,
-    animationEnd: 0.92,
+    animationEnd: 0.86,
     expandStart: 0.8,
-    expandEnd: 0.98,
+    expandEnd: 0.96,
     expandAmount: 1.36,
     expandWave: 0.18,
-    solidStart: 0.91,
-    solidEnd: 0.95,
+    solidStart: 0.82,
+    solidEnd: 0.88,
     descriptionStart: 0.34,
-    descriptionEnd: 0.7,
-    descriptionY: 32,
-    buttonStart: 0.44,
-    buttonEnd: 0.82,
-    buttonY: 44,
+    descriptionEnd: 0.72,
+    descriptionY: 24,
+    buttonStart: 0.48,
+    buttonEnd: 0.86,
+    buttonY: 32,
     scrollStart: 0,
     scrollEnd: 0.12,
   };
@@ -135,9 +135,7 @@
       if (instances.has(section)) return;
 
       const stage = section.closest(STAGE_SELECTOR) || section.parentElement || section;
-      if (stage.matches?.(STAGE_SELECTOR)) {
-        stage.style.setProperty('--cta-stage-extra', stage.style.getPropertyValue('--cta-stage-extra') || DEFAULT_STAGE_EXTRA);
-      }
+      syncStageExtraOverride(stage, section);
 
       const bg = getOrCreateBackground(section);
       const canvas = bg.querySelector(`.${CANVAS_CLASS}`);
@@ -271,6 +269,9 @@
     context.fillStyle = color;
 
     instance.shapes.forEach(shape => {
+      const opacity = getShapeOpacity(shape, config, progress);
+      if (opacity <= 0) return;
+
       const angle = getShapeAngle(shape, config, progress, visualProgress);
       if (angle <= 0) return;
 
@@ -286,6 +287,8 @@
       const scale = lerp(1, config.expandAmount, scaleProgress);
 
       const radius = (shape.size / 2) * scale;
+
+      context.globalAlpha = opacity;
 
       if (angle >= 359.5) {
         context.beginPath();
@@ -375,9 +378,7 @@
 
   function getShapeAngle(shape, config, progress, visualProgress) {
     if (progress <= config.revealEnd) {
-      const revealStart = config.revealStart + shape.revealOrder * config.revealSpread;
-      const revealEnd = Math.min(config.revealEnd, revealStart + config.revealDuration);
-      return lerp(0, shape.a1, smooth(revealStart, revealEnd, progress));
+      return shape.a1;
     }
 
     if (visualProgress <= config.key1) {
@@ -393,6 +394,16 @@
     }
 
     return 360;
+  }
+
+  function getShapeOpacity(shape, config, progress) {
+    if (progress > config.revealEnd) return 1;
+
+    const revealStart = config.revealStart + shape.revealOrder * config.revealSpread;
+    const revealEnd = Math.min(config.revealEnd, revealStart + config.revealDuration);
+    if (revealEnd <= revealStart) return progress >= revealStart ? 1 : 0;
+
+    return smooth(revealStart, revealEnd, progress);
   }
 
   function getRevealOrder(row, column) {
@@ -475,27 +486,59 @@
   }
 
   function getPinDistance(instance) {
-    return Math.max(1, Math.round(getStageExtraPixels(instance.stage)));
+    return Math.max(1, Math.round(getStageExtraPixels(instance.stage, instance.section)));
   }
 
-  function getStageExtraPixels(stage) {
-    const value = stage.style.getPropertyValue('--cta-stage-extra') || DEFAULT_STAGE_EXTRA;
-    const trimmed = value.trim();
+  function syncStageExtraOverride(stage, section) {
+    if (!stage?.matches?.(STAGE_SELECTOR)) return;
+    if (stage.style.getPropertyValue('--cta-stage-extra').trim()) return;
+
+    const dataValue = getStageExtraDataValue(stage, section);
+    if (dataValue) {
+      stage.style.setProperty('--cta-stage-extra', dataValue);
+    }
+  }
+
+  function getStageExtraPixels(stage, section) {
+    return parseStageExtraValue(getStageExtraValue(stage, section));
+  }
+
+  function getStageExtraValue(stage, section) {
+    const inlineValue = stage.style.getPropertyValue('--cta-stage-extra').trim();
+    if (inlineValue) return inlineValue;
+
+    const dataValue = getStageExtraDataValue(stage, section);
+    if (dataValue) return dataValue;
+
+    const computedValue = window.getComputedStyle(stage).getPropertyValue('--cta-stage-extra').trim();
+    return computedValue || DEFAULT_STAGE_EXTRA;
+  }
+
+  function getStageExtraDataValue(stage, section) {
+    return stage.dataset.wipeStageExtra || section.dataset.wipeStageExtra || '';
+  }
+
+  function parseStageExtraValue(value) {
+    const trimmed = String(value || '').trim();
+    const defaultPixels = window.innerHeight * 1.76;
 
     if (trimmed.endsWith('vh')) {
-      return (parseFloat(trimmed) / 100) * window.innerHeight;
+      const numeric = parseFloat(trimmed);
+      return Number.isFinite(numeric) ? (numeric / 100) * window.innerHeight : defaultPixels;
     }
 
     if (trimmed.endsWith('vw')) {
-      return (parseFloat(trimmed) / 100) * window.innerWidth;
+      const numeric = parseFloat(trimmed);
+      return Number.isFinite(numeric) ? (numeric / 100) * window.innerWidth : defaultPixels;
     }
 
     if (trimmed.endsWith('px')) {
-      return parseFloat(trimmed);
+      const numeric = parseFloat(trimmed);
+      return Number.isFinite(numeric) ? numeric : defaultPixels;
     }
 
     const numeric = parseFloat(trimmed);
-    return Number.isFinite(numeric) ? numeric : window.innerHeight * 0.88;
+    return Number.isFinite(numeric) ? numeric : defaultPixels;
   }
 
   function getScrollTrigger() {
