@@ -213,7 +213,7 @@
     right: auto;
     z-index: 6;
     width: 100%;
-    margin-top: clamp(48px, 8svh, 120px);
+    margin-top: 0;
     will-change: transform, opacity;
     backface-visibility: hidden;
   }

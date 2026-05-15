@@ -243,7 +243,7 @@
     if (branchLines.length > 0) {
       timeline.to(branchLines, {
         strokeDashoffset: 0,
-        duration: 0.20,
+        duration: 0.24,
         ease: 'power2.out',
       }, 0.04);
 
@@ -251,41 +251,41 @@
         timeline.to(branchArrowheads, {
           autoAlpha: 1,
           duration: 0.10,
-        }, 0.16);
+        }, 0.24);
       }
     }
 
     timeline.to([state.cards.top, state.cards.bottom], {
       x: () => getScaledX(state, LAYOUT.stackedExitX),
       '--sa-blue-overlay-opacity': 0.3,
-      duration: 0.42,
+      duration: 0.46,
       ease: 'power1.inOut',
-    }, 0.14);
+    }, 0.36);
 
     if (branchLines.length > 0 || branchArrowheads.length > 0) {
       timeline.to([...branchLines, ...branchArrowheads], {
         autoAlpha: 0,
-        duration: 0.18,
-      }, 0.62);
+        duration: 0.16,
+      }, 0.72);
     }
 
     timeline.to(state.cards.final, {
       x: 0,
-      duration: 0.50,
+      duration: 0.56,
       ease: 'power1.inOut',
-    }, 0.14);
+    }, 0.28);
 
     timeline.to(state.cards.source, {
       '--sa-blue-overlay-opacity': 0.3,
       duration: 0.25,
       ease: 'power1.inOut',
-    }, 0.30);
+    }, 0.48);
 
     timeline.to(finalReveal, {
       autoAlpha: 1,
       duration: 0.24,
       ease: 'power2.out',
-    }, 0.40);
+    }, 0.58);
 
     if (state.media) {
       timeline.to(state.media, {
@@ -294,12 +294,12 @@
         rotation: 0,
         duration: 0.30,
         ease: 'power2.out',
-      }, 0.50);
+      }, 0.64);
     }
 
     timeline.to({}, {
-      duration: 0.16,
-    }, 1.02);
+      duration: 0.08,
+    }, 0.94);
 
     setPhase(state, 'initial');
 
@@ -457,12 +457,12 @@
 
     const tween = gsap.to(state.intro, {
       autoAlpha: 0,
-      y: -36,
+      y: -24,
       ease: 'none',
       scrollTrigger: {
         trigger: state.pinFrame || state.scene,
-        start: 'top 88%',
-        end: 'top 48%',
+        start: 'top 74%',
+        end: 'top 24%',
         scrub: true,
         invalidateOnRefresh: true,
       },
@@ -663,7 +663,7 @@
       return;
     }
 
-    if (progress >= 0.24) {
+    if (progress >= 0.34) {
       setPhase(state, 'transition');
       return;
     }
