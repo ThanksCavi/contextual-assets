@@ -14,6 +14,7 @@
   const END_ARROW_SELECTOR = '[data-sa-end-arrow], .sa-arrows-end';
   const INTRO_ARROW_EMBED_SELECTOR = '.sa-intro-arrow-embed';
   const INTRO_ARROW_SELECTOR = '.sa-intro-arrow';
+  const FINAL_CONTENT_SELECTOR = '[data-sa-final-content], .sa-card-main-grid';
   const FINAL_REVEAL_SELECTOR = '[data-sa-card-description]';
   const MEDIA_SELECTOR = '[data-sa-media]';
   const FOCUSABLE_SELECTOR = 'a, button, input, select, textarea, [tabindex]';
@@ -114,6 +115,7 @@
       outcomeCard: null,
       endArrow: null,
       introArrow: root.querySelector(INTRO_ARROW_EMBED_SELECTOR) || root.querySelector(INTRO_ARROW_SELECTOR),
+      finalContent: null,
       media: null,
       lines: Array.from(root.querySelectorAll(LINE_SELECTOR)),
       focusables: collectFocusableCards(cards),
@@ -127,6 +129,7 @@
 
     state.outcomeCard = state.outcome ? state.outcome.querySelector(OUTCOME_CARD_SELECTOR) : null;
     state.endArrow = state.outcome ? state.outcome.querySelector(END_ARROW_SELECTOR) : root.querySelector(END_ARROW_SELECTOR);
+    state.finalContent = state.cards.final.querySelector(FINAL_CONTENT_SELECTOR);
     state.media = state.cards.final.querySelector(MEDIA_SELECTOR);
 
     instances.push(state);
@@ -219,6 +222,12 @@
     state.timeline = timeline;
 
     timeline.set(state.cards.final, getFinalCardStartState(state), 0);
+    if (state.finalContent) {
+      timeline.set(state.finalContent, {
+        autoAlpha: 0.72,
+        x: () => getScaledX(state, 90),
+      }, 0);
+    }
     timeline.set(finalReveal, {
       autoAlpha: 0,
     }, 0);
@@ -257,7 +266,7 @@
 
     timeline.to([state.cards.top, state.cards.bottom], {
       x: () => getScaledX(state, LAYOUT.stackedExitX),
-      '--sa-blue-overlay-opacity': 0.3,
+      '--sa-blue-overlay-opacity': 0.42,
       duration: 0.46,
       ease: 'power1.inOut',
     }, 0.36);
@@ -271,12 +280,21 @@
 
     timeline.to(state.cards.final, {
       x: 0,
-      duration: 0.56,
+      duration: 0.62,
       ease: 'power1.inOut',
-    }, 0.28);
+    }, 0.24);
+
+    if (state.finalContent) {
+      timeline.to(state.finalContent, {
+        autoAlpha: 1,
+        x: 0,
+        duration: 0.56,
+        ease: 'power1.inOut',
+      }, 0.34);
+    }
 
     timeline.to(state.cards.source, {
-      '--sa-blue-overlay-opacity': 0.3,
+      '--sa-blue-overlay-opacity': 0.42,
       duration: 0.25,
       ease: 'power1.inOut',
     }, 0.48);
@@ -298,7 +316,7 @@
     }
 
     timeline.to({}, {
-      duration: 0.08,
+      duration: 0.11,
     }, 0.94);
 
     setPhase(state, 'initial');
@@ -457,12 +475,12 @@
 
     const tween = gsap.to(state.intro, {
       autoAlpha: 0,
-      y: -24,
-      ease: 'none',
+      y: -10,
+      ease: 'power1.out',
       scrollTrigger: {
         trigger: state.pinFrame || state.scene,
-        start: 'top 74%',
-        end: 'top 24%',
+        start: 'top 70%',
+        end: 'top 18%',
         scrub: true,
         invalidateOnRefresh: true,
       },
@@ -538,10 +556,7 @@
     }
 
     if (state.outcomeCard) {
-      gsap.set(state.outcomeCard, {
-        autoAlpha: 0,
-        y: 24,
-      });
+      gsap.set(state.outcomeCard, { autoAlpha: 0, y: 96 });
     }
 
     const timeline = gsap.timeline({
@@ -619,10 +634,15 @@
     if (state.outcomeCard) {
       timeline.to(state.outcomeCard, {
         autoAlpha: 1,
-        y: 0,
-        duration: 0.24,
+        duration: 0.18,
         ease: 'power2.out',
-      }, 0.70);
+      }, 0.60);
+
+      timeline.to(state.outcomeCard, {
+        y: 0,
+        duration: 0.38,
+        ease: 'power2.out',
+      }, 0.60);
     }
   }
 
@@ -787,6 +807,7 @@
       ...(state.introArrow ? [state.introArrow] : []),
       ...(state.introArrow ? Array.from(state.introArrow.querySelectorAll('path')) : []),
       ...(state.outcomeCard ? [state.outcomeCard] : []),
+      ...(state.finalContent ? [state.finalContent] : []),
       ...(state.media ? [state.media] : []),
       ...state.cards.final.querySelectorAll(FINAL_REVEAL_SELECTOR),
     ], {
