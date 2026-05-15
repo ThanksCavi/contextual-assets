@@ -5,7 +5,7 @@
   const BG_CLASS = 'epicenter-wipe__bg';
 
   const DEFAULT_COLOR = '#ecf071';
-  const DEFAULT_STAGE_EXTRA = '88vh';
+  const DEFAULT_STAGE_EXTRA = '132vh';
   const MOBILE_QUERY = '(max-width: 767px)';
 
   const CONFIG = {
@@ -14,16 +14,18 @@
     minRadius: 8,
     falloffExponent: 1.8,
     ignitionEnd: 0.24,
-    waveSpeed: 0.75,
-    waveSpread: 1.2,
-    fillStart: 0.85,
+    introScrollEnd: 0.16,
+    introVisualEnd: 0.24,
+    waveSpeed: 0.88,
+    waveSpread: 1.32,
+    fillStart: 0.88,
     strokeEnd: 0.12,
     strokeColor: '#ecf071',
     scrollStart: 0,
     scrollEnd: 0.12,
-    descRange: [0.12, 0.42],
-    btnRange: [0.22, 0.52],
-    titleRange: [0.82, 0.98]
+    descRange: [0.34, 0.72],
+    btnRange: [0.48, 0.86],
+    titleRange: [0.76, 0.98]
   };
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -80,9 +82,7 @@
       if (instances.has(section)) return;
 
       const stage = section.closest(STAGE_SELECTOR) || section.parentElement || section;
-      if (stage.matches?.(STAGE_SELECTOR)) {
-        stage.style.setProperty('--epicenter-stage-extra', stage.style.getPropertyValue('--epicenter-stage-extra') || DEFAULT_STAGE_EXTRA);
-      }
+      syncStageExtraOverride(stage, section);
 
       const bg = getOrCreateBackground(section);
       const canvas = document.createElement('canvas');
@@ -354,11 +354,19 @@
   }
 
   function getRenderProgress(instance, config, progressOverride) {
-    if (Number.isFinite(progressOverride)) return clamp(progressOverride, 0, 1);
-    if (instance.playgroundProgress !== undefined) return clamp(instance.playgroundProgress, 0, 1);
-    if (instance.scrollTrigger) return clamp(instance.scrollProgress || 0, 0, 1);
+    let rawProgress;
 
-    return getScrollProgress(instance, config);
+    if (Number.isFinite(progressOverride)) {
+      rawProgress = progressOverride;
+    } else if (instance.playgroundProgress !== undefined) {
+      rawProgress = instance.playgroundProgress;
+    } else if (instance.scrollTrigger) {
+      rawProgress = instance.scrollProgress || 0;
+    } else {
+      rawProgress = getScrollProgress(instance, config);
+    }
+
+    return remapProgress(clamp(rawProgress, 0, 1), config);
   }
 
   function setupScrollTrigger(instance) {
@@ -409,27 +417,59 @@
   }
 
   function getPinDistance(instance) {
-    return Math.max(1, Math.round(getStageExtraPixels(instance.stage)));
+    return Math.max(1, Math.round(getStageExtraPixels(instance.stage, instance.section)));
   }
 
-  function getStageExtraPixels(stage) {
-    const value = stage.style.getPropertyValue('--epicenter-stage-extra') || DEFAULT_STAGE_EXTRA;
-    const trimmed = value.trim();
+  function syncStageExtraOverride(stage, section) {
+    if (!stage?.matches?.(STAGE_SELECTOR)) return;
+    if (stage.style.getPropertyValue('--epicenter-stage-extra').trim()) return;
+
+    const dataValue = getStageExtraDataValue(stage, section);
+    if (dataValue) {
+      stage.style.setProperty('--epicenter-stage-extra', dataValue);
+    }
+  }
+
+  function getStageExtraPixels(stage, section) {
+    return parseStageExtraValue(getStageExtraValue(stage, section));
+  }
+
+  function getStageExtraValue(stage, section) {
+    const inlineValue = stage.style.getPropertyValue('--epicenter-stage-extra').trim();
+    if (inlineValue) return inlineValue;
+
+    const dataValue = getStageExtraDataValue(stage, section);
+    if (dataValue) return dataValue;
+
+    const computedValue = window.getComputedStyle(stage).getPropertyValue('--epicenter-stage-extra').trim();
+    return computedValue || DEFAULT_STAGE_EXTRA;
+  }
+
+  function getStageExtraDataValue(stage, section) {
+    return stage.dataset.wipeStageExtra || section.dataset.wipeStageExtra || '';
+  }
+
+  function parseStageExtraValue(value) {
+    const trimmed = String(value || '').trim();
+    const defaultPixels = window.innerHeight * 1.32;
 
     if (trimmed.endsWith('vh')) {
-      return (parseFloat(trimmed) / 100) * window.innerHeight;
+      const numeric = parseFloat(trimmed);
+      return Number.isFinite(numeric) ? (numeric / 100) * window.innerHeight : defaultPixels;
     }
 
     if (trimmed.endsWith('vw')) {
-      return (parseFloat(trimmed) / 100) * window.innerWidth;
+      const numeric = parseFloat(trimmed);
+      return Number.isFinite(numeric) ? (numeric / 100) * window.innerWidth : defaultPixels;
     }
 
     if (trimmed.endsWith('px')) {
-      return parseFloat(trimmed);
+      const numeric = parseFloat(trimmed);
+      return Number.isFinite(numeric) ? numeric : defaultPixels;
     }
 
     const numeric = parseFloat(trimmed);
-    return Number.isFinite(numeric) ? numeric : window.innerHeight * 0.88;
+    return Number.isFinite(numeric) ? numeric : defaultPixels;
   }
 
   function getScrollTrigger() {
@@ -460,6 +500,8 @@
       minRadius: getNumber(section, 'wipeMinRadius', CONFIG.minRadius),
       falloffExponent: getNumber(section, 'wipeFalloffExponent', CONFIG.falloffExponent),
       ignitionEnd: getNumber(section, 'wipeIgnitionEnd', CONFIG.ignitionEnd),
+      introScrollEnd: getNumber(section, 'wipeIntroScrollEnd', CONFIG.introScrollEnd),
+      introVisualEnd: getNumber(section, 'wipeIntroVisualEnd', CONFIG.introVisualEnd),
       waveSpeed: getNumber(section, 'wipeWaveSpeed', CONFIG.waveSpeed),
       waveSpread: getNumber(section, 'wipeWaveSpread', CONFIG.waveSpread),
       fillStart: getNumber(section, 'wipeFillStart', CONFIG.fillStart),
@@ -499,6 +541,17 @@
 
   function shouldUseStaticFallback(section) {
     return prefersReducedMotion.matches || (mobileViewport.matches && section.dataset.wipeMobile !== 'scrub');
+  }
+
+  function remapProgress(progress, config) {
+    const introScrollEnd = clamp(config.introScrollEnd, 0.001, 0.999);
+    const introVisualEnd = clamp(config.introVisualEnd, 0.001, 0.999);
+
+    if (progress <= introScrollEnd) {
+      return lerp(0, introVisualEnd, progress / introScrollEnd);
+    }
+
+    return lerp(introVisualEnd, 1, (progress - introScrollEnd) / (1 - introScrollEnd));
   }
 
   function clamp(value, min = 0, max = 1) {
