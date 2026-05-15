@@ -4,13 +4,13 @@
   --steps-pin-safe-bottom: 32px;
   --steps-rail-width: min(90vw, 1360px);
   --steps-side-inset: max(32px, calc((100vw - var(--steps-rail-width)) / 2));
-  --steps-card-width: clamp(520px, 28vw, 680px);
-  --steps-card-height: clamp(545px, 29.65vw, 720px);
-  --steps-toggle-height: clamp(96px, 5.26vw, 128px);
-  --steps-reveal-height: clamp(240px, 13.23vw, 320px);
+  --steps-card-width: 543px;
+  --steps-card-height: 569px;
+  --steps-toggle-height: 101px;
+  --steps-reveal-height: 254px;
   --steps-summary-height: calc(var(--steps-card-height) - var(--steps-toggle-height));
   --steps-summary-open-height: calc(var(--steps-card-height) - var(--steps-reveal-height));
-  --steps-track-gap: clamp(24px, 2.08vw, 56px);
+  --steps-track-gap: 40px;
   position: relative;
 }
 
@@ -26,7 +26,10 @@
 
 [data-steps-stage] {
   position: relative;
-  width: 100%;
+  margin-left: calc(var(--steps-side-inset) * -1);
+  margin-right: calc(var(--steps-side-inset) * -1);
+  overflow: visible;
+  width: auto;
 }
 
 [data-steps-pin] {
@@ -147,16 +150,15 @@
   }
 }
 
-@media (min-width: 1921px) and (prefers-reduced-motion: no-preference) {
-  [data-steps-slider] {
-    --steps-rail-width: min(82vw, 2200px);
-  }
-}
-
 @media (max-width: 991px), (prefers-reduced-motion: reduce) {
   [data-steps-slider] {
     --steps-track-gap: 10px;
     --steps-card-width: 348px;
+  }
+
+  [data-steps-stage] {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   [data-steps-pin] {
