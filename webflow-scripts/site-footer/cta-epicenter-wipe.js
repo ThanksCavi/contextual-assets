@@ -5,7 +5,7 @@
   const BG_CLASS = 'epicenter-wipe__bg';
 
   const DEFAULT_COLOR = '#ecf071';
-  const DEFAULT_STAGE_EXTRA = '132vh';
+  const DEFAULT_STAGE_EXTRA = '152vh';
   const MOBILE_QUERY = '(max-width: 767px)';
 
   const CONFIG = {
@@ -18,7 +18,8 @@
     introVisualEnd: 0.24,
     waveSpeed: 0.88,
     waveSpread: 1.32,
-    fillStart: 0.88,
+    fillStart: 0.84,
+    fillEaseExponent: 2.35,
     strokeEnd: 0.12,
     strokeColor: '#ecf071',
     scrollStart: 0,
@@ -278,7 +279,7 @@
 
       if (progress > config.fillStart) {
         const fillProgress = clamp((progress - config.fillStart) / (1 - config.fillStart), 0, 1);
-        const extraR = Math.max(0, (maxDist - currentR) * Math.pow(fillProgress, 3));
+        const extraR = Math.max(0, (maxDist - currentR) * Math.pow(fillProgress, config.fillEaseExponent));
         currentR += extraR;
       }
 
@@ -505,6 +506,7 @@
       waveSpeed: getNumber(section, 'wipeWaveSpeed', CONFIG.waveSpeed),
       waveSpread: getNumber(section, 'wipeWaveSpread', CONFIG.waveSpread),
       fillStart: getNumber(section, 'wipeFillStart', CONFIG.fillStart),
+      fillEaseExponent: getNumber(section, 'wipeFillEaseExponent', CONFIG.fillEaseExponent),
       strokeEnd: getNumber(section, 'wipeStrokeEnd', CONFIG.strokeEnd),
       strokeColor: section.dataset.wipeStrokeColor || CONFIG.strokeColor,
       scrollStart: getNumber(section, 'wipeStart', CONFIG.scrollStart),
