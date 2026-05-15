@@ -222,6 +222,11 @@
     backface-visibility: hidden;
   }
 
+  [data-sa-root].is-sa-ready.is-sa-end-arrow-pinned [data-sa-outcome],
+  [data-sa-root].is-sa-ready.is-sa-end-arrow-pinned .sa-outcome {
+    margin-top: min(12.66%, 162px);
+  }
+
   [data-sa-root].is-sa-ready [data-sa-end-arrow],
   [data-sa-root].is-sa-ready .sa-arrows-end,
   [data-sa-root].is-sa-ready [data-sa-outcome-card],
