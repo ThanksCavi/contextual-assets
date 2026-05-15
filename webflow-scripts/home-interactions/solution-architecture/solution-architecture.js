@@ -24,6 +24,7 @@
   const INITIAL_CLASS = 'is-sa-initial';
   const TRANSITION_CLASS = 'is-sa-transition';
   const FINAL_CLASS = 'is-sa-final';
+  const PINNED_END_ARROW_CLASS = 'is-sa-end-arrow-pinned';
   const DISABLED_FOCUS_CLASS = 'is-sa-focus-disabled';
   const ORIGINAL_TABINDEX_ATTRIBUTE = 'data-sa-original-tabindex';
   const TARGET_OPACITY_ATTRIBUTE = 'data-sa-target-opacity';
@@ -114,6 +115,7 @@
       outcome: root.querySelector(OUTCOME_SELECTOR),
       outcomeCard: null,
       endArrow: null,
+      endArrowPinned: false,
       introArrow: root.querySelector(INTRO_ARROW_EMBED_SELECTOR) || root.querySelector(INTRO_ARROW_SELECTOR),
       finalContent: null,
       media: null,
@@ -129,7 +131,8 @@
     };
 
     state.outcomeCard = state.outcome ? state.outcome.querySelector(OUTCOME_CARD_SELECTOR) : null;
-    state.endArrow = state.outcome ? state.outcome.querySelector(END_ARROW_SELECTOR) : root.querySelector(END_ARROW_SELECTOR);
+    state.endArrow = (state.outcome ? state.outcome.querySelector(END_ARROW_SELECTOR) : null) || root.querySelector(END_ARROW_SELECTOR);
+    state.endArrowPinned = Boolean(state.pinFrame && state.endArrow && state.endArrow.closest(PIN_SELECTOR) === state.pinFrame);
     state.finalContent = state.cards.final.querySelector(FINAL_CONTENT_SELECTOR);
     state.media = state.cards.final.querySelector(MEDIA_SELECTOR);
 
@@ -188,6 +191,8 @@
   function createDesktopAnimation(state, gsap) {
     const branchLines = getBranchLines(state);
     const branchArrowheads = getBranchArrowheads(state);
+    const pinnedEndArrowLines = state.endArrowPinned ? getFinalArrowLines(state) : [];
+    const pinnedEndArrowheads = state.endArrowPinned ? getEndArrowheads(state) : [];
     const finalReveal = Array.from(state.cards.final.querySelectorAll(FINAL_REVEAL_SELECTOR));
 
     setDesktopState(state);
@@ -196,6 +201,9 @@
 
     prepareLines(state, gsap);
     prepareBranchArrowheads(branchArrowheads, gsap);
+    if (state.endArrowPinned) {
+      preparePinnedEndArrow(state, pinnedEndArrowLines, pinnedEndArrowheads, gsap);
+    }
     createIntroFade(state, gsap);
     createIntroArrowReveal(state, gsap);
     createOutcomeReveal(state, gsap);
@@ -314,6 +322,23 @@
         duration: 0.30,
         ease: 'power2.out',
       }, 0.64);
+    }
+
+    if (state.endArrowPinned && pinnedEndArrowLines.length > 0) {
+      timeline.to(pinnedEndArrowLines, {
+        opacity: (_, target) => getStoredTargetOpacity(target),
+        strokeDashoffset: 0,
+        duration: 0.16,
+        ease: 'power2.out',
+      }, 0.92);
+
+      if (pinnedEndArrowheads.length > 0) {
+        timeline.to(pinnedEndArrowheads, {
+          opacity: (_, target) => getStoredTargetOpacity(target),
+          duration: 0.05,
+          ease: 'power2.out',
+        }, 1.05);
+      }
     }
 
     timeline.to({}, {
@@ -480,6 +505,40 @@
     }
   }
 
+  function preparePinnedEndArrow(state, lines, arrowheads, gsap) {
+    if (state.endArrow) {
+      gsap.set(state.endArrow, {
+        autoAlpha: 1,
+        clipPath: 'none',
+      });
+    }
+
+    lines.forEach(line => {
+      const length = getLineLength(line);
+      storeTargetOpacity(line);
+
+      line.setAttribute('aria-hidden', 'true');
+      line.style.pointerEvents = 'none';
+
+      if (length > 0) {
+        gsap.set(line, {
+          strokeDasharray: length,
+          strokeDashoffset: length,
+          opacity: 0,
+          visibility: 'visible',
+        });
+      }
+    });
+
+    arrowheads.forEach(arrowhead => {
+      storeTargetOpacity(arrowhead);
+      gsap.set(arrowhead, {
+        opacity: 0,
+        visibility: 'visible',
+      });
+    });
+  }
+
   function createIntroFade(state, gsap) {
     if (!state.intro) return;
 
@@ -555,7 +614,7 @@
     if (!state.outcome && !state.endArrow && !state.outcomeCard) return;
 
     const drawLines = getFinalArrowLines(state);
-    const arrowheads = state.endArrow ? Array.from(state.endArrow.querySelectorAll('.sa-arrowhead')) : [];
+    const arrowheads = getEndArrowheads(state);
     const hasStrokeDraw = drawLines.length > 0;
     const endArrowOpacity = state.endArrow ? getElementOpacity(state.endArrow) : 1;
 
@@ -569,9 +628,9 @@
       gsap.set(state.outcomeCard, { autoAlpha: 0, y: 96 });
     }
 
-    const timeline = gsap.timeline({
+    const timeline = state.endArrowPinned ? null : gsap.timeline({
       scrollTrigger: {
-        trigger: state.outcome || state.endArrow,
+        trigger: state.endArrow || state.outcome,
         start: 'top 82%',
         end: 'bottom 58%',
         scrub: true,
@@ -581,7 +640,7 @@
 
     state.outcomeTween = timeline;
 
-    if (hasStrokeDraw) {
+    if (!state.endArrowPinned && hasStrokeDraw) {
       drawLines.forEach(line => {
         const length = getLineLength(line);
         storeTargetOpacity(line);
@@ -626,7 +685,7 @@
           duration: 0.14,
         }, 0.52);
       }
-    } else if (state.endArrow) {
+    } else if (!state.endArrowPinned && state.endArrow) {
       gsap.set(state.endArrow, {
         opacity: 0,
         visibility: 'visible',
@@ -779,6 +838,7 @@
   function setDesktopState(state) {
     state.root.classList.add(READY_CLASS);
     state.root.classList.remove(STATIC_CLASS);
+    state.root.classList.toggle(PINNED_END_ARROW_CLASS, state.endArrowPinned);
   }
 
   function getBranchLines(state) {
@@ -799,14 +859,18 @@
     return Array.from(state.endArrow.querySelectorAll(`[data-sa-line="${FINAL_LINE_VALUE}"]`));
   }
 
+  function getEndArrowheads(state) {
+    return state.endArrow ? Array.from(state.endArrow.querySelectorAll('.sa-arrowhead')) : [];
+  }
+
   function setStaticState(state) {
-    state.root.classList.remove(READY_CLASS, INITIAL_CLASS, TRANSITION_CLASS, FINAL_CLASS);
+    state.root.classList.remove(READY_CLASS, INITIAL_CLASS, TRANSITION_CLASS, FINAL_CLASS, PINNED_END_ARROW_CLASS);
     state.phase = '';
     setPhase(state, 'static');
   }
 
   function clearDesktopState(state, gsap) {
-    state.root.classList.remove(READY_CLASS, INITIAL_CLASS, TRANSITION_CLASS, FINAL_CLASS);
+    state.root.classList.remove(READY_CLASS, INITIAL_CLASS, TRANSITION_CLASS, FINAL_CLASS, PINNED_END_ARROW_CLASS);
     state.cards.top.style.removeProperty('--sa-blue-overlay-opacity');
     state.cards.bottom.style.removeProperty('--sa-blue-overlay-opacity');
     state.cards.source.style.removeProperty('--sa-blue-overlay-opacity');

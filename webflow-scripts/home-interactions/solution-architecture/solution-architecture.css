@@ -65,6 +65,10 @@
     margin-inline: auto;
   }
 
+  [data-sa-root].is-sa-ready.is-sa-end-arrow-pinned [data-sa-pin] {
+    overflow: visible;
+  }
+
   [data-sa-root].is-sa-ready .sa-intro-arrow-embed .sa-intro-arrow {
     display: block;
     width: 50%;
@@ -225,6 +229,26 @@
   [data-sa-root].is-sa-ready .sa-outcome>.card {
     will-change: transform, opacity;
     backface-visibility: hidden;
+  }
+
+  [data-sa-root].is-sa-ready.is-sa-end-arrow-pinned [data-sa-pin]>[data-sa-end-arrow],
+  [data-sa-root].is-sa-ready.is-sa-end-arrow-pinned [data-sa-pin]>.sa-arrows-end {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    z-index: 2;
+    width: min(17.42%, 223px);
+    transform: translateX(-50%);
+    margin: 0;
+    pointer-events: none;
+  }
+
+  [data-sa-root].is-sa-ready.is-sa-end-arrow-pinned [data-sa-pin]>[data-sa-end-arrow] svg,
+  [data-sa-root].is-sa-ready.is-sa-end-arrow-pinned [data-sa-pin]>.sa-arrows-end svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
   }
 
   [data-sa-root].is-sa-final [data-sa-panel]>[data-sa-card="final"],
