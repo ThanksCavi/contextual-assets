@@ -8,13 +8,14 @@
   const PANEL_SELECTOR = '[data-sa-panel]';
   const CARD_SELECTOR = '[data-sa-card]';
   const LINE_SELECTOR = '[data-sa-line]';
-  const HEADING_SELECTOR = '.sa-heading';
-  const OUTCOME_SELECTOR = '.sa-outcome, .outcome';
-  const OUTCOME_CARD_SELECTOR = '.sa-outcome-card, .card';
-  const END_ARROW_SELECTOR = '.sa-arrows-end';
+  const INTRO_SELECTOR = '[data-sa-intro], .sa-heading';
+  const OUTCOME_SELECTOR = '[data-sa-outcome], .sa-outcome, .outcome';
+  const OUTCOME_CARD_SELECTOR = '[data-sa-outcome-card], .sa-outcome-card, .card';
+  const END_ARROW_SELECTOR = '[data-sa-end-arrow], .sa-arrows-end';
   const INTRO_ARROW_EMBED_SELECTOR = '.sa-intro-arrow-embed';
   const INTRO_ARROW_SELECTOR = '.sa-intro-arrow';
   const FINAL_REVEAL_SELECTOR = '[data-sa-card-description]';
+  const MEDIA_SELECTOR = '[data-sa-media]';
   const FOCUSABLE_SELECTOR = 'a, button, input, select, textarea, [tabindex]';
 
   const READY_CLASS = 'is-sa-ready';
@@ -30,8 +31,8 @@
 
   const DESKTOP_QUERY = '(min-width: 992px) and (prefers-reduced-motion: no-preference)';
   const RESIZE_REFRESH_DELAY_MS = 160;
-  const MIN_SCENE_PIN_OFFSET = 24;
-  const HEADING_CLEARANCE_GAP = 24;
+  const MIN_SCENE_PIN_OFFSET = 32;
+  const LOW_VIEWPORT_SAFE_OFFSET = 96;
 
   const LAYOUT = {
     width: 1280,
@@ -104,33 +105,29 @@
       sticky,
       scene,
       pinFrame,
+      pinFrameWarningShown: false,
       pinLayout: sticky.querySelector('.sa-pin-layout') || sticky,
-      heading: root.querySelector(HEADING_SELECTOR),
+      intro: root.querySelector(INTRO_SELECTOR),
       panel,
       cards,
       outcome: root.querySelector(OUTCOME_SELECTOR),
       outcomeCard: null,
       endArrow: null,
       introArrow: root.querySelector(INTRO_ARROW_EMBED_SELECTOR) || root.querySelector(INTRO_ARROW_SELECTOR),
-      outcomeParent: null,
-      outcomeNextSibling: null,
-      outcomeSpace: 0,
+      media: null,
       lines: Array.from(root.querySelectorAll(LINE_SELECTOR)),
       focusables: collectFocusableCards(cards),
       matchMedia: null,
       timeline: null,
-      lineTween: null,
+      introTween: null,
       introLineTween: null,
       outcomeTween: null,
-      headingOriginalMarginBottom: null,
-      headingBaseMarginBottom: null,
       phase: '',
     };
 
     state.outcomeCard = state.outcome ? state.outcome.querySelector(OUTCOME_CARD_SELECTOR) : null;
     state.endArrow = state.outcome ? state.outcome.querySelector(END_ARROW_SELECTOR) : root.querySelector(END_ARROW_SELECTOR);
-    state.outcomeParent = state.outcome ? state.outcome.parentElement : null;
-    state.outcomeNextSibling = state.outcome ? state.outcome.nextElementSibling : null;
+    state.media = state.cards.final.querySelector(MEDIA_SELECTOR);
 
     instances.push(state);
     setStaticState(state);
@@ -186,17 +183,16 @@
 
   function createDesktopAnimation(state, gsap) {
     const branchLines = getBranchLines(state);
+    const branchArrowheads = getBranchArrowheads(state);
     const finalReveal = Array.from(state.cards.final.querySelectorAll(FINAL_REVEAL_SELECTOR));
 
     setDesktopState(state);
 
     const pinTarget = getPinTarget(state);
-    syncHeadingPinClearance(state, pinTarget);
-
-    const triggerTarget = pinTarget === state.scene ? state.scene : state.stage;
 
     prepareLines(state, gsap);
-    createLineReveal(branchLines, state, gsap);
+    prepareBranchArrowheads(branchArrowheads, gsap);
+    createIntroFade(state, gsap);
     createIntroArrowReveal(state, gsap);
     createOutcomeReveal(state, gsap);
 
@@ -205,7 +201,7 @@
         ease: 'none',
       },
       scrollTrigger: {
-        trigger: triggerTarget,
+        trigger: pinTarget,
         start: () => getPinStart(state, pinTarget),
         end: () => `+=${getScrollDistance(state)}`,
         scrub: true,
@@ -235,6 +231,30 @@
       '--sa-blue-overlay-opacity': 0,
     }, 0);
 
+    if (state.media) {
+      timeline.set(state.media, {
+        autoAlpha: 0.72,
+        scale: 0.92,
+        rotation: -4,
+        transformOrigin: '50% 50%',
+      }, 0);
+    }
+
+    if (branchLines.length > 0) {
+      timeline.to(branchLines, {
+        strokeDashoffset: 0,
+        duration: 0.20,
+        ease: 'power2.out',
+      }, 0.04);
+
+      if (branchArrowheads.length > 0) {
+        timeline.to(branchArrowheads, {
+          autoAlpha: 1,
+          duration: 0.10,
+        }, 0.16);
+      }
+    }
+
     timeline.to([state.cards.top, state.cards.bottom], {
       x: () => getScaledX(state, LAYOUT.stackedExitX),
       '--sa-blue-overlay-opacity': 0.3,
@@ -242,13 +262,8 @@
       ease: 'power1.inOut',
     }, 0.14);
 
-    if (branchLines.length > 0) {
-      timeline.to(branchLines, {
-        autoAlpha: 0.42,
-        duration: 0.16,
-      }, 0.16);
-
-      timeline.to(branchLines, {
+    if (branchLines.length > 0 || branchArrowheads.length > 0) {
+      timeline.to([...branchLines, ...branchArrowheads], {
         autoAlpha: 0,
         duration: 0.18,
       }, 0.62);
@@ -272,9 +287,19 @@
       ease: 'power2.out',
     }, 0.40);
 
+    if (state.media) {
+      timeline.to(state.media, {
+        autoAlpha: 1,
+        scale: 1,
+        rotation: 0,
+        duration: 0.30,
+        ease: 'power2.out',
+      }, 0.50);
+    }
+
     timeline.to({}, {
-      duration: 0.08,
-    }, 0.98);
+      duration: 0.16,
+    }, 1.02);
 
     setPhase(state, 'initial');
 
@@ -285,13 +310,13 @@
 
       timeline.kill();
 
-      if (state.lineTween) {
-        if (state.lineTween.scrollTrigger) {
-          state.lineTween.scrollTrigger.kill();
+      if (state.introTween) {
+        if (state.introTween.scrollTrigger) {
+          state.introTween.scrollTrigger.kill();
         }
 
-        state.lineTween.kill();
-        state.lineTween = null;
+        state.introTween.kill();
+        state.introTween = null;
       }
 
       if (state.introLineTween) {
@@ -360,86 +385,44 @@
   function getScrollDistance(state) {
     const sceneWidth = state.panel.getBoundingClientRect().width || window.innerWidth;
 
-    return Math.max(window.innerHeight * 2.25, sceneWidth * 1.35, 1400);
+    return Math.max(window.innerHeight * 2.45, sceneWidth * 1.45, 1500);
   }
 
   function getPinTarget(state) {
-    if (state.pinFrame) {
-      const pinFrameHeight = getCorePinFrameHeight(state, state.pinFrame);
-      const pinFrameFitsViewport = pinFrameHeight <= window.innerHeight + 1;
+    if (state.pinFrame) return state.pinFrame;
 
-      return pinFrameFitsViewport ? state.pinFrame : state.scene;
+    if (!state.pinFrameWarningShown) {
+      console.warn('[solution-architecture] Expected a [data-sa-pin] wrapper around [data-sa-scene]. Falling back to [data-sa-scene].');
+      state.pinFrameWarningShown = true;
     }
 
     return state.scene;
   }
 
-  function getCorePinFrameHeight(state, pinFrame) {
-    const pinFrameRect = pinFrame.getBoundingClientRect();
-
-    if (!state.outcome || !pinFrame.contains(state.outcome)) return pinFrameRect.height;
-
-    const outcomeHeight = state.outcome.getBoundingClientRect().height;
-
-    return Math.max(0, pinFrameRect.height - outcomeHeight);
-  }
-
   function getPinStart(state, pinTarget) {
-    if (pinTarget === state.pinFrame) {
-      return `top ${getRootTopOffset(state)}px`;
-    }
-
-    if (pinTarget === state.scene) {
-      return `top ${getScenePinOffset(state)}px`;
-    }
-
-    return 'top top';
+    return `top ${getScenePinOffset(state, pinTarget)}px`;
   }
 
-  function getScenePinOffset(state) {
-    const sceneHeight = state.scene.getBoundingClientRect().height || state.panel.getBoundingClientRect().height;
+  function getScenePinOffset(state, pinTarget) {
+    const sceneHeight = getPinnedVisualHeight(state, pinTarget);
     const centeredOffset = Math.round((window.innerHeight - sceneHeight) / 2);
+    const safeOffset = getCssPixelValue(state.root, '--sa-pin-safe-top', LOW_VIEWPORT_SAFE_OFFSET);
 
-    return Math.max(MIN_SCENE_PIN_OFFSET, centeredOffset);
+    return Math.max(MIN_SCENE_PIN_OFFSET, safeOffset, centeredOffset);
   }
 
-  function syncHeadingPinClearance(state, pinTarget) {
-    if (!state.heading || pinTarget !== state.scene) {
-      restoreHeadingMargin(state);
-      return;
-    }
+  function getPinnedVisualHeight(state, pinTarget) {
+    const sceneHeight = state.scene.getBoundingClientRect().height;
+    const panelHeight = state.panel.getBoundingClientRect().height;
+    const pinHeight = pinTarget.getBoundingClientRect().height;
 
-    captureHeadingBaseMargin(state);
-
-    const targetMargin = Math.max(
-      state.headingBaseMarginBottom,
-      getScenePinOffset(state) + HEADING_CLEARANCE_GAP,
-    );
-
-    state.heading.style.marginBottom = `${Math.ceil(targetMargin)}px`;
+    return Math.max(1, sceneHeight || panelHeight || pinHeight || window.innerHeight);
   }
 
-  function captureHeadingBaseMargin(state) {
-    if (!state.heading || state.headingBaseMarginBottom !== null) return;
+  function getCssPixelValue(element, property, fallback) {
+    const value = parseFloat(getComputedStyle(element).getPropertyValue(property));
 
-    state.headingOriginalMarginBottom = state.heading.style.marginBottom;
-
-    const marginBottom = parseFloat(getComputedStyle(state.heading).marginBottom);
-    state.headingBaseMarginBottom = Number.isFinite(marginBottom) ? marginBottom : 0;
-  }
-
-  function restoreHeadingMargin(state) {
-    if (!state.heading || state.headingBaseMarginBottom === null) return;
-
-    state.heading.style.marginBottom = state.headingOriginalMarginBottom || '';
-    state.headingOriginalMarginBottom = null;
-    state.headingBaseMarginBottom = null;
-  }
-
-  function getRootTopOffset(state) {
-    const paddingTop = parseFloat(getComputedStyle(state.root).paddingTop);
-
-    return Number.isFinite(paddingTop) ? paddingTop : 0;
+    return Number.isFinite(value) ? value : fallback;
   }
 
   function prepareLines(state, gsap) {
@@ -463,38 +446,29 @@
     });
   }
 
-  function createLineReveal(lines, state, gsap) {
-    if (lines.length === 0) return;
-
-    const arrowheads = state.panel.querySelectorAll('.sa-arrowhead');
+  function prepareBranchArrowheads(arrowheads, gsap) {
     if (arrowheads.length > 0) {
       gsap.set(arrowheads, { autoAlpha: 0 });
     }
+  }
 
-    const tl = gsap.timeline({
+  function createIntroFade(state, gsap) {
+    if (!state.intro) return;
+
+    const tween = gsap.to(state.intro, {
+      autoAlpha: 0,
+      y: -36,
+      ease: 'none',
       scrollTrigger: {
-        trigger: state.stage,
-        start: 'top 70%',
-        once: true,
+        trigger: state.pinFrame || state.scene,
+        start: 'top 88%',
+        end: 'top 48%',
+        scrub: true,
+        invalidateOnRefresh: true,
       },
     });
 
-    tl.to(lines, {
-      strokeDashoffset: 0,
-      duration: 1,
-      stagger: 0.08,
-      ease: 'power2.out',
-    });
-
-    if (arrowheads.length > 0) {
-      tl.to(arrowheads, {
-        autoAlpha: 1,
-        duration: 0.3,
-        stagger: 0.08,
-      }, 0.7);
-    }
-
-    state.lineTween = tl;
+    state.introTween = tween;
   }
 
   function createIntroArrowReveal(state, gsap) {
@@ -763,33 +737,6 @@
   function setDesktopState(state) {
     state.root.classList.add(READY_CLASS);
     state.root.classList.remove(STATIC_CLASS);
-    moveOutcomeToScene(state);
-  }
-
-  function moveOutcomeToScene(state) {
-    if (!state.outcome || state.outcome.parentElement === state.scene) return;
-
-    state.scene.appendChild(state.outcome);
-    updateOutcomeSpace(state);
-  }
-
-  function updateOutcomeSpace(state) {
-    if (!state.outcome) {
-      state.pinLayout.style.removeProperty('--sa-outcome-space');
-      return;
-    }
-
-    const outcomeHeight = state.outcome.getBoundingClientRect().height;
-    const reserve = Math.ceil(outcomeHeight);
-
-    state.outcomeSpace = reserve;
-    state.pinLayout.style.setProperty('--sa-outcome-space', `${reserve}px`);
-  }
-
-  function restoreOutcomePosition(state) {
-    if (!state.outcome || !state.outcomeParent || state.outcome.parentElement === state.outcomeParent) return;
-
-    state.outcomeParent.insertBefore(state.outcome, state.outcomeNextSibling);
   }
 
   function getBranchLines(state) {
@@ -798,6 +745,10 @@
 
       return lineType !== FINAL_LINE_VALUE && lineType !== INTRO_LINE_VALUE;
     });
+  }
+
+  function getBranchArrowheads(state) {
+    return Array.from(state.panel.querySelectorAll('.sa-arrowhead'));
   }
 
   function getFinalArrowLines(state) {
@@ -818,12 +769,12 @@
     state.cards.bottom.style.removeProperty('--sa-blue-overlay-opacity');
     state.cards.source.style.removeProperty('--sa-blue-overlay-opacity');
     state.pinLayout.style.removeProperty('--sa-outcome-space');
-    restoreHeadingMargin(state);
     state.lines.forEach(line => {
       line.style.pointerEvents = '';
     });
 
     gsap.set([
+      ...(state.intro ? [state.intro] : []),
       state.cards.source,
       state.cards.top,
       state.cards.bottom,
@@ -836,6 +787,7 @@
       ...(state.introArrow ? [state.introArrow] : []),
       ...(state.introArrow ? Array.from(state.introArrow.querySelectorAll('path')) : []),
       ...(state.outcomeCard ? [state.outcomeCard] : []),
+      ...(state.media ? [state.media] : []),
       ...state.cards.final.querySelectorAll(FINAL_REVEAL_SELECTOR),
     ], {
       clearProps: 'transform,opacity,visibility,clipPath,left,top,width,height,zIndex,strokeDasharray,strokeDashoffset',
@@ -857,7 +809,6 @@
       });
     }
 
-    restoreOutcomePosition(state);
     setStaticState(state);
   }
 

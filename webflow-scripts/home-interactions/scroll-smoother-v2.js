@@ -67,8 +67,8 @@
         wrapper,
         content,
         smooth: 2,
-        effects: false,
-        // effectsPrefix: 'smoother-',
+        effects: true,
+        effectsPrefix: 'smoother-',
         smoothTouch: false,
         normalizeScroll: false,
       });
