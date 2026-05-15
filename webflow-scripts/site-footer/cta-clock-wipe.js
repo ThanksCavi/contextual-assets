@@ -8,7 +8,7 @@
   const TILE_ROWS = 4;
   const TILE_COLUMNS = 6;
   const DEFAULT_COLOR = '#ecf071';
-  const DEFAULT_STAGE_EXTRA = '196vh';
+  const DEFAULT_STAGE_EXTRA = '224vh';
   const MOBILE_QUERY = '(max-width: 767px)';
 
   const CONFIG = {
@@ -23,24 +23,26 @@
     key1: 0.24,
     key2: 0.57,
     key3: 0.81,
-    revealStart: 0.065,
-    revealEnd: 0.36,
-    revealSpread: 0.295,
+    revealStart: 0.055,
+    revealEnd: 0.43,
+    revealSpread: 0.36,
+    revealBatches: 11,
     revealDuration: 0.08,
-    animationEnd: 0.84,
-    expandStart: 0.78,
+    animationEnd: 0.855,
+    expandStart: 0.76,
     expandEnd: 0.94,
     expandAmount: 1.36,
-    expandWave: 0.18,
-    solidStart: 0.8,
-    solidEnd: 0.875,
-    titleStart: 0.38,
+    expandWave: 0.22,
+    solidStart: 0.81,
+    solidEnd: 0.9,
+    solidWave: 0.045,
+    titleStart: 0.42,
     titleEnd: 0.78,
-    descriptionStart: 0.42,
-    descriptionEnd: 0.8,
+    descriptionStart: 0.48,
+    descriptionEnd: 0.82,
     descriptionY: 22,
-    buttonStart: 0.56,
-    buttonEnd: 0.9,
+    buttonStart: 0.62,
+    buttonEnd: 0.92,
     buttonY: 30,
     scrollStart: 0,
     scrollEnd: 0.12,
@@ -236,7 +238,7 @@
 
     const progress = getRenderProgress(instance, config, progressOverride);
     const visualProgress = getVisualProgress(config, progress);
-    const solid = smooth(config.solidStart, config.solidEnd, progress);
+    const solid = smooth(config.solidEnd, Math.min(1, config.solidEnd + config.solidWave), progress);
     const rect = section.getBoundingClientRect();
     const titleScale = lerp(1.18, 1, smooth(config.titleStart, config.titleEnd, progress));
     const description = section.querySelector('[data-cta-wipe-description]');
@@ -282,12 +284,15 @@
       const dy = shape.y - rect.height / 2;
       const distance = Math.hypot(dx, dy);
       const maxDistance = Math.hypot(rect.width / 2, rect.height / 2) || 1;
-      const waveDelay = (distance / maxDistance) * config.expandWave;
+      const distanceRatio = distance / maxDistance;
+      const waveDelay = distanceRatio * config.expandWave;
+      const solidDelay = getShapeSolidDelay(shape, distanceRatio, config);
 
       const scaleProgress = smooth(config.expandStart + waveDelay, config.expandEnd + waveDelay, visualProgress);
       const scale = lerp(1, config.expandAmount, scaleProgress);
 
       const radius = (shape.size / 2) * scale;
+      const fillAlpha = smooth(config.solidStart + solidDelay, config.solidEnd + solidDelay, progress);
 
       if (angle >= 359.5) {
         context.beginPath();
@@ -304,6 +309,14 @@
       context.arc(shape.x, shape.y, radius, startAngleRad, endAngleRad);
       context.closePath();
       context.fill();
+
+      if (fillAlpha > 0) {
+        context.globalAlpha = fillAlpha;
+        context.beginPath();
+        context.arc(shape.x, shape.y, radius, 0, Math.PI * 2);
+        context.fill();
+        context.globalAlpha = 1;
+      }
     });
 
     context.restore();
@@ -402,7 +415,20 @@
   }
 
   function getShapeRevealPoint(shape, config) {
-    return Math.min(config.revealEnd, config.revealStart + shape.revealOrder * config.revealSpread);
+    const batchCount = Math.max(1, Math.round(config.revealBatches));
+    const batch = Math.min(batchCount - 1, Math.floor(shape.revealOrder * batchCount));
+    const batchProgress = batchCount <= 1 ? 0 : batch / (batchCount - 1);
+
+    return Math.min(config.revealEnd, config.revealStart + batchProgress * config.revealSpread);
+  }
+
+  function getShapeSolidDelay(shape, distanceRatio, config) {
+    if (!config.solidWave) return 0;
+
+    const orderOffset = (shape.revealOrder - 0.5) * config.solidWave * 0.45;
+    const distanceOffset = distanceRatio * config.solidWave;
+
+    return Math.max(0, orderOffset + distanceOffset);
   }
 
   function getRevealOrder(row, column) {
@@ -519,7 +545,7 @@
 
   function parseStageExtraValue(value) {
     const trimmed = String(value || '').trim();
-    const defaultPixels = window.innerHeight * 1.96;
+    const defaultPixels = window.innerHeight * 2.24;
 
     if (trimmed.endsWith('vh')) {
       const numeric = parseFloat(trimmed);
@@ -577,6 +603,7 @@
       revealStart: getNumber(section, 'wipeRevealStart', CONFIG.revealStart),
       revealEnd: getNumber(section, 'wipeRevealEnd', CONFIG.revealEnd),
       revealSpread: getNumber(section, 'wipeRevealSpread', CONFIG.revealSpread),
+      revealBatches: getNumber(section, 'wipeRevealBatches', CONFIG.revealBatches),
       revealDuration: getNumber(section, 'wipeRevealDuration', CONFIG.revealDuration),
       animationEnd: getNumber(section, 'wipeAnimationEnd', CONFIG.animationEnd),
       expandStart: getNumber(section, 'wipeExpandStart', CONFIG.expandStart),
@@ -585,6 +612,7 @@
       expandWave: getNumber(section, 'wipeExpandWave', CONFIG.expandWave),
       solidStart: getNumber(section, 'wipeSolidStart', CONFIG.solidStart),
       solidEnd: getNumber(section, 'wipeSolidEnd', CONFIG.solidEnd),
+      solidWave: getNumber(section, 'wipeSolidWave', CONFIG.solidWave),
       titleStart: getNumber(section, 'wipeTitleStart', CONFIG.titleStart),
       titleEnd: getNumber(section, 'wipeTitleEnd', CONFIG.titleEnd),
       descriptionStart: getNumber(section, 'wipeDescriptionStart', CONFIG.descriptionStart),
