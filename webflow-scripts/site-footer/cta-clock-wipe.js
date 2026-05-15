@@ -8,7 +8,7 @@
   const TILE_ROWS = 4;
   const TILE_COLUMNS = 6;
   const DEFAULT_COLOR = '#ecf071';
-  const DEFAULT_STAGE_EXTRA = '176vh';
+  const DEFAULT_STAGE_EXTRA = '196vh';
   const MOBILE_QUERY = '(max-width: 767px)';
 
   const CONFIG = {
@@ -23,23 +23,25 @@
     key1: 0.24,
     key2: 0.57,
     key3: 0.81,
-    revealStart: 0.06,
-    revealEnd: 0.34,
-    revealSpread: 0.22,
+    revealStart: 0.065,
+    revealEnd: 0.36,
+    revealSpread: 0.295,
     revealDuration: 0.08,
-    animationEnd: 0.86,
-    expandStart: 0.8,
-    expandEnd: 0.96,
+    animationEnd: 0.84,
+    expandStart: 0.78,
+    expandEnd: 0.94,
     expandAmount: 1.36,
     expandWave: 0.18,
-    solidStart: 0.82,
-    solidEnd: 0.88,
-    descriptionStart: 0.34,
-    descriptionEnd: 0.72,
-    descriptionY: 24,
-    buttonStart: 0.48,
-    buttonEnd: 0.86,
-    buttonY: 32,
+    solidStart: 0.8,
+    solidEnd: 0.875,
+    titleStart: 0.38,
+    titleEnd: 0.78,
+    descriptionStart: 0.42,
+    descriptionEnd: 0.8,
+    descriptionY: 22,
+    buttonStart: 0.56,
+    buttonEnd: 0.9,
+    buttonY: 30,
     scrollStart: 0,
     scrollEnd: 0.12,
   };
@@ -236,7 +238,7 @@
     const visualProgress = getVisualProgress(config, progress);
     const solid = smooth(config.solidStart, config.solidEnd, progress);
     const rect = section.getBoundingClientRect();
-    const titleScale = lerp(1.18, 1, smooth(0.72, config.solidEnd, progress));
+    const titleScale = lerp(1.18, 1, smooth(config.titleStart, config.titleEnd, progress));
     const description = section.querySelector('[data-cta-wipe-description]');
     const button = section.querySelector('[data-cta-wipe-button]');
 
@@ -269,8 +271,7 @@
     context.fillStyle = color;
 
     instance.shapes.forEach(shape => {
-      const opacity = getShapeOpacity(shape, config, progress);
-      if (opacity <= 0) return;
+      if (!isShapeVisible(shape, config, progress)) return;
 
       const angle = getShapeAngle(shape, config, progress, visualProgress);
       if (angle <= 0) return;
@@ -287,8 +288,6 @@
       const scale = lerp(1, config.expandAmount, scaleProgress);
 
       const radius = (shape.size / 2) * scale;
-
-      context.globalAlpha = opacity;
 
       if (angle >= 359.5) {
         context.beginPath();
@@ -396,14 +395,14 @@
     return 360;
   }
 
-  function getShapeOpacity(shape, config, progress) {
-    if (progress > config.revealEnd) return 1;
+  function isShapeVisible(shape, config, progress) {
+    if (progress > config.revealEnd) return true;
 
-    const revealStart = config.revealStart + shape.revealOrder * config.revealSpread;
-    const revealEnd = Math.min(config.revealEnd, revealStart + config.revealDuration);
-    if (revealEnd <= revealStart) return progress >= revealStart ? 1 : 0;
+    return progress >= getShapeRevealPoint(shape, config);
+  }
 
-    return smooth(revealStart, revealEnd, progress);
+  function getShapeRevealPoint(shape, config) {
+    return Math.min(config.revealEnd, config.revealStart + shape.revealOrder * config.revealSpread);
   }
 
   function getRevealOrder(row, column) {
@@ -520,7 +519,7 @@
 
   function parseStageExtraValue(value) {
     const trimmed = String(value || '').trim();
-    const defaultPixels = window.innerHeight * 1.76;
+    const defaultPixels = window.innerHeight * 1.96;
 
     if (trimmed.endsWith('vh')) {
       const numeric = parseFloat(trimmed);
@@ -586,6 +585,8 @@
       expandWave: getNumber(section, 'wipeExpandWave', CONFIG.expandWave),
       solidStart: getNumber(section, 'wipeSolidStart', CONFIG.solidStart),
       solidEnd: getNumber(section, 'wipeSolidEnd', CONFIG.solidEnd),
+      titleStart: getNumber(section, 'wipeTitleStart', CONFIG.titleStart),
+      titleEnd: getNumber(section, 'wipeTitleEnd', CONFIG.titleEnd),
       descriptionStart: getNumber(section, 'wipeDescriptionStart', CONFIG.descriptionStart),
       descriptionEnd: getNumber(section, 'wipeDescriptionEnd', CONFIG.descriptionEnd),
       descriptionY: getNumber(section, 'wipeDescriptionY', CONFIG.descriptionY),
