@@ -124,6 +124,7 @@
       introTween: null,
       introLineTween: null,
       outcomeTween: null,
+      outcomeCardTween: null,
       phase: '',
     };
 
@@ -353,6 +354,15 @@
 
         state.outcomeTween.kill();
         state.outcomeTween = null;
+      }
+
+      if (state.outcomeCardTween) {
+        if (state.outcomeCardTween.scrollTrigger) {
+          state.outcomeCardTween.scrollTrigger.kill();
+        }
+
+        state.outcomeCardTween.kill();
+        state.outcomeCardTween = null;
       }
 
       if (state.timeline === timeline) {
@@ -632,17 +642,29 @@
     }
 
     if (state.outcomeCard) {
-      timeline.to(state.outcomeCard, {
-        autoAlpha: 1,
-        duration: 0.18,
-        ease: 'power2.out',
-      }, 0.60);
+      const cardTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: state.outcomeCard,
+          start: 'top 92%',
+          end: 'bottom 18%',
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
 
-      timeline.to(state.outcomeCard, {
-        y: 0,
-        duration: 0.38,
+      state.outcomeCardTween = cardTimeline;
+
+      cardTimeline.to(state.outcomeCard, {
+        autoAlpha: 1,
+        duration: 0.35,
         ease: 'power2.out',
-      }, 0.60);
+      }, 0);
+
+      cardTimeline.to(state.outcomeCard, {
+        y: 0,
+        duration: 1.00,
+        ease: 'power2.out',
+      }, 0);
     }
   }
 
