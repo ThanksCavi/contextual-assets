@@ -2,8 +2,6 @@
 [data-steps-slider] {
   --steps-pin-safe-top: 96px;
   --steps-pin-safe-bottom: 32px;
-  --steps-rail-width: min(90vw, 1360px);
-  --steps-side-inset: max(32px, calc((100vw - var(--steps-rail-width)) / 2));
   --steps-card-width: 543px;
   --steps-card-height: 569px;
   --steps-toggle-height: 101px;
@@ -26,10 +24,8 @@
 
 [data-steps-stage] {
   position: relative;
-  margin-left: calc(var(--steps-side-inset) * -1);
-  margin-right: calc(var(--steps-side-inset) * -1);
   overflow: visible;
-  width: auto;
+  width: 100%;
 }
 
 [data-steps-pin] {
@@ -44,7 +40,7 @@
 }
 
 [data-steps-viewport] {
-  overflow: hidden;
+  overflow: visible;
   width: 100%;
 }
 
@@ -55,7 +51,7 @@
   box-sizing: border-box;
   width: max-content;
   min-width: 100%;
-  padding-inline: var(--steps-side-inset);
+  padding-inline: 0;
   will-change: transform;
 }
 
@@ -154,11 +150,6 @@
   [data-steps-slider] {
     --steps-track-gap: 10px;
     --steps-card-width: 348px;
-  }
-
-  [data-steps-stage] {
-    margin-left: 0;
-    margin-right: 0;
   }
 
   [data-steps-pin] {

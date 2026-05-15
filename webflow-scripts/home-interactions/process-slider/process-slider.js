@@ -368,23 +368,11 @@
   }
 
   function getHorizontalDistance(state) {
-    const firstItem = state.items[0];
     const lastItem = state.items[state.items.length - 1];
-    const sideInset = getSideInset(state);
     const lastItemRight = lastItem.offsetLeft + lastItem.offsetWidth;
-    const visibleWidth = state.viewport.clientWidth || window.innerWidth;
+    const visibleWidth = state.viewport.clientWidth;
 
-    return Math.max(0, Math.ceil(lastItemRight - visibleWidth + sideInset));
-  }
-
-  function getSideInset(state) {
-    const firstItem = state.items[0];
-    const cssInset = getCssPixelValue(state.root, '--steps-side-inset', NaN);
-
-    if (Number.isFinite(cssInset)) return cssInset;
-    if (firstItem && Number.isFinite(firstItem.offsetLeft)) return Math.max(0, firstItem.offsetLeft);
-
-    return 0;
+    return Math.max(0, Math.ceil(lastItemRight - visibleWidth));
   }
 
   function getPinStartOffset(state) {
