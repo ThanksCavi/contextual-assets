@@ -8,6 +8,7 @@
   const TILE_ROWS = 4;
   const TILE_COLUMNS = 6;
   const DEFAULT_COLOR = '#ecf071';
+  const DEFAULT_BACKGROUND = '#faf9f5';
   const DEFAULT_STAGE_EXTRA = '224vh';
   const MOBILE_QUERY = '(max-width: 767px)';
 
@@ -265,6 +266,8 @@
     button?.style.setProperty('pointer-events', progress > config.buttonStart ? '' : 'none');
 
     context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = DEFAULT_BACKGROUND;
+    context.fillRect(0, 0, canvas.width, canvas.height);
 
     context.fillStyle = color;
     context.globalAlpha = solid;
@@ -660,7 +663,7 @@ ${STAGE_SELECTOR} {
   --cta-wipe-yellow: ${DEFAULT_COLOR};
   position: relative;
   min-height: calc(var(--cta-stage-panel-height, 100vh) + var(--cta-stage-extra, ${DEFAULT_STAGE_EXTRA}));
-  background: #fff;
+  background: var(--_system-colors---light, ${DEFAULT_BACKGROUND});
 }
 
 ${SECTION_SELECTOR} {
@@ -677,7 +680,7 @@ ${SECTION_SELECTOR} {
   width: 100%;
   overflow: hidden;
   isolation: isolate;
-  background: #fff;
+  background: var(--_system-colors---light, ${DEFAULT_BACKGROUND});
 }
 
 ${SECTION_SELECTOR} > :not(.${BG_CLASS}) {
