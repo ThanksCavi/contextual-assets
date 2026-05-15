@@ -2,9 +2,12 @@
 [data-steps-slider] {
   --steps-pin-safe-top: 96px;
   --steps-pin-safe-bottom: 32px;
-  --steps-card-height: 569px;
-  --steps-toggle-height: 101px;
-  --steps-reveal-height: 254px;
+  --steps-card-min-height: 569px;
+  --steps-toggle-min-height: 101px;
+  --steps-reveal-min-height: 254px;
+  --steps-card-height: var(--steps-card-dynamic-height, var(--steps-card-min-height));
+  --steps-toggle-height: var(--steps-toggle-dynamic-height, var(--steps-toggle-min-height));
+  --steps-reveal-height: var(--steps-reveal-dynamic-height, var(--steps-reveal-min-height));
   --steps-summary-height: calc(var(--steps-card-height) - var(--steps-toggle-height));
   --steps-summary-open-height: calc(var(--steps-card-height) - var(--steps-reveal-height));
   position: relative;

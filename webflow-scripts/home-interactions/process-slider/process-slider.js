@@ -24,6 +24,9 @@
   const MIN_PIN_OFFSET = 32;
   const LOW_VIEWPORT_SAFE_TOP = 96;
   const LOW_VIEWPORT_SAFE_BOTTOM = 32;
+  const DEFAULT_CARD_HEIGHT = 569;
+  const DEFAULT_TOGGLE_HEIGHT = 101;
+  const DEFAULT_REVEAL_HEIGHT = 254;
 
   const HOLD_DISTANCE = {
     introMin: 240,
@@ -43,6 +46,7 @@
   };
 
   let resizeTimer = null;
+  let fontsReadyRefreshQueued = false;
   let warnedMissingStructure = false;
   let state = null;
 
@@ -85,6 +89,7 @@
 
     state = nextState;
     prepareAccordion(state);
+    queueFontsReadyRefresh();
     setupResponsiveAnimation(state);
   }
 
@@ -303,6 +308,7 @@
 
   function createDesktopAnimation(state, gsap) {
     setDesktopState(state);
+    syncLayoutMetrics(state);
 
     const horizontalDistance = getHorizontalDistance(state);
     if (horizontalDistance <= 0) {
@@ -375,6 +381,7 @@
 
   function setStaticState(state) {
     state.root.classList.remove(READY_CLASS);
+    clearLayoutMetrics(state);
     state.track.style.transform = '';
 
     if (state.intro) {
@@ -387,6 +394,7 @@
   function clearDesktopState(state, gsap) {
     state.root.classList.remove(READY_CLASS);
     killIntroFade(state);
+    clearLayoutMetrics(state);
     gsap.set([
       state.track,
       ...(state.intro ? [state.intro] : []),
@@ -423,6 +431,153 @@
 
     state.introTween.kill();
     state.introTween = null;
+  }
+
+  function syncLayoutMetrics(state) {
+    const fallbackCardHeight = getCssPixelValue(state.root, '--steps-card-min-height', DEFAULT_CARD_HEIGHT);
+    const fallbackToggleHeight = getCssPixelValue(state.root, '--steps-toggle-min-height', DEFAULT_TOGGLE_HEIGHT);
+    const fallbackRevealHeight = getCssPixelValue(state.root, '--steps-reveal-min-height', DEFAULT_REVEAL_HEIGHT);
+    const fallbackClosedSummaryHeight = Math.max(0, fallbackCardHeight - fallbackToggleHeight);
+    const fallbackOpenSummaryHeight = Math.max(0, fallbackCardHeight - fallbackRevealHeight);
+    const metrics = state.steps.reduce((current, step) => {
+      const stepMetrics = measureStepLayout(step);
+
+      return {
+        closedSummaryHeight: Math.max(current.closedSummaryHeight, stepMetrics.closedSummaryHeight),
+        openSummaryHeight: Math.max(current.openSummaryHeight, stepMetrics.openSummaryHeight),
+        revealHeight: Math.max(current.revealHeight, stepMetrics.revealHeight),
+        toggleHeight: Math.max(current.toggleHeight, stepMetrics.toggleHeight),
+      };
+    }, {
+      closedSummaryHeight: fallbackClosedSummaryHeight,
+      openSummaryHeight: fallbackOpenSummaryHeight,
+      revealHeight: fallbackRevealHeight,
+      toggleHeight: fallbackToggleHeight,
+    });
+    const revealHeight = Math.ceil(Math.max(fallbackRevealHeight, metrics.revealHeight));
+    const toggleHeight = Math.ceil(Math.max(fallbackToggleHeight, metrics.toggleHeight));
+    const cardHeight = Math.ceil(Math.max(
+      fallbackCardHeight,
+      metrics.closedSummaryHeight + toggleHeight,
+      metrics.openSummaryHeight + revealHeight
+    ));
+
+    state.root.style.setProperty('--steps-card-dynamic-height', `${cardHeight}px`);
+    state.root.style.setProperty('--steps-toggle-dynamic-height', `${toggleHeight}px`);
+    state.root.style.setProperty('--steps-reveal-dynamic-height', `${revealHeight}px`);
+  }
+
+  function measureStepLayout(step) {
+    const cardWidth = step.card.getBoundingClientRect().width || step.item.getBoundingClientRect().width;
+    const holder = document.createElement('div');
+    const cardClone = step.card.cloneNode(true);
+
+    removeIds(cardClone);
+    holder.setAttribute('aria-hidden', 'true');
+    holder.style.cssText = [
+      'box-sizing:border-box',
+      'contain:layout style',
+      'left:-10000px',
+      'pointer-events:none',
+      'position:absolute',
+      'top:0',
+      'visibility:hidden',
+      `width:${cardWidth}px`,
+      'z-index:-1',
+    ].join(';');
+    holder.appendChild(cardClone);
+    document.body.appendChild(holder);
+    cardClone.classList.remove(OPEN_CLASS);
+
+    const summary = cardClone.querySelector(SUMMARY_SELECTOR);
+    const toggle = cardClone.querySelector(TOGGLE_SELECTOR);
+    const reveal = cardClone.querySelector(REVEAL_SELECTOR);
+
+    resetMeasuredElement(cardClone);
+    resetMeasuredElement(summary);
+    resetMeasuredElement(toggle);
+    resetMeasuredElement(reveal);
+
+    if (toggle) {
+      toggle.removeAttribute('hidden');
+    }
+
+    if (reveal) {
+      reveal.style.setProperty('display', 'none', 'important');
+    }
+
+    const closedSummaryHeight = getElementHeight(summary);
+    const toggleHeight = getElementHeight(toggle);
+
+    cardClone.classList.add(OPEN_CLASS);
+
+    if (toggle) {
+      toggle.style.setProperty('display', 'none', 'important');
+    }
+
+    if (reveal) {
+      reveal.style.setProperty('display', 'grid', 'important');
+      reveal.style.setProperty('flex-basis', 'auto', 'important');
+      reveal.style.setProperty('grid-template-rows', '1fr', 'important');
+      reveal.style.setProperty('height', 'auto', 'important');
+      reveal.style.setProperty('opacity', '1', 'important');
+    }
+
+    resetMeasuredElement(summary);
+
+    const openSummaryHeight = getElementHeight(summary);
+    const revealHeight = getElementHeight(reveal);
+
+    holder.remove();
+
+    return {
+      closedSummaryHeight,
+      openSummaryHeight,
+      revealHeight,
+      toggleHeight,
+    };
+  }
+
+  function resetMeasuredElement(element) {
+    if (!element) return;
+
+    element.style.setProperty('box-sizing', 'border-box', 'important');
+    element.style.setProperty('flex-basis', 'auto', 'important');
+    element.style.setProperty('height', 'auto', 'important');
+    element.style.setProperty('min-height', '0', 'important');
+    element.style.setProperty('position', 'static', 'important');
+    element.style.setProperty('width', '100%', 'important');
+  }
+
+  function getElementHeight(element) {
+    if (!element) return 0;
+
+    return Math.ceil(element.getBoundingClientRect().height);
+  }
+
+  function removeIds(element) {
+    if (element.id) {
+      element.removeAttribute('id');
+    }
+
+    element.querySelectorAll('[id]').forEach(child => {
+      child.removeAttribute('id');
+    });
+  }
+
+  function clearLayoutMetrics(state) {
+    state.root.style.removeProperty('--steps-card-dynamic-height');
+    state.root.style.removeProperty('--steps-toggle-dynamic-height');
+    state.root.style.removeProperty('--steps-reveal-dynamic-height');
+  }
+
+  function queueFontsReadyRefresh() {
+    if (fontsReadyRefreshQueued || !document.fonts?.ready) return;
+
+    fontsReadyRefreshQueued = true;
+    document.fonts.ready.then(() => {
+      refreshProcessSlider();
+    });
   }
 
   function getHorizontalDistance(state) {
