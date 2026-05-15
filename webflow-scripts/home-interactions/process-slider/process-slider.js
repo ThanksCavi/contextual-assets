@@ -1,24 +1,41 @@
 // Process Slider
 (() => {
   const ROOT_SELECTOR = '[data-steps-slider]';
-  const PIN_SELECTOR = '[data-steps-pin], [data-steps-sticky]';
-  const SLIDER_SELECTOR = '.steps-slider';
+  const INTRO_SELECTOR = '[data-steps-intro]';
+  const STAGE_SELECTOR = '[data-steps-stage]';
+  const PIN_SELECTOR = '[data-steps-pin]';
   const VIEWPORT_SELECTOR = '[data-steps-viewport]';
   const TRACK_SELECTOR = '[data-steps-track]';
-  const ITEM_SELECTOR = '.steps-item';
+  const ITEM_SELECTOR = '[data-steps-item]';
   const CARD_SELECTOR = '[data-steps-card]';
+  const SUMMARY_SELECTOR = '[data-steps-summary]';
   const TOGGLE_SELECTOR = '[data-steps-toggle]';
   const REVEAL_SELECTOR = '[data-steps-reveal]';
   const INTERACTIVE_SELECTOR = 'a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
+  const READY_CLASS = 'is-steps-ready';
   const OPEN_CLASS = 'is-open';
-  const DESKTOP_QUERY = '(min-width: 992px) and (prefers-reduced-motion: no-preference)';
+  const MOTION_BREAKPOINT_PX = 992;
+  const DESKTOP_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px) and (prefers-reduced-motion: no-preference)`;
   const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+  const RESIZE_REFRESH_DELAY_MS = 160;
   const REVEAL_SCROLL_DELAY_MS = 380;
   const REVEAL_SCROLL_PADDING = 48;
-  const RESIZE_REFRESH_DELAY_MS = 120;
+  const MIN_PIN_OFFSET = 32;
+  const LOW_VIEWPORT_SAFE_TOP = 96;
+  const LOW_VIEWPORT_SAFE_BOTTOM = 32;
+
+  const HOLD_DISTANCE = {
+    introMin: 240,
+    introVh: 0.32,
+    introMax: 420,
+    finalMin: 180,
+    finalVh: 0.22,
+    finalMax: 320,
+  };
 
   let resizeTimer = null;
+  let warnedMissingStructure = false;
   let state = null;
 
   window.ProcessSlider = {
@@ -55,42 +72,63 @@
     const root = document.querySelector(ROOT_SELECTOR);
     if (!root) return;
 
-    const pinFrame = root.querySelector(PIN_SELECTOR);
-    const slider = root.querySelector(SLIDER_SELECTOR);
-    const viewport = root.querySelector(VIEWPORT_SELECTOR);
-    const track = root.querySelector(TRACK_SELECTOR);
-    const items = Array.from(root.querySelectorAll(ITEM_SELECTOR));
-    const steps = collectSteps(root);
+    const nextState = collectState(root);
+    if (!nextState) return;
 
-    if (!slider || !viewport || !track || items.length === 0 || steps.length === 0) return;
+    state = nextState;
+    prepareAccordion(state);
+    setupResponsiveAnimation(state);
+  }
 
-    state = {
+  function collectState(root) {
+    const intro = root.querySelector(INTRO_SELECTOR);
+    const stage = root.querySelector(STAGE_SELECTOR);
+    const pin = stage ? stage.querySelector(PIN_SELECTOR) : null;
+    const viewport = pin ? pin.querySelector(VIEWPORT_SELECTOR) : null;
+    const track = viewport ? viewport.querySelector(TRACK_SELECTOR) : null;
+    const items = track ? Array.from(track.children).filter(item => item.matches(ITEM_SELECTOR)) : [];
+    const steps = collectSteps(items);
+
+    if (!intro || !stage || !pin || !viewport || !track || items.length === 0 || steps.length === 0) {
+      warnMissingStructure();
+      return null;
+    }
+
+    return {
       root,
-      pinFrame,
-      slider,
+      intro,
+      stage,
+      pin,
       viewport,
       track,
       items,
       steps,
       matchMedia: null,
+      timeline: null,
       scrollTrigger: null,
     };
-
-    prepareAccordion(state);
-    setupHorizontalScroll(state);
   }
 
-  function collectSteps(root) {
-    return Array.from(root.querySelectorAll(CARD_SELECTOR))
-      .map((card, index) => {
-        const toggle = card.querySelector(TOGGLE_SELECTOR);
-        const reveal = card.querySelector(REVEAL_SELECTOR);
+  function collectSteps(items) {
+    return items
+      .map((item, index) => {
+        const card = item.querySelector(CARD_SELECTOR);
+        const summary = card ? card.querySelector(SUMMARY_SELECTOR) : null;
+        const toggle = card ? card.querySelector(TOGGLE_SELECTOR) : null;
+        const reveal = card ? card.querySelector(REVEAL_SELECTOR) : null;
 
-        if (!toggle || !reveal) return null;
+        if (!card || !summary || !toggle || !reveal) return null;
 
-        return { card, toggle, reveal, index };
+        return { item, card, summary, toggle, reveal, index };
       })
       .filter(Boolean);
+  }
+
+  function warnMissingStructure() {
+    if (warnedMissingStructure) return;
+
+    warnedMissingStructure = true;
+    console.warn('[process-slider] Missing required data-steps structure. Expected data-steps-intro, data-steps-stage, data-steps-pin, data-steps-viewport, data-steps-track, data-steps-item, data-steps-card, data-steps-summary, data-steps-reveal, and data-steps-toggle.');
   }
 
   function prepareAccordion(state) {
@@ -233,11 +271,14 @@
     return Boolean(state.scrollTrigger && state.scrollTrigger.isActive);
   }
 
-  function setupHorizontalScroll(state) {
+  function setupResponsiveAnimation(state) {
     const gsap = window.gsap;
     const ScrollTrigger = window.ScrollTrigger;
 
-    if (!gsap || !ScrollTrigger) return;
+    if (!gsap || !ScrollTrigger || !gsap.matchMedia) {
+      setStaticState(state);
+      return;
+    }
 
     gsap.registerPlugin(ScrollTrigger);
 
@@ -246,96 +287,158 @@
     }
 
     state.matchMedia = gsap.matchMedia();
-    state.matchMedia.add(DESKTOP_QUERY, () => createHorizontalScroll(state, gsap));
+    state.matchMedia.add(DESKTOP_QUERY, () => createDesktopAnimation(state, gsap));
   }
 
-  function createHorizontalScroll(state, gsap) {
-    const pinTarget = getPinTarget(state);
+  function createDesktopAnimation(state, gsap) {
+    setDesktopState(state);
 
-    if (getHorizontalDistance(state) <= 0) {
+    const horizontalDistance = getHorizontalDistance(state);
+    if (horizontalDistance <= 0) {
       gsap.set(state.track, { clearProps: 'transform' });
-      return;
+      return () => clearDesktopState(state, gsap);
     }
 
-    const tween = gsap.to(state.track, {
-      x: () => -getHorizontalDistance(state),
-      ease: 'none',
+    const introHold = getIntroHoldDistance();
+    const finalHold = getFinalHoldDistance();
+    const scrollDistance = introHold + horizontalDistance + finalHold;
+    const timeline = gsap.timeline({
+      defaults: {
+        ease: 'none',
+      },
       scrollTrigger: {
-        trigger: pinTarget,
-        start: () => getPinStart(state, pinTarget),
-        end: () => `+=${getHorizontalDistance(state)}`,
+        trigger: state.pin,
+        start: () => `top ${getPinStartOffset(state)}px`,
+        end: () => `+=${scrollDistance}`,
         scrub: true,
-        pin: pinTarget,
+        pin: state.pin,
         pinSpacing: true,
         anticipatePin: 1,
         invalidateOnRefresh: true,
       },
     });
-    const scrollTrigger = tween.scrollTrigger;
 
-    state.scrollTrigger = scrollTrigger;
+    timeline.to({}, {
+      duration: introHold,
+    });
+
+    timeline.to(state.track, {
+      x: -horizontalDistance,
+      duration: horizontalDistance,
+    });
+
+    timeline.to({}, {
+      duration: finalHold,
+    });
+
+    state.timeline = timeline;
+    state.scrollTrigger = timeline.scrollTrigger;
+    const scrollTrigger = timeline.scrollTrigger;
 
     return () => {
-      scrollTrigger.kill();
-      tween.kill();
-      gsap.set(state.track, { clearProps: 'transform' });
+      if (scrollTrigger) {
+        scrollTrigger.kill();
+      }
+
+      timeline.kill();
+
+      if (state.timeline === timeline) {
+        state.timeline = null;
+      }
 
       if (state.scrollTrigger === scrollTrigger) {
         state.scrollTrigger = null;
       }
+
+      clearDesktopState(state, gsap);
     };
   }
 
+  function setDesktopState(state) {
+    state.root.classList.add(READY_CLASS);
+  }
+
+  function setStaticState(state) {
+    state.root.classList.remove(READY_CLASS);
+  }
+
+  function clearDesktopState(state, gsap) {
+    state.root.classList.remove(READY_CLASS);
+    gsap.set(state.track, { clearProps: 'transform' });
+  }
+
   function getHorizontalDistance(state) {
-    const contentRight = getTrackContentRight(state);
-    const visibleRight = state.viewport.clientWidth - getTrackGap(state);
-
-    return Math.max(0, contentRight - visibleRight);
-  }
-
-  function getTrackContentRight(state) {
+    const firstItem = state.items[0];
     const lastItem = state.items[state.items.length - 1];
+    const sideInset = getSideInset(state);
+    const lastItemRight = lastItem.offsetLeft + lastItem.offsetWidth;
+    const visibleWidth = state.viewport.clientWidth || window.innerWidth;
 
-    return lastItem.offsetLeft + lastItem.offsetWidth;
+    return Math.max(0, Math.ceil(lastItemRight - visibleWidth + sideInset));
   }
 
-  function getTrackGap(state) {
-    return parseFloat(getComputedStyle(state.track).gap) || 0;
+  function getSideInset(state) {
+    const firstItem = state.items[0];
+    const cssInset = getCssPixelValue(state.root, '--steps-side-inset', NaN);
+
+    if (Number.isFinite(cssInset)) return cssInset;
+    if (firstItem && Number.isFinite(firstItem.offsetLeft)) return Math.max(0, firstItem.offsetLeft);
+
+    return 0;
   }
 
-  function getPinTarget(state) {
-    if (state.pinFrame) {
-      const pinFrameHeight = state.pinFrame.getBoundingClientRect().height;
-      const pinFrameFitsViewport = pinFrameHeight <= window.innerHeight;
+  function getPinStartOffset(state) {
+    const pinHeight = getPinnedVisualHeight(state);
+    const centeredOffset = Math.round((window.innerHeight - pinHeight) / 2);
+    const safeTop = Math.max(
+      MIN_PIN_OFFSET,
+      getCssPixelValue(state.root, '--steps-pin-safe-top', LOW_VIEWPORT_SAFE_TOP)
+    );
+    const safeBottom = getCssPixelValue(state.root, '--steps-pin-safe-bottom', LOW_VIEWPORT_SAFE_BOTTOM);
+    const maxSafeOffset = Math.max(safeTop, window.innerHeight - pinHeight - safeBottom);
 
-      return pinFrameFitsViewport ? state.pinFrame : state.slider;
-    }
-
-    const sectionHeight = state.root.getBoundingClientRect().height;
-    const sectionFitsViewport = sectionHeight <= window.innerHeight;
-
-    return sectionFitsViewport ? state.root : state.slider;
+    return Math.min(Math.max(centeredOffset, safeTop), maxSafeOffset);
   }
 
-  function getPinStart(state, pinTarget) {
-    if (pinTarget === state.pinFrame) {
-      return `top ${getRootTopOffset(state)}px`;
-    }
+  function getPinnedVisualHeight(state) {
+    const pinHeight = state.pin.getBoundingClientRect().height;
+    const viewportHeight = state.viewport.getBoundingClientRect().height;
+    const firstCardHeight = state.steps[0]?.card.getBoundingClientRect().height || 0;
 
-    return 'top top';
+    return Math.max(1, pinHeight || viewportHeight || firstCardHeight || window.innerHeight);
   }
 
-  function getRootTopOffset(state) {
-    const paddingTop = parseFloat(getComputedStyle(state.root).paddingTop);
+  function getIntroHoldDistance() {
+    return clamp(
+      window.innerHeight * HOLD_DISTANCE.introVh,
+      HOLD_DISTANCE.introMin,
+      HOLD_DISTANCE.introMax
+    );
+  }
 
-    return Number.isFinite(paddingTop) ? paddingTop : 0;
+  function getFinalHoldDistance() {
+    return clamp(
+      window.innerHeight * HOLD_DISTANCE.finalVh,
+      HOLD_DISTANCE.finalMin,
+      HOLD_DISTANCE.finalMax
+    );
+  }
+
+  function getCssPixelValue(element, property, fallback) {
+    const value = parseFloat(getComputedStyle(element).getPropertyValue(property));
+
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
   }
 
   function refreshProcessSlider(options = {}) {
     initProcessSlider();
 
     if (state) {
-      setupHorizontalScroll(state);
+      setupResponsiveAnimation(state);
     }
 
     if (!options.skipGlobalRefresh) {
