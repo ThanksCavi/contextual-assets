@@ -52,6 +52,11 @@ html:not(.wf-design-mode) [data-lottie-mask]:not([data-lottie-mask-ready="static
   max-width: 205%;
 }
 
+@media screen and (min-width: 1920px) {
+  width: 576px;
+  max-width: 122%;
+}
+
 [data-lottie-mask] .lm-stage,
 [data-lottie-mask] .lm-visible {
   position: absolute;
