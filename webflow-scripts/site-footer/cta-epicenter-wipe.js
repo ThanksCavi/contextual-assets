@@ -5,7 +5,7 @@
   const BG_CLASS = 'epicenter-wipe__bg';
 
   const DEFAULT_COLOR = '#ecf071';
-  const DEFAULT_STAGE_EXTRA = '152vh';
+  const DEFAULT_STAGE_EXTRA = '136vh';
   const MOBILE_QUERY = '(max-width: 767px)';
 
   const CONFIG = {
@@ -14,8 +14,9 @@
     minRadius: 8,
     falloffExponent: 1.8,
     ignitionEnd: 0.24,
-    introScrollEnd: 0.16,
+    introScrollEnd: 0.155,
     introVisualEnd: 0.24,
+    fillScrollStart: 0.8,
     waveSpeed: 0.88,
     waveSpread: 1.32,
     fillStart: 0.84,
@@ -503,6 +504,7 @@
       ignitionEnd: getNumber(section, 'wipeIgnitionEnd', CONFIG.ignitionEnd),
       introScrollEnd: getNumber(section, 'wipeIntroScrollEnd', CONFIG.introScrollEnd),
       introVisualEnd: getNumber(section, 'wipeIntroVisualEnd', CONFIG.introVisualEnd),
+      fillScrollStart: getNumber(section, 'wipeFillScrollStart', CONFIG.fillScrollStart),
       waveSpeed: getNumber(section, 'wipeWaveSpeed', CONFIG.waveSpeed),
       waveSpread: getNumber(section, 'wipeWaveSpread', CONFIG.waveSpread),
       fillStart: getNumber(section, 'wipeFillStart', CONFIG.fillStart),
@@ -548,12 +550,22 @@
   function remapProgress(progress, config) {
     const introScrollEnd = clamp(config.introScrollEnd, 0.001, 0.999);
     const introVisualEnd = clamp(config.introVisualEnd, 0.001, 0.999);
+    const fillVisualStart = clamp(config.fillStart, introVisualEnd + 0.001, 0.999);
+    const fillScrollStart = clamp(config.fillScrollStart, introScrollEnd + 0.001, 0.999);
 
     if (progress <= introScrollEnd) {
       return lerp(0, introVisualEnd, progress / introScrollEnd);
     }
 
-    return lerp(introVisualEnd, 1, (progress - introScrollEnd) / (1 - introScrollEnd));
+    if (progress <= fillScrollStart) {
+      return lerp(
+        introVisualEnd,
+        fillVisualStart,
+        (progress - introScrollEnd) / (fillScrollStart - introScrollEnd)
+      );
+    }
+
+    return lerp(fillVisualStart, 1, (progress - fillScrollStart) / (1 - fillScrollStart));
   }
 
   function clamp(value, min = 0, max = 1) {
