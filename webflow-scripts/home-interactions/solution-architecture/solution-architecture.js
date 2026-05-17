@@ -15,7 +15,6 @@
   const INTRO_ARROW_EMBED_SELECTOR = '.sa-intro-arrow-embed';
   const INTRO_ARROW_SELECTOR = '.sa-intro-arrow';
   const BRANCH_ARROWS_SELECTOR = '.sa-arrows';
-  const FINAL_CONTENT_SELECTOR = '[data-sa-final-content]';
   const FINAL_REVEAL_SELECTOR = '[data-sa-card-description]';
   const MEDIA_SELECTOR = '[data-sa-media]';
   const FOCUSABLE_SELECTOR = 'a, button, input, select, textarea, [tabindex]';
@@ -57,7 +56,6 @@
     blueCardsExit: { start: 0.36, duration: 0.46 },
     branchFade: { start: 0.72, duration: 0.16 },
     finalCard: { start: 0.24, duration: 0.62 },
-    finalContent: { start: 0.34, duration: 0.56, startX: 90, startOpacity: 0.72 },
     sourceOverlay: { start: 0.48, duration: 0.25 },
     finalReveal: { start: 0.58, duration: 0.24 },
     finalMedia: { start: 0.64, duration: 0.30, startOpacity: 0.72, startScale: 0.92, startRotation: -4 },
@@ -147,9 +145,7 @@
       outcomeCard: null,
       endArrow: null,
       introArrow: root.querySelector(INTRO_ARROW_EMBED_SELECTOR) || root.querySelector(INTRO_ARROW_SELECTOR),
-      finalContent: null,
       media: null,
-      lines: Array.from(root.querySelectorAll(LINE_SELECTOR)),
       focusables: collectFocusableCards(cards),
       matchMedia: null,
       timeline: null,
@@ -161,15 +157,10 @@
 
     state.outcomeCard = state.outcome ? state.outcome.querySelector(OUTCOME_CARD_SELECTOR) : null;
     state.endArrow = pinFrame ? pinFrame.querySelector(END_ARROW_SELECTOR) : null;
-    state.finalContent = state.cards.final.querySelector(FINAL_CONTENT_SELECTOR);
     state.media = state.cards.final.querySelector(MEDIA_SELECTOR);
 
     if (!state.endArrow && root.querySelector(END_ARROW_SELECTOR)) {
       console.warn('[solution-architecture] Expected [data-sa-end-arrow] inside [data-sa-pin]. Final arrow animation is disabled for this section.');
-    }
-
-    if (!state.finalContent) {
-      console.warn('[solution-architecture] Expected [data-sa-final-content] inside the final card. Final-card inner parallax is disabled for this section.');
     }
 
     instances.push(state);
@@ -235,7 +226,7 @@
 
     const pinTarget = getPinTarget(state);
 
-    prepareLines(state, gsap);
+    prepareBranchLines(branchLines, gsap);
     prepareBranchArrowheads(branchArrowheads, gsap);
     if (state.endArrow) {
       prepareFinalArrow(finalArrowLines, finalArrowheads, gsap);
@@ -267,12 +258,6 @@
     state.timeline = timeline;
 
     timeline.set(state.cards.final, getFinalCardStartState(state), 0);
-    if (state.finalContent) {
-      timeline.set(state.finalContent, {
-        autoAlpha: TIMING.finalContent.startOpacity,
-        x: () => getScaledX(state, TIMING.finalContent.startX),
-      }, 0);
-    }
     timeline.set(finalReveal, {
       autoAlpha: 0,
     }, 0);
@@ -328,15 +313,6 @@
       duration: TIMING.finalCard.duration,
       ease: 'power1.inOut',
     }, TIMING.finalCard.start);
-
-    if (state.finalContent) {
-      timeline.to(state.finalContent, {
-        autoAlpha: 1,
-        x: 0,
-        duration: TIMING.finalContent.duration,
-        ease: 'power1.inOut',
-      }, TIMING.finalContent.start);
-    }
 
     timeline.to(state.cards.source, {
       '--sa-blue-overlay-opacity': BLUE_CARD_OVERLAY_OPACITY,
@@ -514,12 +490,10 @@
     return Math.max(min, Math.min(max, value));
   }
 
-  function prepareLines(state, gsap) {
-    state.lines.forEach(line => {
+  function prepareBranchLines(lines, gsap) {
+    lines.forEach(line => {
       const length = getLineLength(line);
       const targetOpacity = storeTargetOpacity(line);
-      const lineType = line.getAttribute('data-sa-line');
-      const shouldStartHidden = lineType === FINAL_LINE_VALUE || lineType === INTRO_LINE_VALUE;
 
       line.setAttribute('aria-hidden', 'true');
       line.style.pointerEvents = 'none';
@@ -528,7 +502,7 @@
         gsap.set(line, {
           strokeDasharray: length,
           strokeDashoffset: length,
-          opacity: shouldStartHidden ? 0 : targetOpacity,
+          opacity: targetOpacity,
           visibility: 'visible',
         });
       }
@@ -588,14 +562,21 @@
   function createIntroArrowReveal(state, gsap) {
     if (!state.introArrow) return;
 
-    const lines = Array.from(state.introArrow.querySelectorAll(`[data-sa-line="${INTRO_LINE_VALUE}"]`));
+    const lines = getIntroArrowLines(state);
     if (lines.length === 0) return;
 
     const arrowheads = Array.from(state.introArrow.querySelectorAll('.sa-arrowhead'));
 
     lines.forEach(line => {
+      const length = getLineLength(line);
       storeTargetOpacity(line);
+
+      line.setAttribute('aria-hidden', 'true');
+      line.style.pointerEvents = 'none';
+
       gsap.set(line, {
+        strokeDasharray: length,
+        strokeDashoffset: length,
         opacity: 0,
         visibility: 'visible',
       });
@@ -803,6 +784,20 @@
     return state.endArrow ? Array.from(state.endArrow.querySelectorAll('.sa-arrowhead')) : [];
   }
 
+  function getIntroArrowLines(state) {
+    if (!state.introArrow) return [];
+
+    return Array.from(state.introArrow.querySelectorAll(`[data-sa-line="${INTRO_LINE_VALUE}"]`));
+  }
+
+  function getAnimatedLines(state) {
+    return [
+      ...getBranchLines(state),
+      ...getFinalArrowLines(state),
+      ...getIntroArrowLines(state),
+    ];
+  }
+
   function setStaticState(state) {
     state.root.classList.remove(READY_CLASS, INITIAL_CLASS, TRANSITION_CLASS, FINAL_CLASS);
     state.phase = '';
@@ -814,7 +809,7 @@
     state.cards.top.style.removeProperty('--sa-blue-overlay-opacity');
     state.cards.bottom.style.removeProperty('--sa-blue-overlay-opacity');
     state.cards.source.style.removeProperty('--sa-blue-overlay-opacity');
-    state.lines.forEach(line => {
+    getAnimatedLines(state).forEach(line => {
       line.style.pointerEvents = '';
     });
 
@@ -825,20 +820,19 @@
       state.cards.bottom,
       state.cards.final,
       state.scene,
-      ...state.lines,
+      ...getAnimatedLines(state),
       ...(state.outcome ? [state.outcome] : []),
       ...(state.endArrow ? Array.from(state.endArrow.querySelectorAll('path')) : []),
       ...(state.introArrow ? [state.introArrow] : []),
       ...(state.introArrow ? Array.from(state.introArrow.querySelectorAll('path')) : []),
       ...(state.outcomeCard ? [state.outcomeCard] : []),
-      ...(state.finalContent ? [state.finalContent] : []),
       ...(state.media ? [state.media] : []),
       ...state.cards.final.querySelectorAll(FINAL_REVEAL_SELECTOR),
     ], {
       clearProps: 'transform,opacity,visibility,left,top,width,height,zIndex,strokeDasharray,strokeDashoffset',
     });
 
-    state.lines.forEach(line => {
+    getAnimatedLines(state).forEach(line => {
       line.removeAttribute(TARGET_OPACITY_ATTRIBUTE);
     });
 
