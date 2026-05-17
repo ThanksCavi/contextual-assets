@@ -172,34 +172,27 @@
     visibility: hidden;
   }
 
-  [data-sa-root].is-sa-ready .sa-arrow-top,
-  [data-sa-root].is-sa-ready .sa-arrow-bottom {
+  [data-sa-root].is-sa-ready .sa-arrows {
     position: absolute;
-    left: 31.25%;
-    width: 11.25%;
+    inset: 0;
     z-index: 1;
     overflow: visible;
-    transform-origin: 0 0;
     pointer-events: none;
     transition: opacity 0.4s ease;
   }
 
-  [data-sa-root].is-sa-transition .sa-arrow-top,
-  [data-sa-root].is-sa-transition .sa-arrow-bottom,
-  [data-sa-root].is-sa-final .sa-arrow-top,
-  [data-sa-root].is-sa-final .sa-arrow-bottom {
-    opacity: 0;
+  [data-sa-root].is-sa-ready .sa-arrows svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
     pointer-events: none;
   }
 
-  [data-sa-root].is-sa-ready .sa-arrow-top {
-    top: 22.52%;
-    height: 27.48%;
-  }
-
-  [data-sa-root].is-sa-ready .sa-arrow-bottom {
-    top: 49.58%;
-    height: 27.7%;
+  [data-sa-root].is-sa-transition .sa-arrows,
+  [data-sa-root].is-sa-final .sa-arrows {
+    opacity: 0;
+    pointer-events: none;
   }
 
   [data-sa-root].is-sa-ready [data-sa-line] {

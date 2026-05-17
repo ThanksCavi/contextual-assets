@@ -14,8 +14,7 @@
   const END_ARROW_SELECTOR = '[data-sa-end-arrow]';
   const INTRO_ARROW_EMBED_SELECTOR = '.sa-intro-arrow-embed';
   const INTRO_ARROW_SELECTOR = '.sa-intro-arrow';
-  const BRANCH_ARROW_TOP_SELECTOR = '.sa-arrow-top';
-  const BRANCH_ARROW_BOTTOM_SELECTOR = '.sa-arrow-bottom';
+  const BRANCH_ARROWS_SELECTOR = '.sa-arrows';
   const FINAL_CONTENT_SELECTOR = '[data-sa-final-content]';
   const FINAL_REVEAL_SELECTOR = '[data-sa-card-description]';
   const MEDIA_SELECTOR = '[data-sa-media]';
@@ -236,7 +235,6 @@
 
     const pinTarget = getPinTarget(state);
 
-    positionBranchArrows(state);
     prepareLines(state, gsap);
     prepareBranchArrowheads(branchArrowheads, gsap);
     if (state.endArrow) {
@@ -261,7 +259,6 @@
         invalidateOnRefresh: true,
         onUpdate: self => updatePhaseFromProgress(state, self.progress),
         onRefresh: self => {
-          positionBranchArrows(state);
           updatePhaseFromProgress(state, self.progress);
         },
       },
@@ -538,48 +535,6 @@
     });
   }
 
-  function positionBranchArrows(state) {
-    positionBranchArrow(
-      getBranchArrow(state, BRANCH_ARROW_TOP_SELECTOR),
-      state.cards.source,
-      state.cards.top
-    );
-
-    positionBranchArrow(
-      getBranchArrow(state, BRANCH_ARROW_BOTTOM_SELECTOR),
-      state.cards.source,
-      state.cards.bottom
-    );
-  }
-
-  function positionBranchArrow(arrow, sourceCard, targetCard) {
-    if (!arrow || !sourceCard || !targetCard) return;
-
-    const sourceX = sourceCard.offsetLeft + sourceCard.offsetWidth;
-    const targetX = targetCard.offsetLeft;
-    const sourceY = sourceCard.offsetTop + sourceCard.offsetHeight / 2;
-    const targetY = targetCard.offsetTop + targetCard.offsetHeight / 2;
-    const width = Math.max(1, targetX - sourceX);
-    const top = Math.min(sourceY, targetY);
-    const height = Math.max(1, Math.abs(targetY - sourceY));
-
-    arrow.style.left = `${sourceX}px`;
-    arrow.style.top = `${top}px`;
-    arrow.style.width = `${width}px`;
-    arrow.style.height = `${height}px`;
-  }
-
-  function getBranchArrow(state, selector) {
-    return state.panel.querySelector(selector) || state.root.querySelector(selector);
-  }
-
-  function getBranchArrowElements(state) {
-    return [
-      getBranchArrow(state, BRANCH_ARROW_TOP_SELECTOR),
-      getBranchArrow(state, BRANCH_ARROW_BOTTOM_SELECTOR),
-    ].filter(Boolean);
-  }
-
   function prepareBranchArrowheads(arrowheads, gsap) {
     if (arrowheads.length > 0) {
       gsap.set(arrowheads, { autoAlpha: 0 });
@@ -827,15 +782,15 @@
   }
 
   function getBranchLines(state) {
-    return state.lines.filter(line => {
-      const lineType = line.getAttribute('data-sa-line');
+    const branchArrows = state.panel.querySelector(BRANCH_ARROWS_SELECTOR);
 
-      return lineType !== FINAL_LINE_VALUE && lineType !== INTRO_LINE_VALUE;
-    });
+    return branchArrows ? Array.from(branchArrows.querySelectorAll(LINE_SELECTOR)) : [];
   }
 
   function getBranchArrowheads(state) {
-    return Array.from(state.panel.querySelectorAll('.sa-arrowhead'));
+    const branchArrows = state.panel.querySelector(BRANCH_ARROWS_SELECTOR);
+
+    return branchArrows ? Array.from(branchArrows.querySelectorAll('.sa-arrowhead')) : [];
   }
 
   function getFinalArrowLines(state) {
@@ -870,7 +825,6 @@
       state.cards.bottom,
       state.cards.final,
       state.scene,
-      ...getBranchArrowElements(state),
       ...state.lines,
       ...(state.outcome ? [state.outcome] : []),
       ...(state.endArrow ? Array.from(state.endArrow.querySelectorAll('path')) : []),
