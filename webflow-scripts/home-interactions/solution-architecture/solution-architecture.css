@@ -26,6 +26,15 @@
   min-width: 0;
 }
 
+[data-sa-root] .sa-arrows,
+[data-sa-root] .sa-branch-arrows {
+  overflow: visible;
+}
+
+[data-sa-root] .sa-branch-arrows {
+  display: block;
+}
+
 .is-sa-focus-disabled {
   pointer-events: none !important;
 }
@@ -172,6 +181,7 @@
     visibility: hidden;
   }
 
+  [data-sa-root].is-sa-ready .sa-branch-arrows,
   [data-sa-root].is-sa-ready .sa-arrow-top,
   [data-sa-root].is-sa-ready .sa-arrow-bottom {
     position: absolute;
@@ -184,10 +194,17 @@
     transition: opacity 0.4s ease;
   }
 
+  [data-sa-root].is-sa-ready .sa-branch-arrows {
+    top: 22.52%;
+    height: 54.76%;
+  }
+
   [data-sa-root].is-sa-transition .sa-arrow-top,
   [data-sa-root].is-sa-transition .sa-arrow-bottom,
+  [data-sa-root].is-sa-transition .sa-branch-arrows,
   [data-sa-root].is-sa-final .sa-arrow-top,
-  [data-sa-root].is-sa-final .sa-arrow-bottom {
+  [data-sa-root].is-sa-final .sa-arrow-bottom,
+  [data-sa-root].is-sa-final .sa-branch-arrows {
     opacity: 0;
     pointer-events: none;
   }
