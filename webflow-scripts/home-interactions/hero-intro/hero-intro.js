@@ -51,6 +51,15 @@
 		return window.matchMedia && window.matchMedia(MOBILE_QUERY).matches;
 	}
 
+	function shouldUseIntroScrollLock() {
+		if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.shouldUseHeavyScrollEffects === 'function') {
+			return window.ContextualHomeMotion.shouldUseHeavyScrollEffects();
+		}
+
+		var touchPoints = Number(window.navigator && window.navigator.maxTouchPoints);
+		return !(Number.isFinite(touchPoints) && touchPoints > 0);
+	}
+
 	function nextFrame() {
 		return new Promise(function(resolve) {
 			requestAnimationFrame(function() {
@@ -327,6 +336,14 @@
 	}
 
 	function getSmoother() {
+		if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.getSmoother === 'function') {
+			return window.ContextualHomeMotion.getSmoother();
+		}
+
+		if (!shouldUseIntroScrollLock()) {
+			return null;
+		}
+
 		if (window.ContextualHomeMotion && window.ContextualHomeMotion.smoother) {
 			return window.ContextualHomeMotion.smoother;
 		}
@@ -365,6 +382,10 @@
 	}
 
 	function lockIntroScroll() {
+		if (!shouldUseIntroScrollLock()) {
+			return function releaseIntroScroll() {};
+		}
+
 		var smoother = getSmoother();
 		var hadPausedState = false;
 		var previousPaused = false;
