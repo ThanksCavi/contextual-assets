@@ -10,6 +10,8 @@
   const READY_EVENT = 'contextual:smoother-ready';
   const REQUEST_REFRESH_DELAY_MS = 80;
   const RESIZE_REFRESH_DELAY_MS = 160;
+  const MOTION_BREAKPOINT_PX = 992;
+  const DESKTOP_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px)`;
 
   if (window[INIT_FLAG]) return;
   window[INIT_FLAG] = true;
@@ -18,6 +20,8 @@
   let refreshTimer = null;
   let refreshToken = 0;
   let resizeTimer = null;
+  let smootherState = null;
+  let readyMarked = false;
   const ready = new Promise((resolve) => {
     resolveReady = resolve;
   });
@@ -58,9 +62,77 @@
       return;
     }
 
+    smootherState = {
+      gsap,
+      ScrollTrigger,
+      ScrollSmoother,
+      wrapper,
+      content,
+      desktopMedia: window.matchMedia ? window.matchMedia(DESKTOP_QUERY) : null,
+      wrapperStyle: wrapper.getAttribute('style'),
+      contentStyle: content.getAttribute('style'),
+    };
+
     gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 
+    syncSmootherForViewport();
+    markReady(getSmoother());
+
+    window.addEventListener('load', scheduleSettledRefresh, { once: true });
+    window.addEventListener('resize', queueSettledRefresh);
+
+    if (smootherState.desktopMedia) {
+      if (typeof smootherState.desktopMedia.addEventListener === 'function') {
+        smootherState.desktopMedia.addEventListener('change', handleViewportChange);
+      } else if (typeof smootherState.desktopMedia.addListener === 'function') {
+        smootherState.desktopMedia.addListener(handleViewportChange);
+      }
+    }
+  }
+
+  function markReady(smoother) {
+    if (readyMarked) return;
+    readyMarked = true;
+
+    window.ContextualHomeMotion.smoother = smoother;
+    resolveReady(window.ContextualHomeMotion);
+    window.dispatchEvent(new CustomEvent(READY_EVENT, {
+      detail: {
+        smoother,
+      },
+    }));
+    scheduleSettledRefresh();
+  }
+
+  function queueSettledRefresh() {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      syncSmootherForViewport();
+      requestRefresh();
+    }, RESIZE_REFRESH_DELAY_MS);
+  }
+
+  function handleViewportChange() {
+    syncSmootherForViewport();
+    requestRefresh();
+  }
+
+  function syncSmootherForViewport() {
+    if (!smootherState) return null;
+
+    const { ScrollSmoother, wrapper, content } = smootherState;
     let smoother = ScrollSmoother.get && ScrollSmoother.get();
+
+    if (!shouldUseSmoother()) {
+      if (smoother && typeof smoother.kill === 'function') {
+        smoother.kill();
+      }
+
+      restoreElementStyle(wrapper, smootherState.wrapperStyle);
+      restoreElementStyle(content, smootherState.contentStyle);
+      window.ContextualHomeMotion.smoother = null;
+      return null;
+    }
 
     if (!smoother) {
       smoother = ScrollSmoother.create({
@@ -74,26 +146,21 @@
       });
     }
 
-    markReady(smoother);
-
-    window.addEventListener('load', scheduleSettledRefresh, { once: true });
-    window.addEventListener('resize', queueSettledRefresh);
-  }
-
-  function markReady(smoother) {
     window.ContextualHomeMotion.smoother = smoother;
-    resolveReady(window.ContextualHomeMotion);
-    window.dispatchEvent(new CustomEvent(READY_EVENT, {
-      detail: {
-        smoother,
-      },
-    }));
-    scheduleSettledRefresh();
+    return smoother;
   }
 
-  function queueSettledRefresh() {
-    clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(() => requestRefresh(), RESIZE_REFRESH_DELAY_MS);
+  function shouldUseSmoother() {
+    return !smootherState?.desktopMedia || smootherState.desktopMedia.matches;
+  }
+
+  function restoreElementStyle(element, styleValue) {
+    if (styleValue === null) {
+      element.removeAttribute('style');
+      return;
+    }
+
+    element.setAttribute('style', styleValue);
   }
 
   function requestRefresh(options = {}) {
