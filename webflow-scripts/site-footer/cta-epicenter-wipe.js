@@ -556,6 +556,10 @@
   }
 
   function shouldUseStaticMode(section) {
+    if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.shouldUseHeavyScrollEffects === 'function') {
+      return !window.ContextualHomeMotion.shouldUseHeavyScrollEffects();
+    }
+
     return prefersReducedMotion.matches || (mobileViewport.matches && section.dataset.wipeMobile !== 'scrub');
   }
 
@@ -669,6 +673,17 @@ ${SECTION_SELECTOR} [data-epicenter-wipe-button] {
 
 ${STAGE_SELECTOR}[data-epicenter-wipe-static="true"] {
   min-height: auto;
+}
+
+${STAGE_SELECTOR}[data-epicenter-wipe-static="true"] ${SECTION_SELECTOR} {
+  position: relative;
+  top: auto;
+  min-height: auto;
+  background: var(--epicenter-wipe-yellow);
+}
+
+${STAGE_SELECTOR}[data-epicenter-wipe-static="true"] ${SECTION_SELECTOR} .${BG_CLASS} {
+  display: none;
 }
 
 ${STAGE_SELECTOR}.is-epicenter-wipe-scrolltrigger {

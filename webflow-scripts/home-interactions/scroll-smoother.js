@@ -11,7 +11,10 @@
   const REQUEST_REFRESH_DELAY_MS = 80;
   const RESIZE_REFRESH_DELAY_MS = 160;
   const MOTION_BREAKPOINT_PX = 992;
-  const DESKTOP_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px)`;
+  const DESKTOP_WIDTH_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px)`;
+  const FINE_POINTER_QUERY = '(pointer: fine)';
+  const HOVER_QUERY = '(hover: hover)';
+  const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
   if (window[INIT_FLAG]) return;
   window[INIT_FLAG] = true;
@@ -22,6 +25,7 @@
   let resizeTimer = null;
   let smootherState = null;
   let readyMarked = false;
+  let policyState = null;
   const ready = new Promise((resolve) => {
     resolveReady = resolve;
   });
@@ -32,6 +36,9 @@
     refreshAll,
     requestRefresh,
     getSmoother,
+    getMotionPolicy,
+    shouldUseSmoother,
+    shouldUseHeavyScrollEffects,
     scrollBy,
     scrollTo,
     getScrollTop,
@@ -68,7 +75,6 @@
       ScrollSmoother,
       wrapper,
       content,
-      desktopMedia: window.matchMedia ? window.matchMedia(DESKTOP_QUERY) : null,
       wrapperStyle: wrapper.getAttribute('style'),
       contentStyle: content.getAttribute('style'),
     };
@@ -80,14 +86,7 @@
 
     window.addEventListener('load', scheduleSettledRefresh, { once: true });
     window.addEventListener('resize', queueSettledRefresh);
-
-    if (smootherState.desktopMedia) {
-      if (typeof smootherState.desktopMedia.addEventListener === 'function') {
-        smootherState.desktopMedia.addEventListener('change', handleViewportChange);
-      } else if (typeof smootherState.desktopMedia.addListener === 'function') {
-        smootherState.desktopMedia.addListener(handleViewportChange);
-      }
-    }
+    bindPolicyListeners();
   }
 
   function markReady(smoother) {
@@ -151,7 +150,84 @@
   }
 
   function shouldUseSmoother() {
-    return !smootherState?.desktopMedia || smootherState.desktopMedia.matches;
+    return getMotionPolicy().allowFullScrollMotion;
+  }
+
+  function shouldUseHeavyScrollEffects() {
+    return getMotionPolicy().allowHeavyScrollEffects;
+  }
+
+  function getMotionPolicy() {
+    const media = getPolicyState();
+    const isDesktopWidth = media.desktopWidth ? media.desktopWidth.matches : true;
+    const hasFinePointer = media.finePointer ? media.finePointer.matches : true;
+    const hasHover = media.hover ? media.hover.matches : true;
+    const prefersReducedMotion = media.reducedMotion ? media.reducedMotion.matches : false;
+    const maxTouchPoints = getMaxTouchPoints();
+    const isTouchCapable = maxTouchPoints > 0;
+    const allowFullScrollMotion = Boolean(
+      isDesktopWidth &&
+      hasFinePointer &&
+      hasHover &&
+      !prefersReducedMotion &&
+      !isTouchCapable
+    );
+
+    return {
+      allowFullScrollMotion,
+      allowHeavyScrollEffects: allowFullScrollMotion,
+      shouldUseSmoother: allowFullScrollMotion,
+      isDesktopWidth,
+      hasFinePointer,
+      hasHover,
+      prefersReducedMotion,
+      isTouchCapable,
+      maxTouchPoints,
+    };
+  }
+
+  function getPolicyState() {
+    if (!policyState) {
+      policyState = {
+        desktopWidth: createMediaQuery(DESKTOP_WIDTH_QUERY),
+        finePointer: createMediaQuery(FINE_POINTER_QUERY),
+        hover: createMediaQuery(HOVER_QUERY),
+        reducedMotion: createMediaQuery(REDUCED_MOTION_QUERY),
+        listenersBound: false,
+      };
+    }
+
+    return policyState;
+  }
+
+  function createMediaQuery(query) {
+    return window.matchMedia ? window.matchMedia(query) : null;
+  }
+
+  function bindPolicyListeners() {
+    const media = getPolicyState();
+    if (media.listenersBound) return;
+
+    media.listenersBound = true;
+    [
+      media.desktopWidth,
+      media.finePointer,
+      media.hover,
+      media.reducedMotion,
+    ].forEach(mediaQuery => {
+      if (!mediaQuery) return;
+
+      if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', handleViewportChange);
+      } else if (typeof mediaQuery.addListener === 'function') {
+        mediaQuery.addListener(handleViewportChange);
+      }
+    });
+  }
+
+  function getMaxTouchPoints() {
+    const points = Number(window.navigator?.maxTouchPoints ?? 0);
+    return Number.isFinite(points) ? Math.max(0, points) : 0;
   }
 
   function restoreElementStyle(element, styleValue) {
@@ -257,6 +333,10 @@
   }
 
   function getSmoother() {
+    if (!shouldUseSmoother()) {
+      return null;
+    }
+
     if (window.ContextualHomeMotion?.smoother) {
       return window.ContextualHomeMotion.smoother;
     }

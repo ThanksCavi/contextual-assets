@@ -211,8 +211,28 @@
       state.matchMedia.revert();
     }
 
+    if (!shouldUseDesktopScrollMotion()) {
+      setStaticState(state);
+      return;
+    }
+
     state.matchMedia = gsap.matchMedia();
-    state.matchMedia.add(DESKTOP_QUERY, () => createDesktopAnimation(state, gsap));
+    state.matchMedia.add(DESKTOP_QUERY, () => {
+      if (!shouldUseDesktopScrollMotion()) {
+        setStaticState(state);
+        return undefined;
+      }
+
+      return createDesktopAnimation(state, gsap);
+    });
+  }
+
+  function shouldUseDesktopScrollMotion() {
+    if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.shouldUseHeavyScrollEffects === 'function') {
+      return window.ContextualHomeMotion.shouldUseHeavyScrollEffects();
+    }
+
+    return window.matchMedia ? window.matchMedia(DESKTOP_QUERY).matches : true;
   }
 
   function createDesktopAnimation(state, gsap) {
