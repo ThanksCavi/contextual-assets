@@ -51,14 +51,6 @@
 		return window.matchMedia && window.matchMedia(MOBILE_QUERY).matches;
 	}
 
-	function shouldUseTouchSafeIntro() {
-		if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.shouldUseHeavyScrollEffects === 'function') {
-			return !window.ContextualHomeMotion.shouldUseHeavyScrollEffects();
-		}
-
-		return Number(window.navigator && window.navigator.maxTouchPoints || 0) > 0;
-	}
-
 	function nextFrame() {
 		return new Promise(function(resolve) {
 			requestAnimationFrame(function() {
@@ -600,7 +592,7 @@
 			return;
 		}
 
-		if (isMobileViewport() || shouldUseTouchSafeIntro()) {
+		if (isMobileViewport()) {
 			revealStatic(hero, lottieShell, revealGroups.all, { keepLottieActive: true });
 			return;
 		}
