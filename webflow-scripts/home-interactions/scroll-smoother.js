@@ -137,11 +137,11 @@
 			smoother = ScrollSmoother.create({
 				wrapper,
 				content,
-				smooth: 5,
+				smooth: 2,
 				effects: true,
 				effectsPrefix: 'smoother-',
 				smoothTouch: false,
-				normalizeScroll: false,
+				normalizeScroll: true,
 			});
 		}
 
