@@ -14,6 +14,7 @@
   const INTERACTIVE_SELECTOR = 'a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
   const READY_CLASS = 'is-steps-ready';
+  const NATIVE_SCROLL_CLASS = 'is-steps-native-scroll';
   const OPEN_CLASS = 'is-open';
   const MOTION_BREAKPOINT_PX = 992;
   const DESKTOP_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px) and (prefers-reduced-motion: no-preference)`;
@@ -396,10 +397,12 @@
 
   function setDesktopState(state) {
     state.root.classList.add(READY_CLASS);
+    state.root.classList.remove(NATIVE_SCROLL_CLASS);
   }
 
   function setStaticState(state) {
     state.root.classList.remove(READY_CLASS);
+    state.root.classList.add(NATIVE_SCROLL_CLASS);
     clearLayoutMetrics(state);
     state.track.style.transform = '';
 
@@ -412,6 +415,7 @@
 
   function clearDesktopState(state, gsap) {
     state.root.classList.remove(READY_CLASS);
+    state.root.classList.add(NATIVE_SCROLL_CLASS);
     killIntroFade(state);
     clearLayoutMetrics(state);
     gsap.set([

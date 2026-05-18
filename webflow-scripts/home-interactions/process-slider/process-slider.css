@@ -170,4 +170,32 @@
     height: auto;
   }
 }
+
+[data-steps-slider].is-steps-native-scroll [data-steps-pin] {
+  min-height: 0;
+}
+
+[data-steps-slider].is-steps-native-scroll [data-steps-viewport] {
+  overflow: visible;
+}
+
+[data-steps-slider].is-steps-native-scroll [data-steps-track] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-inline: 0;
+  transform: none !important;
+  width: 100%;
+  will-change: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-steps-slider].is-steps-native-scroll [data-steps-card],
+[data-steps-slider].is-steps-native-scroll [data-steps-summary],
+[data-steps-slider].is-steps-native-scroll [data-steps-card].is-open [data-steps-summary],
+[data-steps-slider].is-steps-native-scroll [data-steps-reveal],
+[data-steps-slider].is-steps-native-scroll [data-steps-card].is-open [data-steps-reveal],
+[data-steps-slider].is-steps-native-scroll [data-steps-toggle] {
+  flex-basis: auto;
+  height: auto;
+}
 /* End Process Slider */
