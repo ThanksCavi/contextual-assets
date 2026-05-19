@@ -9,6 +9,7 @@
   const DEFAULT_COLOR = '#ecf071';
   const DEFAULT_STAGE_EXTRA = '136vh';
   const MOBILE_QUERY = '(max-width: 767px)';
+  const MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
 
   const CONFIG = {
     gridSpacing: 120,
@@ -45,6 +46,7 @@
 
   window.addEventListener('scroll', queueFallbackRender, { passive: true });
   window.addEventListener('resize', handleResize);
+  window.addEventListener(MOTION_POLICY_CHANGE_EVENT, handleResize);
   window.addEventListener('load', handleResize, { once: true });
   prefersReducedMotion.addEventListener?.('change', handleResize);
   mobileViewport.addEventListener?.('change', handleResize);

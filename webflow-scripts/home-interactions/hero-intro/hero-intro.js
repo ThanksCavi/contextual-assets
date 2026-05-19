@@ -52,12 +52,18 @@
 	}
 
 	function shouldUseIntroScrollLock() {
+		if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.getMotionPolicy === 'function') {
+			return !!window.ContextualHomeMotion.getMotionPolicy().allowIntroScrollLock;
+		}
+
+		var touchPoints = Number(window.navigator && window.navigator.maxTouchPoints);
+		if (Number.isFinite(touchPoints) && touchPoints > 0) return false;
+
 		if (window.ContextualHomeMotion && typeof window.ContextualHomeMotion.shouldUseHeavyScrollEffects === 'function') {
 			return window.ContextualHomeMotion.shouldUseHeavyScrollEffects();
 		}
 
-		var touchPoints = Number(window.navigator && window.navigator.maxTouchPoints);
-		return !(Number.isFinite(touchPoints) && touchPoints > 0);
+		return true;
 	}
 
 	function nextFrame() {

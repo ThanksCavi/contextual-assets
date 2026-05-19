@@ -19,6 +19,7 @@
   const MOTION_BREAKPOINT_PX = 992;
   const DESKTOP_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px) and (prefers-reduced-motion: no-preference)`;
   const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+  const MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
   const RESIZE_REFRESH_DELAY_MS = 160;
   const REVEAL_SCROLL_DELAY_MS = 380;
   const REVEAL_SCROLL_PADDING = 48;
@@ -57,6 +58,7 @@
 
   onMotionReady(initProcessSlider);
   window.addEventListener('resize', queueRefresh);
+  window.addEventListener(MOTION_POLICY_CHANGE_EVENT, queueRefresh);
 
   function onMotionReady(callback) {
     if (window.ContextualHomeMotion?.ready) {

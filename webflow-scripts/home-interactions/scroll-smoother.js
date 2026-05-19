@@ -8,12 +8,16 @@
 	const CONTENT_SELECTOR = '#smooth-content';
 	const INIT_FLAG = '__contextualHomeScrollSmootherInit';
 	const READY_EVENT = 'contextual:smoother-ready';
+	const POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
 	const REQUEST_REFRESH_DELAY_MS = 80;
 	const RESIZE_REFRESH_DELAY_MS = 160;
 	const MOTION_BREAKPOINT_PX = 992;
 	const DESKTOP_WIDTH_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px)`;
 	const FINE_POINTER_QUERY = '(pointer: fine)';
 	const HOVER_QUERY = '(hover: hover)';
+	const ANY_FINE_POINTER_QUERY = '(any-pointer: fine)';
+	const ANY_COARSE_POINTER_QUERY = '(any-pointer: coarse)';
+	const ANY_HOVER_QUERY = '(any-hover: hover)';
 	const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 	if (window[INIT_FLAG]) return;
@@ -26,6 +30,7 @@
 	let smootherState = null;
 	let readyMarked = false;
 	let policyState = null;
+	let lastPolicySignature = '';
 	const ready = new Promise((resolve) => {
 		resolveReady = resolve;
 	});
@@ -94,6 +99,9 @@
 		readyMarked = true;
 
 		window.ContextualHomeMotion.smoother = smoother;
+		window.ContextualHomeMotion.motionPolicy = getMotionPolicy();
+		lastPolicySignature = getPolicySignature();
+		bindPolicyListeners();
 		resolveReady(window.ContextualHomeMotion);
 		window.dispatchEvent(new CustomEvent(READY_EVENT, {
 			detail: {
@@ -106,23 +114,28 @@
 	function queueSettledRefresh() {
 		clearTimeout(resizeTimer);
 		resizeTimer = window.setTimeout(() => {
+			const previousPolicySignature = lastPolicySignature || getPolicySignature();
 			syncSmootherForViewport();
 			requestRefresh();
+			dispatchPolicyChangeIfNeeded(previousPolicySignature);
 		}, RESIZE_REFRESH_DELAY_MS);
 	}
 
 	function handleViewportChange() {
+		const previousPolicySignature = lastPolicySignature || getPolicySignature();
 		syncSmootherForViewport();
 		requestRefresh();
+		dispatchPolicyChangeIfNeeded(previousPolicySignature);
 	}
 
 	function syncSmootherForViewport() {
 		if (!smootherState) return null;
 
 		const {ScrollSmoother, wrapper, content} = smootherState;
+		const policy = getMotionPolicy();
 		let smoother = ScrollSmoother.get && ScrollSmoother.get();
 
-		if (!shouldUseSmoother()) {
+		if (!policy.allowSmoother) {
 			if (smoother && typeof smoother.kill === 'function') {
 				smoother.kill();
 			}
@@ -133,6 +146,15 @@
 			return null;
 		}
 
+		if (smoother && smoother.vars && smoother.vars.normalizeScroll !== policy.allowNormalizeScroll) {
+			if (typeof smoother.kill === 'function') {
+				smoother.kill();
+			}
+			restoreElementStyle(wrapper, smootherState.wrapperStyle);
+			restoreElementStyle(content, smootherState.contentStyle);
+			smoother = null;
+		}
+
 		if (!smoother) {
 			smoother = ScrollSmoother.create({
 				wrapper,
@@ -141,7 +163,7 @@
 				effects: true,
 				effectsPrefix: 'smoother-',
 				smoothTouch: false,
-				normalizeScroll: true,
+				normalizeScroll: policy.allowNormalizeScroll,
 			});
 		}
 
@@ -150,7 +172,7 @@
 	}
 
 	function shouldUseSmoother() {
-		return getMotionPolicy().allowFullScrollMotion;
+		return getMotionPolicy().allowSmoother;
 	}
 
 	function shouldUseHeavyScrollEffects() {
@@ -162,26 +184,58 @@
 		const isDesktopWidth = media.desktopWidth ? media.desktopWidth.matches : true;
 		const hasFinePointer = media.finePointer ? media.finePointer.matches : true;
 		const hasHover = media.hover ? media.hover.matches : true;
+		const hasAnyFinePointer = media.anyFinePointer ? media.anyFinePointer.matches : hasFinePointer;
+		const hasAnyCoarsePointer = media.anyCoarsePointer ? media.anyCoarsePointer.matches : false;
+		const hasAnyHover = media.anyHover ? media.anyHover.matches : hasHover;
 		const prefersReducedMotion = media.reducedMotion ? media.reducedMotion.matches : false;
 		const maxTouchPoints = getMaxTouchPoints();
 		const isTouchCapable = maxTouchPoints > 0;
-		const allowFullScrollMotion = Boolean(
-			isDesktopWidth &&
-			hasFinePointer &&
-			hasHover &&
-			!prefersReducedMotion &&
-			!isTouchCapable
+		const scrollTriggerTouch = getScrollTriggerTouchMode();
+		const isTouchOnly = scrollTriggerTouch === 1 || (
+			scrollTriggerTouch === null &&
+			isTouchCapable &&
+			(!hasFinePointer || !hasHover)
 		);
+		const isHybridInput = scrollTriggerTouch === 2 || (
+			scrollTriggerTouch === null &&
+			isTouchCapable &&
+			hasFinePointer &&
+			hasHover
+		);
+		const isIPadLike = getIsIPadLike(maxTouchPoints);
+		const hasDesktopInput = Boolean(hasFinePointer && hasHover);
+		const allowDesktopMotion = Boolean(
+			isDesktopWidth &&
+			hasDesktopInput &&
+			!prefersReducedMotion &&
+			!isTouchOnly &&
+			!isIPadLike
+		);
+		const allowSmoother = allowDesktopMotion;
+		const allowHeavyScrollEffects = allowDesktopMotion;
+		const allowNormalizeScroll = Boolean(allowSmoother && !isTouchCapable);
+		const allowIntroScrollLock = Boolean(allowDesktopMotion && !isTouchCapable);
 
 		return {
-			allowFullScrollMotion,
-			allowHeavyScrollEffects: allowFullScrollMotion,
-			shouldUseSmoother: allowFullScrollMotion,
+			allowFullScrollMotion: allowSmoother,
+			allowSmoother,
+			allowHeavyScrollEffects,
+			allowIntroScrollLock,
+			allowNormalizeScroll,
+			shouldUseSmoother: allowSmoother,
 			isDesktopWidth,
 			hasFinePointer,
 			hasHover,
+			hasAnyFinePointer,
+			hasAnyCoarsePointer,
+			hasAnyHover,
+			hasDesktopInput,
 			prefersReducedMotion,
 			isTouchCapable,
+			isTouchOnly,
+			isHybridInput,
+			isIPadLike,
+			scrollTriggerTouch,
 			maxTouchPoints,
 		};
 	}
@@ -192,6 +246,9 @@
 				desktopWidth: createMediaQuery(DESKTOP_WIDTH_QUERY),
 				finePointer: createMediaQuery(FINE_POINTER_QUERY),
 				hover: createMediaQuery(HOVER_QUERY),
+				anyFinePointer: createMediaQuery(ANY_FINE_POINTER_QUERY),
+				anyCoarsePointer: createMediaQuery(ANY_COARSE_POINTER_QUERY),
+				anyHover: createMediaQuery(ANY_HOVER_QUERY),
 				reducedMotion: createMediaQuery(REDUCED_MOTION_QUERY),
 				listenersBound: false,
 			};
@@ -213,6 +270,9 @@
 			media.desktopWidth,
 			media.finePointer,
 			media.hover,
+			media.anyFinePointer,
+			media.anyCoarsePointer,
+			media.anyHover,
 			media.reducedMotion,
 		].forEach(mediaQuery => {
 			if (!mediaQuery) return;
@@ -228,6 +288,60 @@
 	function getMaxTouchPoints() {
 		const points = Number(window.navigator?.maxTouchPoints ?? 0);
 		return Number.isFinite(points) ? Math.max(0, points) : 0;
+	}
+
+	function getScrollTriggerTouchMode() {
+		const value = window.ScrollTrigger?.isTouch;
+		return value === 0 || value === 1 || value === 2 ? value : null;
+	}
+
+	function getIsIPadLike(maxTouchPoints) {
+		const navigator = window.navigator || {};
+		const userAgent = navigator.userAgent || '';
+		const platform = navigator.platform || '';
+
+		return /iPad/.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
+	}
+
+	function getPolicySignature() {
+		const policy = getMotionPolicy();
+
+		return [
+			policy.allowSmoother,
+			policy.allowHeavyScrollEffects,
+			policy.allowIntroScrollLock,
+			policy.allowNormalizeScroll,
+			policy.isDesktopWidth,
+			policy.hasFinePointer,
+			policy.hasHover,
+			policy.hasAnyFinePointer,
+			policy.hasAnyCoarsePointer,
+			policy.hasAnyHover,
+			policy.prefersReducedMotion,
+			policy.isTouchOnly,
+			policy.isHybridInput,
+			policy.isIPadLike,
+			policy.scrollTriggerTouch,
+			policy.maxTouchPoints,
+		].join('|');
+	}
+
+	function dispatchPolicyChangeIfNeeded(previousPolicySignature) {
+		const policy = getMotionPolicy();
+		const nextPolicySignature = getPolicySignature();
+
+		if (nextPolicySignature === previousPolicySignature) {
+			lastPolicySignature = nextPolicySignature;
+			return;
+		}
+
+		lastPolicySignature = nextPolicySignature;
+		window.ContextualHomeMotion.motionPolicy = policy;
+		window.dispatchEvent(new CustomEvent(POLICY_CHANGE_EVENT, {
+			detail: {
+				policy,
+			},
+		}));
 	}
 
 	function restoreElementStyle(element, styleValue) {

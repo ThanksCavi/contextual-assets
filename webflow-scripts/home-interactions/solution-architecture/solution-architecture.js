@@ -32,6 +32,7 @@
 
   const MOTION_BREAKPOINT_PX = 992;
   const DESKTOP_QUERY = `(min-width: ${MOTION_BREAKPOINT_PX}px) and (prefers-reduced-motion: no-preference)`;
+  const MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
   const RESIZE_REFRESH_DELAY_MS = 160;
   const MIN_SCENE_PIN_OFFSET = 32;
   const LOW_VIEWPORT_SAFE_OFFSET = 96;
@@ -82,6 +83,7 @@
   let resizeTimer = null;
 
   window.addEventListener('resize', queueRefresh);
+  window.addEventListener(MOTION_POLICY_CHANGE_EVENT, queueRefresh);
 
   window.SolutionArchitecture = {
     refresh: refreshAll,

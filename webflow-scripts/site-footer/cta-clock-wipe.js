@@ -11,6 +11,7 @@
   const DEFAULT_BACKGROUND = '#faf9f5';
   const DEFAULT_STAGE_EXTRA = '224vh';
   const MOBILE_QUERY = '(max-width: 767px)';
+  const MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
 
   const CONFIG = {
     columns: 6,
@@ -93,6 +94,7 @@
 
   window.addEventListener('scroll', queueFallbackRender, { passive: true });
   window.addEventListener('resize', handleResize);
+  window.addEventListener(MOTION_POLICY_CHANGE_EVENT, handleResize);
   window.addEventListener('load', handleResize, { once: true });
   prefersReducedMotion.addEventListener?.('change', handleResize);
   mobileViewport.addEventListener?.('change', handleResize);
