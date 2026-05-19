@@ -615,12 +615,13 @@
 
   function getPinStartOffset(state) {
     const pinHeight = getPinnedVisualHeight(state);
-    const centeredOffset = Math.round((window.innerHeight - pinHeight) / 2);
     const safeTop = Math.max(
       MIN_PIN_OFFSET,
       getCssPixelValue(state.root, '--steps-pin-safe-top', LOW_VIEWPORT_SAFE_TOP)
     );
     const safeBottom = getCssPixelValue(state.root, '--steps-pin-safe-bottom', LOW_VIEWPORT_SAFE_BOTTOM);
+    const availableHeight = Math.max(0, window.innerHeight - safeTop - safeBottom);
+    const centeredOffset = safeTop + Math.round((availableHeight - pinHeight) / 2);
     const maxSafeOffset = Math.max(safeTop, window.innerHeight - pinHeight - safeBottom);
 
     return Math.min(Math.max(centeredOffset, safeTop), maxSafeOffset);
