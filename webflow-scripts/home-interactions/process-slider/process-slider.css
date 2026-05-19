@@ -145,6 +145,11 @@
   [data-steps-slider] {
     --steps-card-min-height: 580px;
     --steps-card-height: min(var(--steps-card-dynamic-height, 580px), 580px);
+    --steps-intro-stage-gap: 24px;
+  }
+
+  [data-steps-slider].is-steps-ready [data-steps-stage] {
+    margin-top: var(--steps-intro-stage-gap);
   }
 
   [data-steps-slider].is-steps-ready [data-steps-pin] {
