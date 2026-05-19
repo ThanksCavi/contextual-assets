@@ -393,11 +393,10 @@
   }
 
   function getContentMinHeight(section) {
-    const sectionRect = section.getBoundingClientRect();
     const styles = window.getComputedStyle(section);
     const paddingTop = parseFloat(styles.paddingTop) || 0;
     const paddingBottom = parseFloat(styles.paddingBottom) || 0;
-    let contentBottom = paddingTop;
+    let maxChildOuterHeight = 0;
 
     Array.from(section.children).forEach(child => {
       if (child.classList?.contains(BG_CLASS)) return;
@@ -406,11 +405,15 @@
       if (childStyles.display === 'none' || childStyles.position === 'absolute' || childStyles.position === 'fixed') return;
 
       const childRect = child.getBoundingClientRect();
+      const marginTop = parseFloat(childStyles.marginTop) || 0;
       const marginBottom = parseFloat(childStyles.marginBottom) || 0;
-      contentBottom = Math.max(contentBottom, childRect.bottom - sectionRect.top + marginBottom);
+      maxChildOuterHeight = Math.max(maxChildOuterHeight, childRect.height + marginTop + marginBottom);
     });
 
-    return Math.max(100, Math.round(contentBottom + paddingBottom));
+    const naturalHeight = paddingTop + maxChildOuterHeight + paddingBottom;
+    const overflowHeight = section.scrollHeight > section.clientHeight ? section.scrollHeight : 0;
+
+    return Math.max(100, Math.round(naturalHeight), Math.round(overflowHeight));
   }
 
   function getVisualProgress(config, progress) {
