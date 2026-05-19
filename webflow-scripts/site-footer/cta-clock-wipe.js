@@ -341,7 +341,8 @@
     const cell = Math.round(Math.max(config.cellMin, Math.min(config.cellMax, width / config.columns)));
     const targetHeight = Math.round(cell * 3.5);
     const designHeight = Math.round(Math.max(config.heightMin, Math.min(config.heightMax, width * config.heightRatio)));
-    const sectionMinHeight = Math.max(targetHeight, designHeight);
+    const contentMinHeight = getContentMinHeight(section);
+    const sectionMinHeight = Math.max(targetHeight, designHeight, contentMinHeight);
     const tile = PRIMARY_PATTERN;
 
     section.style.setProperty('--cta-wipe-min-height', `${sectionMinHeight}px`);
@@ -389,6 +390,27 @@
 
     instance.shapes = shapes;
     instance.buildKey = key;
+  }
+
+  function getContentMinHeight(section) {
+    const sectionRect = section.getBoundingClientRect();
+    const styles = window.getComputedStyle(section);
+    const paddingTop = parseFloat(styles.paddingTop) || 0;
+    const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+    let contentBottom = paddingTop;
+
+    Array.from(section.children).forEach(child => {
+      if (child.classList?.contains(BG_CLASS)) return;
+
+      const childStyles = window.getComputedStyle(child);
+      if (childStyles.display === 'none' || childStyles.position === 'absolute' || childStyles.position === 'fixed') return;
+
+      const childRect = child.getBoundingClientRect();
+      const marginBottom = parseFloat(childStyles.marginBottom) || 0;
+      contentBottom = Math.max(contentBottom, childRect.bottom - sectionRect.top + marginBottom);
+    });
+
+    return Math.max(100, Math.round(contentBottom + paddingBottom));
   }
 
   function getVisualProgress(config, progress) {

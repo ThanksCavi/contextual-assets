@@ -309,6 +309,10 @@
 
   function buildGrid(instance, config) {
     const { section, stage, canvas, context } = instance;
+    const contentMinHeight = Math.max(840, getContentMinHeight(section));
+
+    section.style.setProperty('--epicenter-wipe-min-height', `${contentMinHeight}px`);
+
     const rect = section.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
@@ -356,6 +360,27 @@
     instance.centerIndex2 = points.findIndex(p => Math.abs(p.x - rightCenterX) < 1 && Math.abs(p.y - bottomCenterY) < 1);
 
     instance.buildKey = key;
+  }
+
+  function getContentMinHeight(section) {
+    const sectionRect = section.getBoundingClientRect();
+    const styles = window.getComputedStyle(section);
+    const paddingTop = parseFloat(styles.paddingTop) || 0;
+    const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+    let contentBottom = paddingTop;
+
+    Array.from(section.children).forEach(child => {
+      if (child.classList?.contains(BG_CLASS)) return;
+
+      const childStyles = window.getComputedStyle(child);
+      if (childStyles.display === 'none' || childStyles.position === 'absolute' || childStyles.position === 'fixed') return;
+
+      const childRect = child.getBoundingClientRect();
+      const marginBottom = parseFloat(childStyles.marginBottom) || 0;
+      contentBottom = Math.max(contentBottom, childRect.bottom - sectionRect.top + marginBottom);
+    });
+
+    return Math.max(100, Math.round(contentBottom + paddingBottom));
   }
 
   function getScrollProgress(instance, config) {
