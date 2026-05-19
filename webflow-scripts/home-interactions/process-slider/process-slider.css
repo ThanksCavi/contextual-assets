@@ -151,6 +151,15 @@
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+
+  [data-steps-slider].is-steps-ready [data-steps-track] {
+    align-items: flex-start;
+  }
+
+  [data-steps-slider].is-steps-ready [data-steps-item] {
+    align-self: flex-start;
+    height: var(--steps-card-height);
+  }
 }
 
 @media (max-width: 991px), (prefers-reduced-motion: reduce) {
