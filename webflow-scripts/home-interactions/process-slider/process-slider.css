@@ -145,7 +145,7 @@
   [data-steps-slider] {
     --steps-card-min-height: 580px;
     --steps-card-height: min(var(--steps-card-dynamic-height, 580px), 580px);
-    --steps-intro-stage-gap: 24px;
+    --steps-intro-stage-gap: 48px;
   }
 
   [data-steps-slider].is-steps-ready [data-steps-stage] {
