@@ -2,6 +2,37 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.blog-faq .article').forEach(function (faq) {
     if (faq.dataset.faqReady === 'true') return;
 
+    function setPanelHeight(item) {
+      var panel = item.querySelector('.blog-faq__panel');
+      if (!panel) return;
+
+      if (item.classList.contains('is-open')) {
+        panel.style.maxHeight = panel.scrollHeight + 'px';
+      } else {
+        panel.style.maxHeight = '0px';
+      }
+    }
+
+    function closeItem(item) {
+      var trigger = item.querySelector('.blog-faq__trigger');
+
+      item.classList.remove('is-open');
+      if (trigger) {
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      setPanelHeight(item);
+    }
+
+    function openItem(item) {
+      var trigger = item.querySelector('.blog-faq__trigger');
+
+      item.classList.add('is-open');
+      if (trigger) {
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+      setPanelHeight(item);
+    }
+
     var headings = Array.from(faq.children).filter(function (child) {
       return child.tagName === 'H3';
     });
@@ -52,18 +83,22 @@ document.addEventListener('DOMContentLoaded', function () {
         var isOpen = item.classList.contains('is-open');
 
         faq.querySelectorAll('.blog-faq__item').forEach(function (otherItem) {
-          otherItem.classList.remove('is-open');
-
-          var otherTrigger = otherItem.querySelector('.blog-faq__trigger');
-          if (otherTrigger) {
-            otherTrigger.setAttribute('aria-expanded', 'false');
-          }
+          closeItem(otherItem);
         });
 
         if (!isOpen) {
-          item.classList.add('is-open');
-          trigger.setAttribute('aria-expanded', 'true');
+          openItem(item);
         }
+      });
+    });
+
+    faq.querySelectorAll('.blog-faq__item').forEach(function (item) {
+      setPanelHeight(item);
+    });
+
+    window.addEventListener('resize', function () {
+      faq.querySelectorAll('.blog-faq__item.is-open').forEach(function (item) {
+        setPanelHeight(item);
       });
     });
 
