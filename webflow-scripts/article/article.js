@@ -1,4 +1,22 @@
 document.addEventListener('DOMContentLoaded', function () {
+  var ARTICLE_LAYOUT_SELECTOR = '[data-article-layout]';
+  var ARTICLE_SIDEBAR_SELECTOR = '[data-article-sidebar]';
+  var ARTICLE_CONTENT_SELECTOR = '[data-article-content]';
+  var ARTICLE_PIN_MANAGED_CLASS = 'is-article-pin-managed';
+  var DESKTOP_QUERY = '(min-width: 992px) and (prefers-reduced-motion: no-preference)';
+  var MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
+  var RESIZE_REFRESH_DELAY_MS = 160;
+  var DEFAULT_TOP_OFFSET = 100;
+  var articlePin = {
+    matchMedia: null,
+    trigger: null,
+    sidebar: null,
+    sidebarStyle: null,
+    pinTopOffset: null,
+    stylesApplied: false,
+  };
+  var articlePinResizeTimer = null;
+
   document.querySelectorAll('.blog-faq .article').forEach(function (faq) {
     if (faq.dataset.faqReady === 'true') return;
 
@@ -110,4 +128,152 @@ document.addEventListener('DOMContentLoaded', function () {
 
     faq.dataset.faqReady = 'true';
   });
+
+  if (document.querySelector(ARTICLE_LAYOUT_SELECTOR) && document.querySelector(ARTICLE_SIDEBAR_SELECTOR) && document.querySelector(ARTICLE_CONTENT_SELECTOR)) {
+    onArticleMotionReady(initArticleSidebarPin);
+    window.addEventListener('resize', queueArticleSidebarPinRefresh);
+    window.addEventListener(MOTION_POLICY_CHANGE_EVENT, queueArticleSidebarPinRefresh);
+  }
+
+  function onArticleMotionReady(callback) {
+    if (window.ContextualHomeMotion && window.ContextualHomeMotion.ready) {
+      window.ContextualHomeMotion.ready.then(callback);
+      return;
+    }
+
+    requestAnimationFrame(callback);
+  }
+
+  function initArticleSidebarPin() {
+    setupArticleSidebarPin();
+    requestGlobalRefresh();
+  }
+
+  function setupArticleSidebarPin() {
+    var gsap = window.gsap;
+    var ScrollTrigger = window.ScrollTrigger;
+    var layout = document.querySelector(ARTICLE_LAYOUT_SELECTOR);
+    var sidebar = document.querySelector(ARTICLE_SIDEBAR_SELECTOR);
+    var content = document.querySelector(ARTICLE_CONTENT_SELECTOR);
+
+    clearArticleSidebarPin();
+
+    if (!gsap || !ScrollTrigger || !gsap.matchMedia || !layout || !sidebar || !content || !shouldUseDesktopMotion()) {
+      return;
+    }
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    articlePin.matchMedia = gsap.matchMedia();
+    articlePin.matchMedia.add(DESKTOP_QUERY, function () {
+      if (!shouldUseDesktopMotion() || content.offsetHeight <= sidebar.offsetHeight) return undefined;
+
+      applyArticlePinStyles(sidebar);
+      articlePin.trigger = ScrollTrigger.create({
+        trigger: layout,
+        endTrigger: layout,
+        start: function () {
+          return 'top top+=' + getArticleTopOffset() + 'px';
+        },
+        end: function () {
+          return 'bottom top+=' + (getArticleTopOffset() + sidebar.offsetHeight) + 'px';
+        },
+        pin: sidebar,
+        pinSpacing: false,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+      });
+
+      return clearActiveArticlePin;
+    });
+  }
+
+  function clearArticleSidebarPin() {
+    if (articlePin.matchMedia) {
+      var matchMedia = articlePin.matchMedia;
+      articlePin.matchMedia = null;
+      matchMedia.revert();
+    }
+
+    clearActiveArticlePin();
+  }
+
+  function clearActiveArticlePin() {
+    if (articlePin.trigger) {
+      articlePin.trigger.kill();
+      articlePin.trigger = null;
+    }
+
+    restoreArticlePinStyles();
+  }
+
+  function applyArticlePinStyles(sidebar) {
+    articlePin.sidebar = sidebar;
+    articlePin.pinTopOffset = getComputedArticleTopOffset(sidebar);
+    articlePin.sidebarStyle = sidebar.getAttribute('style');
+    articlePin.stylesApplied = true;
+    sidebar.classList.add(ARTICLE_PIN_MANAGED_CLASS);
+    sidebar.style.position = 'relative';
+    sidebar.style.top = 'auto';
+  }
+
+  function restoreArticlePinStyles() {
+    var sidebar = articlePin.sidebar;
+    if (!sidebar || !articlePin.stylesApplied) return;
+
+    sidebar.classList.remove(ARTICLE_PIN_MANAGED_CLASS);
+    articlePin.pinTopOffset = null;
+
+    if (articlePin.sidebarStyle === null) {
+      sidebar.removeAttribute('style');
+    } else {
+      sidebar.setAttribute('style', articlePin.sidebarStyle);
+    }
+
+    articlePin.sidebar = null;
+    articlePin.sidebarStyle = null;
+    articlePin.stylesApplied = false;
+  }
+
+  function queueArticleSidebarPinRefresh() {
+    clearTimeout(articlePinResizeTimer);
+    articlePinResizeTimer = window.setTimeout(function () {
+      setupArticleSidebarPin();
+      requestGlobalRefresh();
+    }, RESIZE_REFRESH_DELAY_MS);
+  }
+
+  function shouldUseDesktopMotion() {
+    var motion = window.ContextualHomeMotion;
+
+    if (motion && motion.shouldUseSmoother && !motion.shouldUseSmoother()) return false;
+    if (motion && motion.shouldUseHeavyScrollEffects) return motion.shouldUseHeavyScrollEffects();
+
+    return window.matchMedia(DESKTOP_QUERY).matches;
+  }
+
+  function getArticleTopOffset() {
+    return Number.isFinite(articlePin.pinTopOffset) ? articlePin.pinTopOffset : getComputedArticleTopOffset(articlePin.sidebar);
+  }
+
+  function getComputedArticleTopOffset(sidebar) {
+    if (!sidebar) return DEFAULT_TOP_OFFSET;
+
+    var value = Number.parseFloat(window.getComputedStyle(sidebar).top);
+    return Number.isFinite(value) ? value : DEFAULT_TOP_OFFSET;
+  }
+
+  function requestGlobalRefresh() {
+    if (window.ContextualHomeMotion && window.ContextualHomeMotion.requestRefresh) {
+      window.ContextualHomeMotion.requestRefresh();
+      return;
+    }
+
+    if (window.ScrollTrigger) {
+      if (window.ScrollTrigger.sort) {
+        window.ScrollTrigger.sort();
+      }
+      window.ScrollTrigger.refresh(true);
+    }
+  }
 });
