@@ -175,6 +175,7 @@
 
 .blog-faq__question {
   margin: 0;
+  font-family: var(--_fonts---family--body);
   font-size: 18px;
   font-weight: 600;
   line-height: 133%;
