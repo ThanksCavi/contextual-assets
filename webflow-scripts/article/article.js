@@ -7,7 +7,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!panel) return;
 
       if (item.classList.contains('is-open')) {
-        panel.style.maxHeight = panel.scrollHeight + 'px';
+        var styles = window.getComputedStyle(panel);
+        var currentPaddingTop = parseFloat(styles.paddingTop) || 0;
+        var currentPaddingBottom = parseFloat(styles.paddingBottom) || 0;
+        var openPaddingBottom = parseFloat(styles.getPropertyValue('--blog-faq-panel-open-padding-bottom')) || 0;
+        var contentHeight = panel.scrollHeight - currentPaddingTop - currentPaddingBottom;
+
+        panel.style.maxHeight = contentHeight + currentPaddingTop + openPaddingBottom + 'px';
       } else {
         panel.style.maxHeight = '0px';
       }

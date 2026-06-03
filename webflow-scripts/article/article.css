@@ -241,6 +241,7 @@
 }
 
 .blog-faq__panel {
+  --blog-faq-panel-open-padding-bottom: 36px;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -255,7 +256,7 @@
 
 .blog-faq__item.is-open .blog-faq__panel {
   opacity: 1;
-  padding-bottom: 36px;
+  padding-bottom: var(--blog-faq-panel-open-padding-bottom);
 }
 
 @media (max-width: 767px) {
@@ -271,11 +272,8 @@
   }
 
   .blog-faq__panel {
+    --blog-faq-panel-open-padding-bottom: 28px;
     padding-right: 0;
-  }
-
-  .blog-faq__item.is-open .blog-faq__panel {
-    padding-bottom: 28px;
   }
 }
 /* END - Blog FAQ */
