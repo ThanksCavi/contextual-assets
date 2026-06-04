@@ -4,13 +4,16 @@
  */
 html:not(.wf-design-mode) .navbar.w-nav {
 	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	width: 100%;
-	max-width: none;
+	top: 10px;
+	left: 10px;
+	right: auto;
+	width: calc(100% - 20px);
+	max-width: calc(100% - 20px);
 	z-index: 1000;
-	transition-property: top, left, width, max-width, height, min-height, background-color, border-color, border-radius, box-shadow, color;
+	background-color: transparent;
+	border-color: transparent;
+	box-shadow: none;
+	transition-property: height, min-height, background-color, border-color, border-radius, box-shadow, color;
 	transition-duration: 260ms;
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -25,7 +28,7 @@ html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
 }
 
 html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
-	transition-property: min-height, height, width, max-width, color;
+	transition-property: min-height, height, color;
 	transition-duration: 260ms;
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
