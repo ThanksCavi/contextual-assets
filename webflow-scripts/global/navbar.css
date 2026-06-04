@@ -1,0 +1,22 @@
+/*
+ * Navbar runtime styles
+ * Keeps the Webflow header outside ScrollSmoother's transformed content.
+ */
+html:not(.wf-design-mode) .navbar.w-nav {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	width: 100%;
+	max-width: none;
+	z-index: 1000;
+}
+
+html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
+	position: fixed;
+	top: 10px;
+	left: 10px;
+	right: auto;
+	width: calc(100% - 20px);
+	max-width: calc(100% - 20px);
+}
