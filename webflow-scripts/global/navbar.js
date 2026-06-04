@@ -5,6 +5,7 @@
 (() => {
 	const INIT_FLAG = '__contextualNavbarInit';
 	const NAVBAR_SELECTOR = '.navbar.w-nav';
+	const NAVBAR_STICKY_SELECTOR = '.navbar-sticky';
 	const NAVBAR_CONTAINER_SELECTOR = '.navbar-container';
 	const MOBILE_TOGGLE_SELECTOR = '.mob-menu-toggle';
 	const MOBILE_ITEM_SELECTOR = '.mob-menu-item';
@@ -24,6 +25,7 @@
 	window[INIT_FLAG] = true;
 
 	let navbar = null;
+	let navbarSticky = null;
 	let navbarContainer = null;
 	let isSticky = false;
 	let ticking = false;
@@ -45,6 +47,7 @@
 
 	function initStickyNavbar() {
 		navbar = document.querySelector(NAVBAR_SELECTOR);
+		navbarSticky = navbar ? navbar.querySelector(NAVBAR_STICKY_SELECTOR) : null;
 		navbarContainer = document.querySelector(NAVBAR_CONTAINER_SELECTOR);
 
 		if (!navbar) return;
@@ -143,6 +146,10 @@
 	function setStickyState(nextSticky) {
 		isSticky = nextSticky;
 		navbar.classList.toggle(STICKY_CLASS, nextSticky);
+
+		if (navbarSticky) {
+			navbarSticky.classList.toggle(STICKY_CLASS, nextSticky);
+		}
 
 		if (navbarContainer) {
 			navbarContainer.classList.toggle(STICKY_CLASS, nextSticky);

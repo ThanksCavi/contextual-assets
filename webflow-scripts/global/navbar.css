@@ -3,6 +3,9 @@
  * Keeps the Webflow header outside ScrollSmoother's transformed content.
  */
 html:not(.wf-design-mode) .navbar.w-nav {
+	--navbar-offset: 92px;
+	--navbar-sticky-min-height: 60px;
+	--navbar-sticky-padding-y: 10px;
 	position: fixed;
 	top: 10px;
 	left: 10px;
@@ -31,6 +34,17 @@ html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
 	border-radius: 10px;
 }
 
+html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky {
+	box-sizing: border-box;
+	width: 100%;
+	background-color: transparent;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	transition-property: min-height, background-color, border-color, box-shadow;
+	transition-duration: 260ms;
+	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 	transition-property: color;
 	transition-duration: 260ms;
@@ -39,47 +53,39 @@ html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 
 @media screen and (min-width: 992px) {
 	html:not(.wf-design-mode) .navbar.w-nav {
-		height: var(--navbar-offset, 92px);
-		min-height: var(--navbar-offset, 92px);
+		height: var(--navbar-offset);
+		min-height: var(--navbar-offset);
 	}
 
-	html:not(.wf-design-mode) .navbar.w-nav::before {
-		content: "";
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: var(--navbar-sticky-height, 60px);
-		box-sizing: border-box;
-		pointer-events: none;
-		background-color: var(--_system-colors---white);
-		border: 1px solid var(--_system-colors---muted);
-		border-radius: 10px;
-		opacity: 0;
-		transition-property: opacity, background-color, border-color, box-shadow;
-		transition-duration: 260ms;
-		transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	html:not(.wf-design-mode) .navbar.w-nav.is-sticky::before {
-		opacity: 1;
-	}
-
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-container,
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-container:not(.is-sticky) {
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky {
 		height: 100%;
-		min-height: var(--navbar-offset, 92px);
+		min-height: var(--navbar-offset);
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky {
+		height: auto;
+		min-height: var(--navbar-sticky-min-height);
+		padding-top: var(--navbar-sticky-padding-y);
+		padding-bottom: var(--navbar-sticky-padding-y);
+		background-color: var(--_system-colors---white);
+		border-color: var(--_system-colors---muted);
 	}
 
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 		position: relative;
 		z-index: 1;
-		transition-property: min-height, height, color;
 	}
 
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-container.is-sticky {
-		height: var(--navbar-sticky-height, 60px);
-		min-height: var(--navbar-sticky-height, 60px);
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky:not(.is-sticky) > .navbar-container {
+		height: 100%;
+		min-height: 100%;
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky > .navbar-container {
+		height: auto;
+		min-height: 0;
 	}
 }
 
@@ -97,7 +103,7 @@ html:not(.wf-design-mode) .navbar-spacer {
 
 @media (prefers-reduced-motion: reduce) {
 	html:not(.wf-design-mode) .navbar.w-nav,
-	html:not(.wf-design-mode) .navbar.w-nav::before,
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky,
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 		transition-duration: 0ms;
 	}
