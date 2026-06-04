@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var minutes = Math.max(1, Math.ceil(words / WORDS_PER_MINUTE));
 
     readTimeTargets.forEach(function (target) {
-      target.textContent = minutes + ' min read';
+      target.textContent = String(minutes);
     });
   }
 
