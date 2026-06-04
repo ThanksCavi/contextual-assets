@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
   var RESIZE_REFRESH_DELAY_MS = 160;
   var DEFAULT_TOP_OFFSET = 100;
+  var WORDS_PER_MINUTE = 200;
   var articlePin = {
     matchMedia: null,
     trigger: null,
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   var articlePinResizeTimer = null;
 
+  setupArticleReadTime();
   setupArticleStandaloneLinks();
 
   document.querySelectorAll('.blog-faq .article').forEach(function (faq) {
@@ -154,6 +156,24 @@ document.addEventListener('DOMContentLoaded', function () {
     if (paragraph.textContent.trim() !== link.textContent.trim()) return null;
 
     return link;
+  }
+
+  function setupArticleReadTime() {
+    var readTimeTargets = document.querySelectorAll('[data-article-read-time]');
+    var article = document.querySelector('[data-article-read-source]') || document.querySelector('.article');
+    if (!readTimeTargets.length || !article) return;
+
+    var words = getWordCount(article.textContent);
+    var minutes = Math.max(1, Math.ceil(words / WORDS_PER_MINUTE));
+
+    readTimeTargets.forEach(function (target) {
+      target.textContent = minutes + ' min read';
+    });
+  }
+
+  function getWordCount(text) {
+    var matches = text.trim().match(/\S+/g);
+    return matches ? matches.length : 0;
   }
 
   if (document.querySelector(ARTICLE_LAYOUT_SELECTOR) && document.querySelector(ARTICLE_SIDEBAR_SELECTOR) && document.querySelector(ARTICLE_CONTENT_SELECTOR)) {
