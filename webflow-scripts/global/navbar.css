@@ -10,9 +10,6 @@ html:not(.wf-design-mode) .navbar.w-nav {
 	width: calc(100% - 20px);
 	max-width: calc(100% - 20px);
 	z-index: 1000;
-	background-color: transparent;
-	border-color: transparent;
-	box-shadow: none;
 	transition-property: height, min-height, background-color, border-color, border-radius, box-shadow, color;
 	transition-duration: 260ms;
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
