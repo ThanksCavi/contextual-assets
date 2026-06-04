@@ -14,7 +14,7 @@ html:not(.wf-design-mode) .navbar.w-nav {
 	background-color: transparent;
 	border: 1px solid transparent;
 	border-radius: 10px;
-	transition-property: background-color, border-color, box-shadow, color;
+	transition-property: color;
 	transition-duration: 260ms;
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -26,8 +26,8 @@ html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
 	right: auto;
 	width: calc(100% - 20px);
 	max-width: calc(100% - 20px);
-	background-color: var(--_system-colors---white);
-	border-color: var(--_system-colors---muted);
+	background-color: transparent;
+	border-color: transparent;
 	border-radius: 10px;
 }
 
@@ -38,10 +38,48 @@ html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 }
 
 @media screen and (min-width: 992px) {
+	html:not(.wf-design-mode) .navbar.w-nav {
+		height: var(--navbar-offset, 92px);
+		min-height: var(--navbar-offset, 92px);
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: var(--navbar-sticky-height, 60px);
+		box-sizing: border-box;
+		pointer-events: none;
+		background-color: var(--_system-colors---white);
+		border: 1px solid var(--_system-colors---muted);
+		border-radius: 10px;
+		opacity: 0;
+		transition-property: opacity, background-color, border-color, box-shadow;
+		transition-duration: 260ms;
+		transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav.is-sticky::before {
+		opacity: 1;
+	}
+
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-container,
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-container.is-sticky {
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-container:not(.is-sticky) {
 		height: 100%;
 		min-height: var(--navbar-offset, 92px);
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
+		position: relative;
+		z-index: 1;
+		transition-property: min-height, height, color;
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-container.is-sticky {
+		height: var(--navbar-sticky-height, 60px);
+		min-height: var(--navbar-sticky-height, 60px);
 	}
 }
 
@@ -59,6 +97,7 @@ html:not(.wf-design-mode) .navbar-spacer {
 
 @media (prefers-reduced-motion: reduce) {
 	html:not(.wf-design-mode) .navbar.w-nav,
+	html:not(.wf-design-mode) .navbar.w-nav::before,
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 		transition-duration: 0ms;
 	}
