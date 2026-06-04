@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intro Screen — Lottie Mask + Image Fades</title>
+  <style>
+    :root {
+      --bg: #0e0e10;
+      --panel: #1a1a1d;
+      --border: #2a2a2f;
+      --text: #ececef;
+      --muted: #9a9aa3;
+      --accent: #6cf;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #1d1d24 0%, transparent 60%),
+        var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+        Roboto, sans-serif;
+      padding: 32px 16px;
+    }
+
+    h1 { margin: 0; font-weight: 300; font-size: 22px; letter-spacing: 0.5px; }
+    h1 span { color: var(--accent); }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 10px;
+    }
+    .controls label {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    select {
+      background: #111114;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+    }
+    select:focus { border-color: var(--accent); }
+
+    .stage {
+      position: relative;
+      width: min(540px, 92vw);
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      background:
+        repeating-linear-gradient(45deg, #18181c 0 10px, #1d1d22 10px 20px);
+    }
+
+    /* Three layers stacked inside the stage, all filling 100%:
+       1. #lottie-visible   — visible Lottie animation (bottom layer)
+       2. #image-stage      — SVG holding mask + masked images (top layer)
+       3. #lottie-mask-source — invisible 2nd Lottie we cannibalize for mask  */
+    #lottie-visible,
+    #image-stage {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #lottie-visible svg,
+    #image-stage {
+      display: block;
+    }
+    #lottie-mask-source {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      max-width: 600px;
+      text-align: center;
+      line-height: 1.55;
+    }
+    .hint code {
+      background: #181820;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11.5px;
+    }
+
+    .frame-readout {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+    .frame-readout span { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <h1>Intro Screen <span>×</span> Image Fades</h1>
+
+  <div class="controls">
+    <label for="set-select">Image set</label>
+    <select id="set-select">
+      <option value="nature">Nature</option>
+      <option value="urban">Urban</option>
+      <option value="abstract">Abstract</option>
+    </select>
+    <span class="frame-readout">frame <span id="frame">0</span> / 276</span>
+  </div>
+
+  <div class="stage">
+    <!-- Visible Lottie: plays normally, you see the strokes/circles. -->
+    <div id="lottie-visible"></div>
+
+    <!-- One SVG holds BOTH the mask and the three masked images. Same
+         viewBox as the lottie (0 0 900 900) so mask coords and image coords
+         live in the same user space; no cross-coordinate translation
+         needed. preserveAspectRatio="xMidYMid slice" mirrors object-fit:cover. -->
+    <svg id="image-stage"
+         viewBox="0 0 900 900"
+         preserveAspectRatio="xMidYMid slice"
+         xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Mask is filled in once the mask-source Lottie has DOMLoaded.
+             mask-type="alpha" so the lottie's opacity drives visibility. -->
+        <mask id="lottieMask" mask-type="alpha"
+              maskUnits="userSpaceOnUse"
+              maskContentUnits="userSpaceOnUse"
+              x="0" y="0" width="900" height="900">
+          <!-- lottie's <g> elements get appended here at runtime -->
+        </mask>
+      </defs>
+
+      <!-- Three SVG <image>s, each masked, each opacity-driven from JS.
+           href is set from the dropdown's selected image set. -->
+      <image id="img-1" x="0" y="0" width="900" height="900"
+             preserveAspectRatio="xMidYMid slice"
+             mask="url(#lottieMask)" opacity="0" />
+      <image id="img-2" x="0" y="0" width="900" height="900"
+             preserveAspectRatio="xMidYMid slice"
+             mask="url(#lottieMask)" opacity="0" />
+      <image id="img-3" x="0" y="0" width="900" height="900"
+             preserveAspectRatio="xMidYMid slice"
+             mask="url(#lottieMask)" opacity="0" />
+    </svg>
+
+    <!-- Mask-source Lottie: rendered into a 0×0 wrapper. Its top-level
+         <g> elements get moved into #lottieMask at runtime. -->
+    <div id="lottie-mask-source"></div>
+  </div>
+
+  <p class="hint">
+    Two synced Lottie instances. One renders <em>visibly</em>; the other is
+    cannibalized — its <code>&lt;g&gt;</code> elements are moved into a
+    <code>&lt;mask&gt;</code> that lives in the same SVG as the masked
+    images, so coordinates align by construction.
+  </p>
+
+  <!-- Lottie Web (bodymovin) from cdnjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+  <script>
+    /* ----------------------------------------------------------------
+       1. Your Lottie JSON, inlined.
+    ---------------------------------------------------------------- */
+    const introScreenData = {"v":"5.12.1","fr":30,"ip":0,"op":276,"w":900,"h":900,"nm":"intro screen","ddd":0,"assets":[],"layers":[{"ddd":0,"ind":1,"ty":4,"nm":"top small","sr":1,"ks":{"o":{"a":0,"k":100,"ix":11},"r":{"a":1,"k":[{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":9,"s":[-494]},{"i":{"x":[0.771],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":23,"s":[-90]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":25,"s":[-90]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":43,"s":[90]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":67,"s":[90]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":69,"s":[90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.276],"y":[0]},"t":119,"s":[90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":120,"s":[-90]},{"t":142,"s":[-180]}],"ix":10},"p":{"a":1,"k":[{"i":{"x":0.08,"y":1},"o":{"x":0.58,"y":0},"t":9,"s":[450,194.125,0],"to":[0,-7.25,0],"ti":[0,7.25,0]},{"i":{"x":0.08,"y":0.08},"o":{"x":0.58,"y":0.58},"t":23,"s":[450,150.625,0],"to":[0,0,0],"ti":[0,0,0]},{"i":{"x":0.833,"y":0.833},"o":{"x":0.58,"y":0.58},"t":43,"s":[450,150.625,0],"to":[0,0,0],"ti":[0,0,0]},{"i":{"x":0.08,"y":1},"o":{"x":0.58,"y":0},"t":46,"s":[450,150.625,0],"to":[0,49.896,0],"ti":[0,0,0]},{"i":{"x":0.08,"y":0.08},"o":{"x":0.167,"y":0.167},"t":67,"s":[450,450,0],"to":[0,0,0],"ti":[0,0,0]},{"t":69,"s":[450,450,0]}],"ix":2,"l":2},"a":{"a":0,"k":[0,0,0],"ix":1,"l":2},"s":{"a":1,"k":[{"i":{"x":[0.08,0.08,0.08],"y":[1,1,1]},"o":{"x":[0.58,0.58,0.58],"y":[0,0,0]},"t":9,"s":[0,0,100]},{"i":{"x":[0.833,0.833,0.833],"y":[1,1,1]},"o":{"x":[0.167,0.167,0.167],"y":[0,0,0]},"t":23,"s":[61,61,100]},{"i":{"x":[0.833,0.833,0.833],"y":[1,1,1]},"o":{"x":[0.167,0.167,0.167],"y":[0,0,0]},"t":68,"s":[61,61,100]},{"t":69,"s":[61,-61,100]}],"ix":6,"l":2}},"ao":0,"shapes":[{"ty":"gr","it":[{"d":1,"ty":"el","s":{"a":0,"k":[126.5,126.5],"ix":2},"p":{"a":0,"k":[0,0],"ix":3},"nm":"Ellipse Path 1","mn":"ADBE Vector Shape - Ellipse","hd":false},{"ty":"st","c":{"a":0,"k":[0.058823533152,0.043137254902,0.019607843137,1],"ix":3},"o":{"a":0,"k":100,"ix":4},"w":{"a":0,"k":128,"ix":5},"lc":1,"lj":1,"ml":4,"bm":0,"nm":"Stroke 1","mn":"ADBE Vector Graphic - Stroke","hd":false},{"ty":"tr","p":{"a":0,"k":[-0.25,0.5],"ix":2},"a":{"a":0,"k":[0,0],"ix":1},"s":{"a":0,"k":[100,100],"ix":3},"r":{"a":0,"k":0,"ix":6},"o":{"a":0,"k":100,"ix":7},"sk":{"a":0,"k":0,"ix":4},"sa":{"a":0,"k":0,"ix":5},"nm":"Transform"}],"nm":"Ellipse 1","np":3,"cix":2,"bm":0,"ix":1,"mn":"ADBE Vector Group","hd":false},{"ty":"tm","s":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":119,"s":[0]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":120,"s":[100]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":142,"s":[100]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":164,"s":[100]},{"i":{"x":[0.833],"y":[0.833]},"o":{"x":[0.333],"y":[0]},"t":209,"s":[100]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":234,"s":[50]},{"t":254,"s":[100]}],"ix":1},"e":{"a":1,"k":[{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":23,"s":[75]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":25,"s":[75]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":43,"s":[50]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":67,"s":[50]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":69,"s":[50]},{"i":{"x":[0.791],"y":[10.012]},"o":{"x":[0.163],"y":[0]},"t":85,"s":[100]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.374],"y":[0.005]},"t":119,"s":[100]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":120,"s":[0]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":142,"s":[50]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":164,"s":[0]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":208,"s":[0]},{"t":209,"s":[0]}],"ix":2},"o":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":142,"s":[0]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":164,"s":[180]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":208,"s":[180]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":209,"s":[90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":234,"s":[90]},{"t":254,"s":[-180]}],"ix":3},"m":1,"ix":2,"nm":"Trim Paths 1","mn":"ADBE Vector Filter - Trim","hd":false}],"ip":0,"op":276,"st":0,"ct":1,"bm":0},{"ddd":0,"ind":2,"ty":4,"nm":"middl","sr":1,"ks":{"o":{"a":0,"k":100,"ix":11},"r":{"a":1,"k":[{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":43,"s":[90]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":46,"s":[90]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":67,"s":[-90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":69,"s":[-90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":120,"s":[-90]},{"t":142,"s":[0]}],"ix":10},"p":{"a":0,"k":[450,450,0],"ix":2,"l":2},"a":{"a":0,"k":[0,0,0],"ix":1,"l":2},"s":{"a":0,"k":[61,61,100],"ix":6,"l":2}},"ao":0,"shapes":[{"ty":"gr","it":[{"d":1,"ty":"el","s":{"a":0,"k":[370.5,370.5],"ix":2},"p":{"a":0,"k":[0,0],"ix":3},"nm":"Ellipse Path 1","mn":"ADBE Vector Shape - Ellipse","hd":false},{"ty":"st","c":{"a":0,"k":[0.058823533152,0.043137254902,0.019607843137,1],"ix":3},"o":{"a":0,"k":100,"ix":4},"w":{"a":0,"k":119,"ix":5},"lc":1,"lj":1,"ml":4,"bm":0,"nm":"Stroke 1","mn":"ADBE Vector Graphic - Stroke","hd":false},{"ty":"tr","p":{"a":0,"k":[-0.25,0.5],"ix":2},"a":{"a":0,"k":[0,0],"ix":1},"s":{"a":0,"k":[100,100],"ix":3},"r":{"a":0,"k":0,"ix":6},"o":{"a":0,"k":100,"ix":7},"sk":{"a":0,"k":0,"ix":4},"sa":{"a":0,"k":0,"ix":5},"nm":"Transform"}],"nm":"Ellipse 1","np":3,"cix":2,"bm":0,"ix":1,"mn":"ADBE Vector Group","hd":false},{"ty":"tm","s":{"a":0,"k":0,"ix":1},"e":{"a":1,"k":[{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":9,"s":[0]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":23,"s":[25]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":25,"s":[25]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":43,"s":[50]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":67,"s":[50]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":69,"s":[50]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":85,"s":[100]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":120,"s":[100]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":142,"s":[50]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":164,"s":[100]},{"i":{"x":[0.833],"y":[0.833]},"o":{"x":[0.333],"y":[0]},"t":210,"s":[100]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":234,"s":[50]},{"t":254,"s":[100]}],"ix":2},"o":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":209,"s":[0]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":210,"s":[90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":234,"s":[90]},{"t":254,"s":[0]}],"ix":3},"m":1,"ix":2,"nm":"Trim Paths 1","mn":"ADBE Vector Filter - Trim","hd":false}],"ip":0,"op":276,"st":0,"ct":1,"bm":0},{"ddd":0,"ind":3,"ty":4,"nm":"big","sr":1,"ks":{"o":{"a":0,"k":100,"ix":11},"r":{"a":1,"k":[{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":43,"s":[-90]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":46,"s":[-90]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":67,"s":[90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":69,"s":[90]},{"t":120,"s":[90]}],"ix":10},"p":{"a":1,"k":[{"i":{"x":0.833,"y":0.833},"o":{"x":0.58,"y":0.58},"t":23,"s":[450,610.5,0],"to":[0,0,0],"ti":[0,0,0]},{"i":{"x":0.08,"y":1},"o":{"x":0.58,"y":0},"t":25,"s":[450,610.5,0],"to":[0,-26.75,0],"ti":[0,26.75,0]},{"t":43,"s":[450,450,0]}],"ix":2,"l":2},"a":{"a":0,"k":[0,0,0],"ix":1,"l":2},"s":{"a":0,"k":[100,100,100],"ix":6,"l":2}},"ao":0,"shapes":[{"ty":"gr","it":[{"d":1,"ty":"el","s":{"a":0,"k":[370.5,370.5],"ix":2},"p":{"a":0,"k":[0,0],"ix":3},"nm":"Ellipse Path 1","mn":"ADBE Vector Shape - Ellipse","hd":false},{"ty":"st","c":{"a":0,"k":[0.407843167174,0.505882352941,1,1],"ix":3},"o":{"a":0,"k":100,"ix":4},"w":{"a":0,"k":73,"ix":5},"lc":1,"lj":1,"ml":4,"bm":0,"nm":"Stroke 1","mn":"ADBE Vector Graphic - Stroke","hd":false},{"ty":"tr","p":{"a":0,"k":[-0.25,0.5],"ix":2},"a":{"a":0,"k":[0,0],"ix":1},"s":{"a":0,"k":[100,100],"ix":3},"r":{"a":0,"k":0,"ix":6},"o":{"a":0,"k":100,"ix":7},"sk":{"a":0,"k":0,"ix":4},"sa":{"a":0,"k":0,"ix":5},"nm":"Transform"}],"nm":"Ellipse 1","np":3,"cix":2,"bm":0,"ix":1,"mn":"ADBE Vector Group","hd":false},{"ty":"tm","s":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":142,"s":[0]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":164,"s":[0]},{"i":{"x":[0.833],"y":[0.833]},"o":{"x":[0.333],"y":[0]},"t":210,"s":[0]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":234,"s":[50]},{"t":254,"s":[0]}],"ix":1},"e":{"a":1,"k":[{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":9,"s":[0]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":23,"s":[25]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":25,"s":[25]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":43,"s":[50]},{"i":{"x":[0.08],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":67,"s":[50]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.58],"y":[0]},"t":69,"s":[50]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":85,"s":[100]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":120,"s":[100]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":142,"s":[50]},{"t":164,"s":[100]}],"ix":2},"o":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":142,"s":[0]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":164,"s":[-180]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0]},"t":207,"s":[0]},{"i":{"x":[0.833],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":210,"s":[-90]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.167],"y":[0.167]},"t":234,"s":[-90]},{"t":254,"s":[90]}],"ix":3},"m":1,"ix":2,"nm":"Trim Paths 1","mn":"ADBE Vector Filter - Trim","hd":false}],"ip":0,"op":276,"st":0,"ct":1,"bm":0}],"markers":[{"tm":90,"cm":"","dr":0},{"tm":120,"cm":"","dr":0},{"tm":180,"cm":"","dr":0},{"tm":210,"cm":"","dr":0}],"props":{}};
+
+    /* ----------------------------------------------------------------
+       2. Image sets — three picsum URLs per set. Dropdown swaps the set.
+    ---------------------------------------------------------------- */
+    const IMAGE_SETS = {
+      nature:   ["forest", "ocean", "mountain"],
+      urban:    ["city",   "neon",  "subway"],
+      abstract: ["paint",  "noise", "fractal"]
+    };
+    const seedToUrl = (seed) => `https://picsum.photos/seed/${seed}/1200/1200`;
+
+    /* ----------------------------------------------------------------
+       3. Fade timing — exactly the frames you specified.
+       Image 1: in 79→90,  out 120→140
+       Image 2: in 140→165, out 207→234
+       Image 3: in 234→256, no fade out (animation loops at 276)
+    ---------------------------------------------------------------- */
+    const FADE_RULES = [
+      { id: "img-1", inStart:  79, inEnd:  90, outStart: 120, outEnd: 140 },
+      { id: "img-2", inStart: 140, inEnd: 165, outStart: 207, outEnd: 234 },
+      { id: "img-3", inStart: 234, inEnd: 256, outStart: Infinity, outEnd: Infinity }
+    ];
+
+    function fadeOpacity(f, inStart, inEnd, outStart, outEnd) {
+      if (f < inStart)  return 0;
+      if (f < inEnd)    return (f - inStart) / (inEnd - inStart);
+      if (f < outStart) return 1;
+      if (f < outEnd)   return 1 - (f - outStart) / (outEnd - outStart);
+      return 0;
+    }
+
+    /* ----------------------------------------------------------------
+       4. Wire up images. SVG <image> uses href + xlink:href (set both
+          for older browser/safari compatibility).
+    ---------------------------------------------------------------- */
+    const imgEls = FADE_RULES.map((r) => document.getElementById(r.id));
+    const frameReadout = document.getElementById("frame");
+
+    function setImageHref(el, url) {
+      el.setAttribute("href", url);
+      el.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", url);
+    }
+
+    function applyImageSet(setName) {
+      const seeds = IMAGE_SETS[setName] || IMAGE_SETS.nature;
+      imgEls.forEach((el, i) => setImageHref(el, seedToUrl(seeds[i])));
+    }
+    applyImageSet("nature");
+
+    document.getElementById("set-select").addEventListener("change", (e) => {
+      applyImageSet(e.target.value);
+    });
+
+    /* ----------------------------------------------------------------
+       5. Two Lottie instances:
+          - anim:     visible, plays normally, drives the timeline.
+          - animMask: not autoplaying; we drive its frame from anim and
+                      cannibalize its <g> for the mask.
+    ---------------------------------------------------------------- */
+    const anim = lottie.loadAnimation({
+      container: document.getElementById("lottie-visible"),
+      renderer: "svg",
+      loop: true,
+      autoplay: true,
+      animationData: introScreenData,
+      rendererSettings: { preserveAspectRatio: "xMidYMid meet" }
+    });
+
+    const animMask = lottie.loadAnimation({
+      container: document.getElementById("lottie-mask-source"),
+      renderer: "svg",
+      loop: true,
+      autoplay: false,
+      animationData: introScreenData,
+      rendererSettings: { preserveAspectRatio: "xMidYMid meet" }
+    });
+
+    /* ----------------------------------------------------------------
+       6. Once the mask-source Lottie's DOM exists, move its <g> elements
+          into #lottieMask. Both the mask and the masked images live
+          inside the SAME outer SVG (#image-stage) with the SAME viewBox
+          (0 0 900 900), so coordinates align by construction — no CSS
+          mask coordinate translation, no positioning weirdness.
+    ---------------------------------------------------------------- */
+    animMask.addEventListener("DOMLoaded", () => {
+      const sourceSvg = document.querySelector("#lottie-mask-source svg");
+      const maskEl = document.getElementById("lottieMask");
+      if (!sourceSvg || !maskEl) return;
+
+      Array.from(sourceSvg.children)
+        .filter((el) => el.localName === "g")
+        .forEach((g) => {
+          // The clip-path lottie applies refers to a clipPath in the
+          // source SVG's <defs>. After moving across SVGs that ID would
+          // resolve to a different document tree; safer to drop it. The
+          // mask's own x/y/width/height already constrains the area.
+          g.removeAttribute("clip-path");
+          maskEl.appendChild(g);
+        });
+    });
+
+    /* ----------------------------------------------------------------
+       7. Per-frame driver: sync the mask Lottie to the visible Lottie's
+          frame, update image opacities, update the readout.
+    ---------------------------------------------------------------- */
+    anim.addEventListener("enterFrame", (e) => {
+      const f = e.currentTime;
+      frameReadout.textContent = Math.round(f);
+
+      animMask.goToAndStop(f, true);
+
+      for (let i = 0; i < FADE_RULES.length; i++) {
+        const r = FADE_RULES[i];
+        imgEls[i].setAttribute(
+          "opacity",
+          fadeOpacity(f, r.inStart, r.inEnd, r.outStart, r.outEnd).toFixed(3)
+        );
+      }
+    });
+  </script>
+</body>
+</html>

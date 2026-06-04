@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Гайд по заполнению Case Study в Webflow CMS</title>
+  <style>
+    :root {
+      --bg: #f7f6f2;
+      --paper: #ffffff;
+      --ink: #1c1f24;
+      --muted: #656b74;
+      --line: #d9d5cc;
+      --accent: #495cff;
+      --soft: #eef0ff;
+      --warn: #fff4df;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      line-height: 1.58;
+    }
+
+    .page {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+    }
+
+    header {
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 820px;
+      font-size: 42px;
+      font-weight: 700;
+    }
+
+    h2 {
+      margin-top: 40px;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    h3 {
+      margin-top: 24px;
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 12px 0 0;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    .lead {
+      max-width: 800px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+
+    .meta {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      margin-top: 18px;
+      padding: 20px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .note {
+      margin-top: 18px;
+      padding: 16px 18px;
+      background: var(--soft);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+    }
+
+    .warning {
+      background: var(--warn);
+      border-left-color: #bd7a00;
+    }
+
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 24px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .toc a {
+      display: block;
+      padding: 10px 0;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toc a:hover {
+      color: var(--accent);
+    }
+
+    ol,
+    ul {
+      margin: 12px 0 0;
+      padding-left: 22px;
+    }
+
+    li + li {
+      margin-top: 8px;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 16px;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      background: #f0eee8;
+      font-size: 13px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      padding: 2px 5px;
+      background: #ecebe7;
+      border-radius: 4px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.95em;
+      color: var(--ink);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .compact-list {
+      padding-left: 18px;
+    }
+
+    .checklist {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .checklist li {
+      position: relative;
+      padding-left: 28px;
+    }
+
+    .checklist li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 32px 18px 48px;
+      }
+
+      h1 {
+        font-size: 32px;
+      }
+
+      h2 {
+        font-size: 23px;
+      }
+
+      .toc,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      table,
+      thead,
+      tbody,
+      tr,
+      th,
+      td {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        border-bottom: 1px solid var(--line);
+      }
+
+      td {
+        border-bottom: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>Гайд по заполнению Case Study в Webflow CMS</h1>
+      <p class="lead">Короткая инструкция для редактора: как создать новый кейс, заполнить нужные поля, собрать секции и блоки, проверить страницу и опубликовать все связанные элементы.</p>
+      <p class="meta">Актуальные примеры для ориентира: <strong>TFS Global</strong>, <strong>BDR</strong>, <strong>Milrose Consultants</strong>. Архивный пример <strong>Success Story</strong> не используйте как основной образец.</p>
+    </header>
+
+    <section class="card" aria-labelledby="contents">
+      <h2 id="contents">Содержание</h2>
+      <ul class="toc">
+        <li><a href="#what-is-case-study">1. Что такое Case Study в админке</a></li>
+        <li><a href="#workflow">2. Порядок заполнения</a></li>
+        <li><a href="#main-fields">3. Поля главного Case Study</a></li>
+        <li><a href="#sections">4. Секции Case Study</a></li>
+        <li><a href="#blocks">5. Блоки Case Study</a></li>
+        <li><a href="#optional-fields">6. Опциональные поля и скрытие</a></li>
+        <li><a href="#template">7. Что есть в шаблоне страницы</a></li>
+        <li><a href="#checklist">8. Чеклист перед публикацией</a></li>
+      </ul>
+    </section>
+
+    <section id="what-is-case-study">
+      <h2>1. Что такое Case Study в админке</h2>
+      <p>Case Study - это не один изолированный элемент, а набор связанных записей в CMS.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Основные коллекции</h3>
+          <ul class="compact-list">
+            <li><code>Case Studies</code> - главная страница кейса: клиент, заголовок, hero, SEO, PDF, testimonial, homepage-поля.</li>
+            <li><code>Case Study Sections</code> - разделы внутри страницы, например Challenge, Solution, Impact.</li>
+            <li><code>Case Study Blocks</code> - контентные блоки внутри секций: цитаты, карточки, видео, изображения, timeline.</li>
+            <li><code>Categories</code> - категория кейса.</li>
+            <li><code>Quick Facts</code> - короткие факты о клиенте или проекте.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Связь между элементами</h3>
+          <p>Сначала создается главный <code>Case Study</code>. Затем создаются секции, каждая секция привязывается к этому кейсу. Блоки тоже привязываются к тому же кейсу, а затем добавляются в нужные секции.</p>
+          <p>Простая схема: главный кейс → секции → блоки.</p>
+        </div>
+      </div>
+
+      <div class="note warning">
+        <strong>Не используйте для заполнения кейса:</strong> <code>Client Logos</code> и <code>Lottie Image Sets</code>. Для обычного создания Case Study они не нужны.
+      </div>
+    </section>
+
+    <section id="workflow">
+      <h2>2. Порядок заполнения</h2>
+      <ol>
+        <li>Создайте новый элемент в <code>Case Studies</code>.</li>
+        <li>Выберите существующую <code>Category</code> или создайте новую.</li>
+        <li>Выберите существующие <code>Quick Facts</code> или создайте новые короткие факты.</li>
+        <li>Заполните основные поля главного кейса: hero, SEO/listing, Project at a Glance, homepage-поля, testimonial, PDF и переключатели видимости.</li>
+        <li>Создайте элементы в <code>Case Study Sections</code>: Challenge, Solution, Impact и, если нужно, Story.</li>
+        <li>Создайте элементы в <code>Case Study Blocks</code> для цитат, карточек, изображений, видео или дополнительных текстовых блоков.</li>
+        <li>Откройте каждую секцию и добавьте в поле <code>Blocks</code> нужные блоки в правильном порядке.</li>
+        <li>Проверьте Preview, убедитесь, что все выглядит корректно, затем опубликуйте новые или измененные связанные элементы.</li>
+      </ol>
+    </section>
+
+    <section id="main-fields">
+      <h2>3. Поля главного Case Study</h2>
+      <p>Главный элемент управляет основными данными страницы, hero-блоком, карточками на сайте, PDF, testimonial и некоторыми секциями шаблона.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Группа</th>
+            <th>Поля</th>
+            <th>Как заполнять</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Обязательные</td>
+            <td><code>Name</code>, <code>Slug</code>, <code>Client Name</code>, <code>Title</code></td>
+            <td><code>Name</code> удобно делать по имени клиента. <code>Slug</code> должен быть коротким и понятным. <code>Title</code> - главный заголовок страницы.</td>
+          </tr>
+          <tr>
+            <td>Hero</td>
+            <td><code>Client Logo</code>, <code>Featured Image</code>, <code>Category</code>, <code>Quick Facts</code></td>
+            <td>Добавьте логотип, главное изображение, одну категорию и несколько коротких фактов. Эти поля помогают сразу понять, чей это кейс и о чем он.</td>
+          </tr>
+          <tr>
+            <td>SEO и listing</td>
+            <td><code>Meta Description</code>, <code>Excerpt</code></td>
+            <td><code>Meta Description</code> используется для поискового описания. <code>Excerpt</code> - короткое описание для карточек и списков.</td>
+          </tr>
+          <tr>
+            <td>Project at a Glance</td>
+            <td><code>Glance About</code>, <code>Glance AI Solution</code>, <code>Glance Results</code></td>
+            <td>Заполните кратко: кто клиент, какое AI-решение было создано, какие результаты получены.</td>
+          </tr>
+          <tr>
+            <td>Homepage / featured</td>
+            <td><code>Featured Project</code>, <code>Case Study Spotlight Order</code>, <code>Client Description</code>, <code>Supporting Image</code>, <code>Problem</code>, <code>Solution Delivered</code>, <code>Business Outcome</code></td>
+            <td>Заполняйте, если кейс должен показываться в homepage spotlight. Если кейс не нужен на главной, обычно достаточно оставить <code>Featured Project</code> выключенным.</td>
+          </tr>
+          <tr>
+            <td>Testimonial</td>
+            <td><code>Testimonial Image</code>, <code>Testimonial Quote</code>, <code>Testimonial Attribution</code></td>
+            <td>Используйте для клиентской цитаты. Если изображения нет, цитата может отображаться без фото.</td>
+          </tr>
+          <tr>
+            <td>PDF и ссылки</td>
+            <td><code>Case Study PDF</code>, <code>Project URL</code>, <code>Related Case Study Override</code></td>
+            <td>PDF включает кнопку загрузки. <code>Project URL</code> нужен только если есть внешняя ссылка на проект или сайт клиента. Related override используйте только если нужно вручную выбрать связанный кейс.</td>
+          </tr>
+          <tr>
+            <td>Видимость</td>
+            <td><code>Hide "The Compounding Advantage" Section</code>, <code>Hide "CTA" Section</code></td>
+            <td>Включайте переключатель, если соответствующий блок на странице нужно скрыть.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        Старые plain text поля <code>Client Details</code>, <code>AI Solution Area</code> и <code>Delivery Timeline</code> не используйте как основной источник данных. Для коротких фактов выбирайте <code>Quick Facts</code>.
+      </div>
+    </section>
+
+    <section id="sections">
+      <h2>4. Секции Case Study</h2>
+      <p>Секция - это крупный раздел страницы. Она управляет заголовком, текстом, подписью в навигации и набором блоков внутри раздела.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Поле</th>
+            <th>Что означает</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Name</code>, <code>Slug</code></td>
+            <td>Внутреннее название и адрес элемента. Удобный формат названия: "Client / 01 Challenge".</td>
+          </tr>
+          <tr>
+            <td><code>Case Study</code></td>
+            <td>Главный кейс, к которому относится секция. Выбирайте тот же кейс, для которого создаете страницу.</td>
+          </tr>
+          <tr>
+            <td><code>Order</code></td>
+            <td>Порядок секций на странице. Используйте 1, 2, 3 и так далее.</td>
+          </tr>
+          <tr>
+            <td><code>Nav Label</code></td>
+            <td>Короткая подпись для боковой навигации. Например: Story, Challenge, Solution, Impact.</td>
+          </tr>
+          <tr>
+            <td><code>Heading</code></td>
+            <td>Основной заголовок секции на странице.</td>
+          </tr>
+          <tr>
+            <td><code>Body</code></td>
+            <td>Основной текст секции. Поле можно оставить пустым, если секция состоит только из блоков.</td>
+          </tr>
+          <tr>
+            <td><code>Blocks</code></td>
+            <td>Список блоков, которые появятся внутри секции. Порядок в этом поле важен.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Рекомендуемая структура</h3>
+      <ul>
+        <li><strong>Challenge</strong> - проблема или ограничение до внедрения решения.</li>
+        <li><strong>Solution</strong> - что было создано и как это работает.</li>
+        <li><strong>Impact</strong> - результаты, метрики и бизнес-эффект.</li>
+      </ul>
+
+      <p>Если кейсу нужен сильный вводный рассказ или цитата перед Challenge, добавьте секцию <strong>Story</strong> перед основными секциями. Такой подход можно использовать по примеру Milrose Consultants.</p>
+    </section>
+
+    <section id="blocks">
+      <h2>5. Блоки Case Study</h2>
+      <p>Блок - это отдельный контентный элемент внутри секции. Каждый блок должен быть привязан к правильному <code>Case Study</code> и добавлен в поле <code>Blocks</code> нужной секции.</p>
+
+      <div class="note">
+        Главное правило: выберите один <code>Block Type</code> и заполняйте только поля, которые относятся к этому типу. Не смешивайте цитату, карточки, видео и изображение в одном блоке.
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Block Type</th>
+            <th>Какие поля заполнять</th>
+            <th>Когда использовать</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Rich Text</code></td>
+            <td><code>Rich Text Block</code></td>
+            <td>Для дополнительного текста, списков, простых подзаголовков.</td>
+          </tr>
+          <tr>
+            <td><code>Image</code></td>
+            <td><code>Image Block</code></td>
+            <td>Для отдельного изображения или скриншота внутри секции.</td>
+          </tr>
+          <tr>
+            <td><code>Video</code></td>
+            <td><code>Video Block</code></td>
+            <td>Для видео-демо или другого встроенного видео.</td>
+          </tr>
+          <tr>
+            <td><code>Quote Light</code>, <code>Quote Dark</code></td>
+            <td><code>Quote Label</code>, <code>Quote Text</code>, <code>Quote Name</code>, <code>Quote Details</code></td>
+            <td>Для короткой цитаты. Light и Dark отличаются визуальным стилем.</td>
+          </tr>
+          <tr>
+            <td><code>Stat Cards</code>, <code>Stat Cards Small</code></td>
+            <td><code>Card 1-4 - Heading</code> и <code>Card 1-4 - Text</code></td>
+            <td>Для набора фактов, показателей или "before AI" карточек.</td>
+          </tr>
+          <tr>
+            <td><code>Metric Cards</code></td>
+            <td><code>Card 1-4 - Heading</code> и <code>Card 1-4 - Text</code></td>
+            <td>Для итоговых метрик и результатов в секции Impact.</td>
+          </tr>
+          <tr>
+            <td><code>Checklist Cards</code></td>
+            <td><code>Card 1-4 - Heading</code> и <code>Card 1-4 - Text</code></td>
+            <td>Для шагов решения, возможностей продукта или списка действий.</td>
+          </tr>
+          <tr>
+            <td><code>Timeline</code></td>
+            <td><code>Rich Text Block</code> при необходимости, затем <code>Card 1-4 - Heading</code> и <code>Card 1-4 - Text</code></td>
+            <td>Для временной шкалы: недели, этапы проекта, запуск и дальнейшее развитие.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="optional-fields">
+      <h2>6. Опциональные поля и скрытие</h2>
+      <p>В CMS много полей необязательные. Простое правило: если поле не заполнено, связанный элемент на странице обычно не показывается или остается пустым. После заполнения всегда проверяйте Preview.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Особенно важно проверить</h3>
+          <ul class="compact-list">
+            <li><code>Case Study PDF</code>: если PDF не добавлен, кнопка загрузки может быть не нужна.</li>
+            <li><code>Testimonial Quote</code> и <code>Testimonial Attribution</code>: без текста testimonial лучше не использовать.</li>
+            <li><code>Project URL</code>: оставляйте пустым, если нет внешней ссылки.</li>
+            <li><code>Homepage</code>-поля: заполняйте только для featured-кейсов.</li>
+            <li><code>Body</code> в секции: можно оставить пустым, если весь контент идет через blocks.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Переключатели</h3>
+          <ul class="compact-list">
+            <li><code>Hide "The Compounding Advantage" Section</code>: скрывает соответствующий большой блок страницы.</li>
+            <li><code>Hide "CTA" Section</code>: скрывает нижний CTA-блок.</li>
+            <li><code>Featured Project</code>: включает показ кейса в homepage spotlight, если остальные homepage-поля заполнены.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="template">
+      <h2>7. Что есть в шаблоне страницы</h2>
+      <p>Шаблон Case Study в Designer доступен для проверки. В нем предусмотрены hero, quick facts, блок Project at a Glance, кнопка загрузки PDF, боковая навигация по sections, контентные blocks внутри sections, testimonial, related stories, CTA и блок "The Compounding Advantage".</p>
+      <p>Для редактора это означает: не все поля нужны в каждом кейсе. Заполняйте только те элементы, которые действительно должны появиться на странице, а затем проверяйте результат в Preview.</p>
+    </section>
+
+    <section id="checklist">
+      <h2>8. Чеклист перед публикацией</h2>
+      <ul class="checklist">
+        <li>Главный <code>Case Study</code> создан, обязательные поля заполнены.</li>
+        <li><code>Category</code> выбрана или создана и опубликована.</li>
+        <li><code>Quick Facts</code> выбраны или созданы и опубликованы.</li>
+        <li>Все sections привязаны к правильному case.</li>
+        <li>Все blocks привязаны к правильному case.</li>
+        <li>Blocks добавлены в нужные sections через поле <code>Blocks</code>.</li>
+        <li><code>Order</code> у sections выставлен правильно: 1, 2, 3 и далее.</li>
+        <li>Изображения добавлены там, где они нужны: logo, featured image, supporting image, testimonial image или image blocks.</li>
+        <li>SEO заполнено: <code>Meta Description</code> и короткий <code>Excerpt</code>.</li>
+        <li>PDF, testimonial, project URL и homepage-поля заполнены только там, где они действительно нужны.</li>
+        <li>Preview проверен: hero, quick facts, секции, блоки, PDF-кнопка, testimonial, CTA и related stories выглядят корректно.</li>
+        <li>Опубликованы все связанные items: Category, Quick Facts, Blocks, Sections и сам Case Study.</li>
+      </ul>
+    </section>
+
+    <footer>
+      Документ предназначен для редакторов Webflow CMS. Названия полей оставлены на английском, чтобы их было легко найти в админке.
+    </footer>
+  </main>
+</body>
+</html>
