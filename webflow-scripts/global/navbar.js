@@ -14,8 +14,8 @@
 	const OPEN_CLASS = 'is-open';
 	const READY_EVENT = 'contextual:smoother-ready';
 	const POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
-	const STICKY_ON_Y = 120;
-	const STICKY_OFF_Y = 40;
+	const STICKY_ON_Y = 8;
+	const STICKY_OFF_Y = 1;
 	const MONITOR_MAX_MS = 1800;
 	const MONITOR_STABLE_FRAME_COUNT = 4;
 	const MONITOR_SETTLED_DELTA = 0.5;
@@ -130,14 +130,12 @@
 	function updateStickyState() {
 		if (!navbar) return;
 
-		const scrollTop = getVisualScrollTop();
-
-		if (!isSticky && scrollTop > STICKY_ON_Y) {
+		if (!isSticky && getStickyActivationScrollTop() > STICKY_ON_Y) {
 			setStickyState(true);
 			return;
 		}
 
-		if (isSticky && scrollTop < STICKY_OFF_Y) {
+		if (isSticky && getStickyReleaseScrollTop() <= STICKY_OFF_Y) {
 			setStickyState(false);
 		}
 	}
@@ -159,6 +157,18 @@
 		}
 
 		return Math.max(0, window.scrollY || window.pageYOffset || 0);
+	}
+
+	function getNativeScrollTop() {
+		return Math.max(0, window.scrollY || window.pageYOffset || 0);
+	}
+
+	function getStickyActivationScrollTop() {
+		return Math.max(getNativeScrollTop(), getVisualScrollTop());
+	}
+
+	function getStickyReleaseScrollTop() {
+		return Math.max(getNativeScrollTop(), getVisualScrollTop());
 	}
 
 	function shouldContinueStickyMonitor() {
