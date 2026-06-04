@@ -2,12 +2,17 @@
  * Navbar runtime styles
  * Keeps the Webflow header outside ScrollSmoother's transformed content.
  */
+.navbar::before,
+.navbar::after {
+	display: none;
+}
+
 html:not(.wf-design-mode) .navbar.w-nav {
 	--navbar-offset: 92px;
 	--navbar-sticky-min-height: 60px;
 	/*--navbar-sticky-padding-y: 10px;*/
-	position: fixed;
 	/*top: 10px;*/
+	position: fixed;
 	top: 0;
 	left: 10px;
 	right: auto;
@@ -67,7 +72,7 @@ html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky {
 		height: auto;
-		min-height: var(--navbar-sticky-min-height);
+		/*min-height: var(--navbar-sticky-min-height);*/
 		/*padding-top: var(--navbar-sticky-padding-y);*/
 		/*padding-bottom: var(--navbar-sticky-padding-y);*/
 		background-color: var(--_system-colors---white);
@@ -96,10 +101,6 @@ html:not(.wf-design-mode) #smooth-content {
 
 html:not(.wf-design-mode) body.has-navbar-overlay #smooth-content {
 	padding-top: 0;
-}
-
-html:not(.wf-design-mode) .navbar-spacer {
-	display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
