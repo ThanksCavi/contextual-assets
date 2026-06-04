@@ -10,6 +10,9 @@ html:not(.wf-design-mode) .navbar.w-nav {
 	width: 100%;
 	max-width: none;
 	z-index: 1000;
+	transition-property: top, left, width, max-width, height, min-height, background-color, border-color, border-radius, box-shadow, color;
+	transition-duration: 260ms;
+	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
@@ -19,4 +22,29 @@ html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
 	right: auto;
 	width: calc(100% - 20px);
 	max-width: calc(100% - 20px);
+}
+
+html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
+	transition-property: min-height, height, width, max-width, color;
+	transition-duration: 260ms;
+	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:not(.wf-design-mode) #smooth-content {
+	padding-top: var(--navbar-offset, 92px);
+}
+
+html:not(.wf-design-mode) body.has-navbar-overlay #smooth-content {
+	padding-top: 0;
+}
+
+html:not(.wf-design-mode) .navbar-spacer {
+	display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html:not(.wf-design-mode) .navbar.w-nav,
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
+		transition-duration: 0ms;
+	}
 }

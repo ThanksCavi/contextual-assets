@@ -14,8 +14,11 @@
 	const OPEN_CLASS = 'is-open';
 	const READY_EVENT = 'contextual:smoother-ready';
 	const POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
-	const STICKY_ON_Y = 300;
-	const STICKY_OFF_Y = 200;
+	const STICKY_ON_Y = 120;
+	const STICKY_OFF_Y = 40;
+	const MONITOR_MAX_MS = 1800;
+	const MONITOR_STABLE_FRAME_COUNT = 4;
+	const MONITOR_SETTLED_DELTA = 0.5;
 
 	if (window[INIT_FLAG]) return;
 	window[INIT_FLAG] = true;
@@ -24,6 +27,10 @@
 	let navbarContainer = null;
 	let isSticky = false;
 	let ticking = false;
+	let monitorFrame = null;
+	let monitorStartedAt = 0;
+	let lastMonitorScrollTop = null;
+	let stableMonitorFrames = 0;
 
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', initNavbar, {once: true});
@@ -45,10 +52,11 @@
 		isSticky = navbar.classList.contains(STICKY_CLASS);
 		updateStickyState();
 
-		window.addEventListener('scroll', requestStickyUpdate, {passive: true});
-		window.addEventListener('resize', requestStickyUpdate);
-		window.addEventListener(READY_EVENT, requestStickyUpdate);
-		window.addEventListener(POLICY_CHANGE_EVENT, requestStickyUpdate);
+		window.addEventListener('scroll', startStickyMonitor, {passive: true});
+		window.addEventListener('wheel', startStickyMonitor, {passive: true});
+		window.addEventListener('resize', startStickyMonitor);
+		window.addEventListener(READY_EVENT, startStickyMonitor);
+		window.addEventListener(POLICY_CHANGE_EVENT, startStickyMonitor);
 	}
 
 	function initMobileMenuDropdowns() {
@@ -98,6 +106,27 @@
 		});
 	}
 
+	function startStickyMonitor() {
+		requestStickyUpdate();
+
+		monitorStartedAt = getCurrentTime();
+		lastMonitorScrollTop = null;
+		stableMonitorFrames = 0;
+
+		if (monitorFrame !== null) return;
+
+		monitorFrame = requestAnimationFrame(runStickyMonitor);
+	}
+
+	function runStickyMonitor() {
+		monitorFrame = null;
+		updateStickyState();
+
+		if (!shouldContinueStickyMonitor()) return;
+
+		monitorFrame = requestAnimationFrame(runStickyMonitor);
+	}
+
 	function updateStickyState() {
 		if (!navbar) return;
 
@@ -130,6 +159,23 @@
 		}
 
 		return Math.max(0, window.scrollY || window.pageYOffset || 0);
+	}
+
+	function shouldContinueStickyMonitor() {
+		const elapsed = getCurrentTime() - monitorStartedAt;
+		if (elapsed >= MONITOR_MAX_MS) return false;
+
+		const currentScrollTop = getVisualScrollTop();
+
+		if (Number.isFinite(lastMonitorScrollTop) && Math.abs(currentScrollTop - lastMonitorScrollTop) <= MONITOR_SETTLED_DELTA) {
+			stableMonitorFrames += 1;
+		} else {
+			stableMonitorFrames = 0;
+		}
+
+		lastMonitorScrollTop = currentScrollTop;
+
+		return stableMonitorFrames < MONITOR_STABLE_FRAME_COUNT;
 	}
 
 	function getSmootherScrollTop() {
@@ -173,5 +219,13 @@
 		}
 
 		return null;
+	}
+
+	function getCurrentTime() {
+		if (window.performance && typeof window.performance.now === 'function') {
+			return window.performance.now();
+		}
+
+		return Date.now();
 	}
 })();
