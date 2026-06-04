@@ -5,9 +5,10 @@
 html:not(.wf-design-mode) .navbar.w-nav {
 	--navbar-offset: 92px;
 	--navbar-sticky-min-height: 60px;
-	--navbar-sticky-padding-y: 10px;
+	/*--navbar-sticky-padding-y: 10px;*/
 	position: fixed;
-	top: 10px;
+	/*top: 10px;*/
+	top: 0;
 	left: 10px;
 	right: auto;
 	width: calc(100% - 20px);
@@ -24,7 +25,7 @@ html:not(.wf-design-mode) .navbar.w-nav {
 
 html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
 	position: fixed;
-	top: 10px;
+	/*top: 10px;*/
 	left: 10px;
 	right: auto;
 	width: calc(100% - 20px);
