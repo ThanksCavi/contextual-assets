@@ -4,7 +4,11 @@
  */
 html:not(.wf-design-mode) .navbar.w-nav {
 	--navbar-offset: 92px;
+	--navbar-top-min-height: 70px;
 	--navbar-sticky-min-height: 60px;
+	--navbar-shell-padding-y: 10px;
+	--navbar-sticky-button-padding-y: 13px;
+	--navbar-sticky-menu-padding-y: 8px;
 	position: fixed;
 	top: 10px;
 	left: 10px;
@@ -14,8 +18,7 @@ html:not(.wf-design-mode) .navbar.w-nav {
 	z-index: 1000;
 	box-sizing: border-box;
 	background-color: transparent;
-	border: 1px solid transparent;
-	border-radius: 10px;
+	border: 0;
 	transition-property: color;
 	transition-duration: 260ms;
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
@@ -29,18 +32,19 @@ html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
 	width: calc(100% - 20px);
 	max-width: calc(100% - 20px);
 	background-color: transparent;
-	border-color: transparent;
-	border-radius: 10px;
 }
 
 html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky {
+	display: flex;
+	align-items: center;
 	box-sizing: border-box;
 	width: 100%;
+	height: auto;
 	background-color: transparent;
 	border: 1px solid transparent;
 	border-radius: 10px;
-	padding-top: 0;
-	padding-bottom: 0;
+	padding-top: var(--navbar-shell-padding-y);
+	padding-bottom: var(--navbar-shell-padding-y);
 	transition-property: min-height, background-color, border-color, box-shadow;
 	transition-duration: 260ms;
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
@@ -56,14 +60,11 @@ html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky {
 html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 	position: relative;
 	z-index: 1;
+	height: auto;
+	min-height: 0;
 	transition-property: color;
 	transition-duration: 260ms;
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky > .navbar-container {
-	height: auto;
-	min-height: 0;
 }
 
 @media screen and (min-width: 992px) {
@@ -73,20 +74,28 @@ html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky > .navbar-conta
 	}
 
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky {
-		height: 100%;
-		min-height: var(--navbar-offset);
-		padding-top: 0;
-		padding-bottom: 0;
+		min-height: var(--navbar-top-min-height);
 	}
 
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky {
-		height: auto;
 		min-height: var(--navbar-sticky-min-height);
 	}
 
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky:not(.is-sticky) > .navbar-container {
-		height: 100%;
-		min-height: 100%;
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon,
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .menu {
+		transition-property: padding-top, padding-bottom, background-color, border-color, color;
+		transition-duration: 260ms;
+		transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky .button.button-icon {
+		padding-top: var(--navbar-sticky-button-padding-y);
+		padding-bottom: var(--navbar-sticky-button-padding-y);
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky .menu {
+		padding-top: var(--navbar-sticky-menu-padding-y);
+		padding-bottom: var(--navbar-sticky-menu-padding-y);
 	}
 }
 
@@ -110,6 +119,8 @@ html:not(.wf-design-mode) body.has-navbar-overlay #smooth-content {
 @media (prefers-reduced-motion: reduce) {
 	html:not(.wf-design-mode) .navbar.w-nav,
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky,
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon,
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .menu,
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 		transition-duration: 0ms;
 	}
