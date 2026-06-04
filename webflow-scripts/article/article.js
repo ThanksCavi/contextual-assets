@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   var articlePinResizeTimer = null;
 
+  setupArticleStandaloneLinks();
+
   document.querySelectorAll('.blog-faq .article').forEach(function (faq) {
     if (faq.dataset.faqReady === 'true') return;
 
@@ -128,6 +130,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     faq.dataset.faqReady = 'true';
   });
+
+  function setupArticleStandaloneLinks() {
+    document.querySelectorAll('.article').forEach(function (article) {
+      if (article.closest('.blog-faq')) return;
+
+      article.querySelectorAll('p').forEach(function (paragraph) {
+        var link = getStandaloneParagraphLink(paragraph);
+        if (!link || link.dataset.articleTextLinkReady === 'true') return;
+
+        paragraph.classList.add('article-link-wrap');
+        link.classList.add('article-text-link');
+        link.dataset.articleTextLinkReady = 'true';
+      });
+    });
+  }
+
+  function getStandaloneParagraphLink(paragraph) {
+    var elementChildren = Array.from(paragraph.children);
+    if (elementChildren.length !== 1 || elementChildren[0].tagName !== 'A') return null;
+
+    var link = elementChildren[0];
+    if (paragraph.textContent.trim() !== link.textContent.trim()) return null;
+
+    return link;
+  }
 
   if (document.querySelector(ARTICLE_LAYOUT_SELECTOR) && document.querySelector(ARTICLE_SIDEBAR_SELECTOR) && document.querySelector(ARTICLE_CONTENT_SELECTOR)) {
     onArticleMotionReady(initArticleSidebarPin);
