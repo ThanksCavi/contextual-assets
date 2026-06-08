@@ -1,5 +1,6 @@
-webflow-scripts/versions/
-docs/
-spec/
+*.md
 .idea/
 .DS_Store
+docs/
+spec/
+webflow-scripts/versions/
