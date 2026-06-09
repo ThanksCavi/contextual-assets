@@ -26,16 +26,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function setPanelHeight(item) {
       var panel = item.querySelector('.blog-faq__panel');
-      if (!panel) return;
+      var panelInner = item.querySelector('.blog-faq__panel-inner');
+      if (!panel || !panelInner) return;
 
       if (item.classList.contains('is-open')) {
-        var styles = window.getComputedStyle(panel);
-        var currentPaddingTop = parseFloat(styles.paddingTop) || 0;
-        var currentPaddingBottom = parseFloat(styles.paddingBottom) || 0;
-        var openPaddingBottom = parseFloat(styles.getPropertyValue('--blog-faq-panel-open-padding-bottom')) || 0;
-        var contentHeight = panel.scrollHeight - currentPaddingTop - currentPaddingBottom;
-
-        panel.style.maxHeight = contentHeight + currentPaddingTop + openPaddingBottom + 'px';
+        panel.style.maxHeight = panelInner.scrollHeight + 'px';
       } else {
         panel.style.maxHeight = '0px';
       }
@@ -68,12 +63,14 @@ document.addEventListener('DOMContentLoaded', function () {
     headings.forEach(function (heading, index) {
       var item = document.createElement('div');
       var panel = document.createElement('div');
+      var panelInner = document.createElement('div');
       var trigger = document.createElement('button');
       var icon = document.createElement('span');
       var label = document.createElement('span');
 
       item.className = 'blog-faq__item';
       panel.className = 'blog-faq__panel';
+      panelInner.className = 'blog-faq__panel-inner';
       heading.classList.add('blog-faq__question');
 
       trigger.className = 'blog-faq__trigger';
@@ -97,9 +94,10 @@ document.addEventListener('DOMContentLoaded', function () {
       while (next && !(next.nodeType === 1 && next.tagName === 'H3')) {
         var current = next;
         next = next.nextSibling;
-        panel.appendChild(current);
+        panelInner.appendChild(current);
       }
 
+      panel.appendChild(panelInner);
       item.appendChild(panel);
 
       if (index === 0) {
