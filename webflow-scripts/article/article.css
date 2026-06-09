@@ -441,6 +441,11 @@
   margin-bottom: 0;
   padding-top: 20px;
   padding-bottom: 20px;
+  font-family: var(--_fonts---family--body);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 133%;
+  letter-spacing: -0.01em;
 }
 .blog-faq .article .blog-faq__trigger {
   display: flex;
