@@ -8,7 +8,13 @@
  *   data-lottie-mask    – marker (value ignored)
  *   data-lottie-img-1   – URL to first image
  *   data-lottie-img-2   – URL to second image
- *   data-lottie-img-3   – URL to third image
+ *   data-lottie-img-3   – URL to third image (also used as placeholder / fallback)
+ *
+ * Optional:
+ *   data-lottie-img-4   – URL to fourth image; when present, replays the 1→2
+ *                         transition once more so four images appear in sequence.
+ *                         3-image instances are unaffected. Empty/whitespace is
+ *                         treated as absent (safe with Webflow CMS empty fields).
  *
  * Dependencies: lottie-web (bodymovin) must be loaded before this script.
  *
@@ -32,6 +38,22 @@
     { idx: 0, inStart:  79, inEnd:  90, outStart: 120, outEnd: 140 },
     { idx: 1, inStart: 140, inEnd: 165, outStart: 207, outEnd: 234 },
     { idx: 2, inStart: 234, inEnd: 256, outStart: Infinity, outEnd: Infinity }
+  ];
+
+  // Segment splice constants for 4-image mode.
+  // Frames 100 and 186 are pixel-identical in the Lottie asset; replaying
+  // [100, 276] after [0, 186] extends the animation by one extra transition.
+  var SEG_A = 100;
+  var SEG_B = 186;
+  var REPEAT_OFFSET = SEG_B - SEG_A; // 86 — added to actual frame to get virtual frame in segment 2
+
+  // Virtual-timeline fade rules for 4-image mode.
+  // Everything after the splice is original_window + REPEAT_OFFSET.
+  var FADE_RULES_4 = [
+    { idx: 0, inStart:  79, inEnd:  90, outStart: 120, outEnd: 140 },
+    { idx: 1, inStart: 140, inEnd: 165, outStart: 206, outEnd: 226 },
+    { idx: 2, inStart: 226, inEnd: 251, outStart: 293, outEnd: 320 },
+    { idx: 3, inStart: 320, inEnd: 342, outStart: Infinity, outEnd: Infinity }
   ];
 
   var IO_THRESHOLD = 0.15;
@@ -149,11 +171,14 @@
   }
 
   function readConfig(container, index) {
+    var img4 = (container.getAttribute('data-lottie-img-4') || '').trim();
     var imgUrls = [
       container.getAttribute('data-lottie-img-1'),
       container.getAttribute('data-lottie-img-2'),
       container.getAttribute('data-lottie-img-3')
     ];
+
+    if (img4) imgUrls.push(img4);
 
     if (!imgUrls[2]) {
       console.warn('[lottie-mask] Missing data-lottie-img-3 fallback on instance', index);
@@ -162,7 +187,8 @@
     return {
       jsonUrl: DEFAULT_JSON_URL,
       imgUrls: imgUrls,
-      fallbackUrl: imgUrls[2]
+      fallbackUrl: img4 || imgUrls[2],
+      repeatMode: !!img4
     };
   }
 
@@ -193,7 +219,7 @@
     svgStage.appendChild(defs);
 
     var imageEls = [];
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < imgUrls.length; i++) {
       var img = createSvgElement('image', {
         'x': IMAGE_FRAME.x,
         'y': IMAGE_FRAME.y,
@@ -286,7 +312,12 @@
         container.setAttribute('data-lottie-mask-ready', 'playing');
         visibleAnim.goToAndStop(0, true);
         maskAnim.goToAndStop(0, true);
-        visibleAnim.play();
+
+        if (config.repeatMode) {
+          visibleAnim.playSegments([[0, SEG_B], [SEG_A, data.op]], true);
+        } else {
+          visibleAnim.play();
+        }
       }
 
       visibleAnim.addEventListener('DOMLoaded', function() {
@@ -305,17 +336,34 @@
         startPlaybackWhenReady();
       });
 
-      visibleAnim.addEventListener('enterFrame', function(e) {
-        var f = e.currentTime;
-        maskAnim.goToAndStop(f, true);
+      if (config.repeatMode) {
+        visibleAnim.addEventListener('enterFrame', function(e) {
+          // firstFrame is 0 in segment 1, SEG_A in segment 2.
+          var actual = visibleAnim.firstFrame + e.currentTime;
+          var virtual = actual + (visibleAnim.firstFrame > 0 ? REPEAT_OFFSET : 0);
 
-        for (var i = 0; i < FADE_RULES.length; i++) {
-          var rule = FADE_RULES[i];
-          if (parts.imageEls[i]) {
-            parts.imageEls[i].setAttribute('opacity', getOpacity(f, rule).toFixed(3));
+          maskAnim.goToAndStop(actual, true);
+
+          for (var i = 0; i < FADE_RULES_4.length; i++) {
+            var rule = FADE_RULES_4[i];
+            if (parts.imageEls[i]) {
+              parts.imageEls[i].setAttribute('opacity', getOpacity(virtual, rule).toFixed(3));
+            }
           }
-        }
-      });
+        });
+      } else {
+        visibleAnim.addEventListener('enterFrame', function(e) {
+          var f = e.currentTime;
+          maskAnim.goToAndStop(f, true);
+
+          for (var i = 0; i < FADE_RULES.length; i++) {
+            var rule = FADE_RULES[i];
+            if (parts.imageEls[i]) {
+              parts.imageEls[i].setAttribute('opacity', getOpacity(f, rule).toFixed(3));
+            }
+          }
+        });
+      }
     }).catch(function(err) {
       showStaticFallback(container, config, 'error');
       console.error('[lottie-mask] Init failed:', err);

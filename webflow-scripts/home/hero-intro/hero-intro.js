@@ -287,7 +287,7 @@
 		lottieEl = heroLottie.matches('[data-lottie-mask]') ? heroLottie : heroLottie.querySelector('[data-lottie-mask]');
 		if (!lottieEl) return;
 
-		fallbackUrl = lottieEl.getAttribute('data-lottie-img-3') || '';
+		fallbackUrl = (lottieEl.getAttribute('data-lottie-img-4') || '').trim() || lottieEl.getAttribute('data-lottie-img-3') || '';
 		placeholder = lottieEl.querySelector('.lottie-builder-placeholder');
 
 		if (!placeholder && fallbackUrl) {
