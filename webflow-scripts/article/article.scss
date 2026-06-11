@@ -99,6 +99,26 @@
 		}
 	}
 	
+	h2, h3, h4, h5, h6 {
+		strong {
+			font-weight: inherit;
+			color: var(--_system-colors---primary);
+			
+			&:first-child {
+				display: inline-block;
+				padding-right: 0.65em;
+			}
+		}
+	}
+	
+	li,
+	p {
+		strong {
+			font-weight: inherit;
+			color: var(--_system-colors---light);
+		}
+	}
+	
 	// List
 	ol,
 	ul {
@@ -106,7 +126,7 @@
 		row-gap: 12px;
 		display: flex;
 		flex-direction: column;
-		margin-top: 40px;
+		margin-top: 32px;
 		margin-bottom: 60px;
 	}
 	
