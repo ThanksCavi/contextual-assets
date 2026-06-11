@@ -41,19 +41,21 @@
   ];
 
   // Segment splice constants for 4-image mode.
-  // Frames 100 and 186 are pixel-identical in the Lottie asset; replaying
-  // [100, 276] after [0, 186] extends the animation by one extra transition.
-  var SEG_A = 100;
-  var SEG_B = 186;
-  var REPEAT_OFFSET = SEG_B - SEG_A; // 86 — added to actual frame to get virtual frame in segment 2
+  // Frames 100 and 266 are pixel-identical in the Lottie asset (0-channel diff verified).
+  // Playing [0, 266] then [100, 186] gives T1 anticlockwise → T2 clockwise → T1 anticlockwise.
+  var SEG_A    = 100; // jump-to frame (start of T1 steady zone)
+  var SEG_B    = 266; // jump-from frame (end of T2 steady zone, pixel-identical to SEG_A)
+  var SEG_TAIL = 186; // end of replay segment (just past T1 transition)
+  var REPEAT_OFFSET = SEG_B - SEG_A; // 166 — added to actual frame to get virtual frame in segment 2
 
-  // Virtual-timeline fade rules for 4-image mode.
-  // Everything after the splice is original_window + REPEAT_OFFSET.
+  // Virtual-timeline fade rules for 4-image mode (total virtual length = 266 + 86 = 352 frames).
+  // img1/img2 windows are the same as the 3-image FADE_RULES (T1 + T2 play in full first).
+  // img3 out and img4 in are the original T1 windows + REPEAT_OFFSET (166).
   var FADE_RULES_4 = [
     { idx: 0, inStart:  79, inEnd:  90, outStart: 120, outEnd: 140 },
-    { idx: 1, inStart: 140, inEnd: 165, outStart: 206, outEnd: 226 },
-    { idx: 2, inStart: 226, inEnd: 251, outStart: 293, outEnd: 320 },
-    { idx: 3, inStart: 320, inEnd: 342, outStart: Infinity, outEnd: Infinity }
+    { idx: 1, inStart: 140, inEnd: 165, outStart: 207, outEnd: 234 },
+    { idx: 2, inStart: 234, inEnd: 256, outStart: 286, outEnd: 306 },
+    { idx: 3, inStart: 306, inEnd: 331, outStart: Infinity, outEnd: Infinity }
   ];
 
   var IO_THRESHOLD = 0.15;
@@ -314,7 +316,7 @@
         maskAnim.goToAndStop(0, true);
 
         if (config.repeatMode) {
-          visibleAnim.playSegments([[0, SEG_B], [SEG_A, data.op]], true);
+          visibleAnim.playSegments([[0, SEG_B], [SEG_A, SEG_TAIL]], true);
         } else {
           visibleAnim.play();
         }
