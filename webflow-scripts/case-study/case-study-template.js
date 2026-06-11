@@ -1,17 +1,14 @@
 // Case Study Template
 (() => {
-  const LAYOUT_SELECTOR = '[data-case-study-layout]';
   const NAV_SELECTOR = '[data-case-study-nav]';
-  const CONTENT_SELECTOR = '[data-case-study-content]';
   const SECTION_SELECTOR = '.story-content-block[data-anchor-section]';
   const NAV_ITEM_SELECTOR = '.story-nav-item[data-anchor-link]';
   const SHARE_SELECTOR = '[data-share]';
 
   const ACTIVE_CLASS = 'is-active';
-  const PIN_MANAGED_CLASS = 'is-case-study-pin-managed';
-  const DESKTOP_QUERY = '(min-width: 992px) and (prefers-reduced-motion: no-preference)';
   const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
   const MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
+  const STICKY_REFRESH_EVENT = 'contextual:sticky-sidebar-refresh';
   const RESIZE_REFRESH_DELAY_MS = 160;
   const DEFAULT_TOP_OFFSET = 100;
 
@@ -19,15 +16,8 @@
     isReady: false,
     sections: [],
     navItems: [],
-    layout: null,
     nav: null,
-    content: null,
     observer: null,
-    matchMedia: null,
-    pin: null,
-    navStyle: null,
-    pinTopOffset: null,
-    pinStylesApplied: false,
   };
 
   let resizeTimer = null;
@@ -39,6 +29,7 @@
   onMotionReady(initPage);
   window.addEventListener('resize', queueRefresh);
   window.addEventListener(MOTION_POLICY_CHANGE_EVENT, queueRefresh);
+  window.addEventListener(STICKY_REFRESH_EVENT, handleStickySidebarRefresh);
 
   // Init after ScrollSmoother has decided whether desktop motion is enabled.
   function onMotionReady(callback) {
@@ -62,17 +53,15 @@
     }
   }
 
-  // Page setup: active nav, anchor scrolling, share links, and sidebar pin.
+  // Page setup: active nav, anchor scrolling, and share links.
   function initPage() {
     if (state.isReady) return;
 
     state.sections = Array.from(document.querySelectorAll(SECTION_SELECTOR));
     state.navItems = Array.from(document.querySelectorAll(NAV_ITEM_SELECTOR));
-    state.layout = document.querySelector(LAYOUT_SELECTOR);
     state.nav = document.querySelector(NAV_SELECTOR);
-    state.content = document.querySelector(CONTENT_SELECTOR);
 
-    if (state.sections.length === 0 && state.navItems.length === 0 && !state.layout && !state.nav && !state.content) {
+    if (state.sections.length === 0 && state.navItems.length === 0 && !state.nav && document.querySelectorAll(SHARE_SELECTOR).length === 0) {
       return;
     }
 
@@ -80,7 +69,7 @@
     setupShareLinks();
     setupActiveNav();
     setupAnchorScroll();
-    setupSidebarPin();
+    refreshStickySidebar();
     requestGlobalRefresh();
   }
 
@@ -119,40 +108,6 @@
     });
   }
 
-  // Sidebar pin: replaces CSS sticky only when ScrollSmoother desktop motion is active.
-  function setupSidebarPin() {
-    const gsap = window.gsap;
-    const ScrollTrigger = window.ScrollTrigger;
-
-    clearSidebarPin();
-
-    if (!gsap || !ScrollTrigger || !gsap.matchMedia || !state.layout || !state.nav || !state.content || !shouldUseDesktopMotion()) {
-      return;
-    }
-
-    gsap.registerPlugin(ScrollTrigger);
-
-    state.matchMedia = gsap.matchMedia();
-    state.matchMedia.add(DESKTOP_QUERY, () => {
-      if (!shouldUseDesktopMotion() || state.content.offsetHeight <= state.nav.offsetHeight) return undefined;
-
-      applyPinStyles();
-      state.pin = ScrollTrigger.create({
-        trigger: state.layout,
-        endTrigger: state.layout,
-        start: () => `top top+=${getTopOffset()}px`,
-        end: () => `bottom top+=${getTopOffset() + state.nav.offsetHeight}px`,
-        pin: state.nav,
-        pinSpacing: false,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onRefresh: updateActiveNavFromScroll,
-      });
-
-      return clearActivePin;
-    });
-  }
-
   // Share links: preserves the existing X, LinkedIn, and email behavior.
   function setupShareLinks() {
     const url = encodeURIComponent(window.location.href);
@@ -183,7 +138,7 @@
       return;
     }
 
-    setupSidebarPin();
+    refreshStickySidebar();
     updateActiveNavFromScroll();
     requestGlobalRefresh();
   }
@@ -228,62 +183,20 @@
     setActiveNavItem(activeSection.dataset.anchorSection);
   }
 
-  function shouldUseDesktopMotion() {
-    const motion = window.ContextualHomeMotion;
-
-    if (motion?.shouldUseSmoother && !motion.shouldUseSmoother()) return false;
-    if (motion?.shouldUseHeavyScrollEffects) return motion.shouldUseHeavyScrollEffects();
-
-    return window.matchMedia(DESKTOP_QUERY).matches;
-  }
-
-  function clearSidebarPin() {
-    if (state.matchMedia) {
-      const matchMedia = state.matchMedia;
-      state.matchMedia = null;
-      matchMedia.revert();
-    }
-
-    clearActivePin();
-  }
-
-  function clearActivePin() {
-    if (state.pin) {
-      state.pin.kill();
-      state.pin = null;
-    }
-
-    restorePinStyles();
-  }
-
-  function applyPinStyles() {
-    state.pinTopOffset = getComputedTopOffset();
-    state.navStyle = state.nav.getAttribute('style');
-    state.pinStylesApplied = true;
-    state.nav.classList.add(PIN_MANAGED_CLASS);
-    state.nav.style.position = 'relative';
-    state.nav.style.top = 'auto';
-  }
-
-  function restorePinStyles() {
-    if (!state.nav || !state.pinStylesApplied) return;
-
-    state.nav.classList.remove(PIN_MANAGED_CLASS);
-    state.pinTopOffset = null;
-
-    if (state.navStyle === null) {
-      state.nav.removeAttribute('style');
-    } else {
-      state.nav.setAttribute('style', state.navStyle);
-    }
-
-    state.navStyle = null;
-    state.pinStylesApplied = false;
-  }
-
   function queueRefresh() {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(refresh, RESIZE_REFRESH_DELAY_MS);
+  }
+
+  function refreshStickySidebar() {
+    if (window.ContextualStickySidebar?.refresh && state.nav) {
+      window.ContextualStickySidebar.refresh(state.nav);
+    }
+  }
+
+  function handleStickySidebarRefresh(event) {
+    if (!state.nav || event.detail?.sidebar !== state.nav) return;
+    updateActiveNavFromScroll();
   }
 
   function requestGlobalRefresh() {
@@ -309,7 +222,11 @@
   }
 
   function getTopOffset() {
-    return Number.isFinite(state.pinTopOffset) ? state.pinTopOffset : getComputedTopOffset();
+    if (window.ContextualStickySidebar?.getTopOffset && state.nav) {
+      return window.ContextualStickySidebar.getTopOffset(state.nav);
+    }
+
+    return getComputedTopOffset();
   }
 
   function getComputedTopOffset() {
