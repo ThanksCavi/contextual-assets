@@ -3,12 +3,6 @@
   --ctx404-yellow: var(--_system-colors---accent, #ecf071);
   --ctx404-blue: var(--_system-colors---primary, #6881ff);
   --ctx404-light: var(--_system-colors---light, #faf9f5);
-  --ctx404-border: var(--_colors---border, #dcd9e5);
-  --ctx404-scale: 1;
-  --ctx404-frame-left: 0px;
-  --ctx404-frame-top: 0px;
-  --ctx404-frame-width: 1440px;
-  --ctx404-frame-height: 900px;
 }
 
 * {
@@ -36,113 +30,93 @@ body {
   background: var(--ctx404-light);
 }
 
-.ctx404__design {
+/* Physics stage — full viewport overlay, behind content */
+.ctx404__stage {
   position: absolute;
-  top: var(--ctx404-frame-top);
-  left: var(--ctx404-frame-left);
-  width: var(--ctx404-frame-width);
-  height: var(--ctx404-frame-height);
-  transform: scale(var(--ctx404-scale));
-  transform-origin: top left;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.ctx404__pattern {
+/* Individual shape wrappers — positioned via JS transform */
+.ctx404__shape {
   position: absolute;
-  top: -71px;
-  left: -88px;
-  width: 1405px;
-  height: 789px;
-  object-fit: cover;
-  mix-blend-mode: multiply;
+  top: 0;
+  left: 0;
+  display: block;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+}
+
+.ctx404__shape img {
+  width: 100%;
+  height: 100%;
+  display: block;
   pointer-events: none;
   user-select: none;
 }
 
-.ctx404__logo {
-  position: absolute;
-  top: 40.6px;
-  left: 623px;
-  width: 195px;
-  height: 24px;
-  display: block;
-}
-
-.ctx404__header {
-  position: absolute;
-  top: 205px;
-  left: 347px;
-  width: 744px;
-  height: 375px;
+/* Page content sits above the physics stage */
+.ctx404__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  z-index: 6;
+  padding: 120px 24px 320px;
 }
 
 .ctx404__tag {
-  position: absolute;
-  top: 0;
-  left: 322px;
-  width: 100px;
+  display: inline-block;
+  padding: 0 12px;
   height: 30px;
+  line-height: 30px;
   border-radius: 5px;
   background: var(--ctx404-yellow);
   color: var(--ctx404-navy);
-  font-family: "IBM Plex Mono", "IBM Plex Mono Medium", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 14px;
   font-weight: 600;
-  line-height: 30px;
   text-transform: uppercase;
+  margin-bottom: 24px;
 }
 
 .ctx404__title {
-  position: absolute;
-  top: 66px;
-  left: 0;
-  width: 744px;
-  margin: 0;
+  margin: 0 0 20px;
   color: var(--ctx404-navy);
   font-family: "New Spirit", "NewSpirit", Georgia, "Times New Roman", serif;
-  font-size: 120px;
+  font-size: clamp(64px, 8vw, 120px);
   font-weight: 400;
-  line-height: 1.25;
-  letter-spacing: 0;
-  white-space: nowrap;
+  line-height: 1.1;
 }
 
 .ctx404__copy {
-  position: absolute;
-  top: 242px;
-  left: 43px;
-  width: 660px;
-  margin: 0;
+  margin: 0 0 32px;
+  max-width: 480px;
   color: var(--ctx404-navy);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 300;
-  line-height: 32px;
-  letter-spacing: 0;
+  line-height: 1.5;
 }
 
 .ctx404__button {
-  position: absolute;
-  top: 315px;
-  left: 279px;
   display: inline-flex;
-  width: 186px;
-  height: 60px;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   padding: 0 22px 0 25px;
+  height: 56px;
   border-radius: 10px;
   color: var(--ctx404-yellow);
   background: var(--ctx404-navy);
-  font-family: "IBM Plex Mono", "IBM Plex Mono Medium", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 14px;
   font-weight: 600;
-  line-height: 14px;
+  line-height: 1;
   text-decoration: none;
   text-transform: uppercase;
-}
-
-.ctx404__button span:last-child {
   white-space: nowrap;
 }
 
@@ -161,64 +135,9 @@ body {
   transform: rotate(-90deg);
 }
 
-.ctx404__static-graphics,
-.ctx404__physics-stage {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.ctx404__static-graphics {
-  display: none;
-}
-
-.ctx404__static-graphics img {
-  position: absolute;
-  inset: 0;
-  width: 1440px;
-  height: 900px;
-  display: block;
-  object-fit: fill;
-  pointer-events: none;
-}
-
-.ctx404__shape {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: block;
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-  will-change: transform;
-  z-index: 4;
-}
-
-.ctx404__shape img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  pointer-events: none;
-  user-select: none;
-}
-
-.ctx404[data-static="true"] .ctx404__physics-stage {
-  display: none;
-}
-
-.ctx404[data-static="true"] .ctx404__static-graphics {
-  display: block;
-}
-
-.ctx404[data-static="true"] .ctx404__pattern,
-.ctx404[data-static="true"] .ctx404__logo,
-.ctx404[data-static="true"] .ctx404__header {
-  display: none;
-}
-
 @media (max-width: 767px) {
-  .ctx404 {
-    min-height: 700px;
+  .ctx404__content {
+    padding-top: 80px;
+    padding-bottom: 240px;
   }
 }

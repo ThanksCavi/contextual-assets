@@ -11,6 +11,8 @@
   const SUMMARY_SELECTOR = '[data-steps-summary]';
   const TOGGLE_SELECTOR = '[data-steps-toggle]';
   const REVEAL_SELECTOR = '[data-steps-reveal]';
+  const TITLE_SELECTOR = '.steps-card-title';
+  const NUMBER_SELECTOR = '.steps-number';
   const INTERACTIVE_SELECTOR = 'a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
   const READY_CLASS = 'is-steps-ready';
@@ -133,10 +135,12 @@
         const summary = card ? card.querySelector(SUMMARY_SELECTOR) : null;
         const toggle = card ? card.querySelector(TOGGLE_SELECTOR) : null;
         const reveal = card ? card.querySelector(REVEAL_SELECTOR) : null;
+        const title = card ? card.querySelector(TITLE_SELECTOR) : null;
+        const number = card ? card.querySelector(NUMBER_SELECTOR) : null;
 
         if (!card || !summary || !toggle || !reveal) return null;
 
-        return { item, card, summary, toggle, reveal, index };
+        return { item, card, summary, toggle, reveal, title, number, index };
       })
       .filter(Boolean);
   }
@@ -226,6 +230,8 @@
   function setStepOpen(step, isOpen) {
     step.card.classList.toggle(OPEN_CLASS, isOpen);
     step.toggle.classList.toggle(OPEN_CLASS, isOpen);
+    step.title?.classList.toggle(OPEN_CLASS, isOpen);
+    step.number?.classList.toggle(OPEN_CLASS, isOpen);
     step.toggle.setAttribute('aria-expanded', String(isOpen));
     step.toggle.toggleAttribute('hidden', isOpen);
     step.reveal.tabIndex = isOpen ? 0 : -1;
