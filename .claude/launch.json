@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lottie-playground",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "webflow-scripts", "-p", "7788", "--no-clipboard"],
+      "port": 7788
+    }
+  ]
+}
