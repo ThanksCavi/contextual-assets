@@ -205,12 +205,14 @@
   }
 
   function handleScroll() {
+    updateViewportPositions();
+    refreshActiveZone();
+
     if (manager.hasClientPosition && canAnimate()) {
       manager.targetClientX = manager.lastClientX;
       manager.targetClientY = manager.lastClientY;
+      requestFrame();
     }
-
-    requestFrame();
   }
 
   function handleWindowResize() {

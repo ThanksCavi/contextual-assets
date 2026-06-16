@@ -6,12 +6,6 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "serve", "webflow-scripts", "-p", "7788", "--no-clipboard"],
       "port": 7788
-    },
-    {
-      "name": "404-physics",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "serve", "webflow-scripts/playground/404-physics", "-p", "7789", "--no-clipboard"],
-      "port": 7789
     }
   ]
 }
