@@ -177,7 +177,7 @@
 				// refresh, which is a plausible source of runaway work.
 				effects: true,
 				//effectsPrefix: 'smoother-',
-				//smoothTouch: false,
+				smoothTouch: false,
 				normalizeScroll: policy.allowNormalizeScroll,
 			});
 		}
