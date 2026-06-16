@@ -136,6 +136,7 @@
       pinTopOffset: null,
       stylesApplied: false,
       resizeObserver: null,
+      lastSetupSignature: null,
     };
 
     instances.push(instance);
@@ -160,6 +161,12 @@
 
   function setupPin(instance) {
     const ScrollTrigger = getScrollTrigger();
+
+    const signature = `${instance.layout.offsetHeight}:${instance.sidebar.offsetHeight}:${instance.content.offsetHeight}`;
+    if (instance.pin && instance.lastSetupSignature === signature) {
+      return;
+    }
+    instance.lastSetupSignature = signature;
 
     clearPin(instance);
 

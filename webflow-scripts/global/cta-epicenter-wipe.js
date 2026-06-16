@@ -439,9 +439,7 @@
         render(instance, self.progress);
       },
       onRefresh: self => {
-        instance.buildKey = '';
         instance.scrollProgress = self.progress;
-        render(instance, self.progress);
       },
     });
   }
