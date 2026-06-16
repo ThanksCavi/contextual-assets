@@ -31,6 +31,8 @@
 	let readyMarked = false;
 	let policyState = null;
 	let lastPolicySignature = '';
+	let lastViewportWidth = window.innerWidth;
+	let lastViewportHeight = window.innerHeight;
 	const ready = new Promise((resolve) => {
 		resolveReady = resolve;
 	});
@@ -114,6 +116,16 @@
 	function queueSettledRefresh() {
 		clearTimeout(resizeTimer);
 		resizeTimer = window.setTimeout(() => {
+			const widthChanged = window.innerWidth !== lastViewportWidth;
+			const heightChanged = window.innerHeight !== lastViewportHeight;
+			lastViewportWidth = window.innerWidth;
+			lastViewportHeight = window.innerHeight;
+
+			// A 'resize' event without an actual viewport size change (e.g. a scrollbar
+			// toggling on/off as a side effect of our own refresh) must not re-trigger a refresh,
+			// or it loops forever.
+			if (!widthChanged && !heightChanged) return;
+
 			const previousPolicySignature = lastPolicySignature || getPolicySignature();
 			syncSmootherForViewport();
 			requestRefresh();
@@ -213,7 +225,10 @@
 		);
 		const allowSmoother = allowDesktopMotion;
 		const allowHeavyScrollEffects = allowDesktopMotion;
-		const allowNormalizeScroll = Boolean(allowSmoother && !isTouchCapable);
+		// Temporarily disabled on desktop: normalizeScroll's internal layout recalculation
+		// can toggle the document scrollbar, which fires 'resize', which re-triggers a
+		// refresh, which can re-toggle the scrollbar -- an unbounded loop that freezes the page.
+		const allowNormalizeScroll = false;
 		const allowIntroScrollLock = Boolean(allowDesktopMotion && !isTouchCapable);
 
 		return {
