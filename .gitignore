@@ -1,7 +1,8 @@
 *.md
+.cloude
 .idea/
 .DS_Store
 docs/
 spec/
-webflow-scripts/versions/
+interactions/versions/
 .codegraph/
