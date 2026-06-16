@@ -171,7 +171,7 @@
 			smoother = ScrollSmoother.create({
 				wrapper,
 				content,
-				smooth: 3,
+				smooth: 5,
 				// Temporarily disabled while diagnosing the freeze: effects:true rescans
 				// [data-speed]/[data-lag] elements and recalculates their positions on every
 				// refresh, which is a plausible source of runaway work.
