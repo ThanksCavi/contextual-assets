@@ -1,0 +1,10 @@
+<!-- Hero Intro — Critical Inline Guard -->
+<!-- ADD TO: Webflow Page Settings → Custom Code → <head> section, BEFORE other stylesheets. -->
+<!-- PURPOSE: Prevents the raw placeholder image from flashing oversized before the component
+     stylesheet loads (publish-time / cold-cache first paint). Independent of the late stylesheet. -->
+<style>
+  html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"]
+    [data-lottie-mask]:not([data-lottie-mask-ready="static"]):not([data-lottie-mask-ready="error"])
+    > .lottie-builder-placeholder { visibility: hidden; }
+</style>
+<!-- End Hero Intro — Critical Inline Guard -->
