@@ -474,7 +474,14 @@
 		if (typeof el.animate === 'function') {
 			var animation = el.animate(keyframes, options);
 			el._heroIntroAnimation = animation;
-			return wait((options.delay || 0) + (options.duration || 0));
+			var fallback = wait((options.delay || 0) + (options.duration || 0));
+			if (animation.finished && typeof animation.finished.then === 'function') {
+				return Promise.race([
+					animation.finished.catch(function() { return null; }),
+					fallback
+				]);
+			}
+			return fallback;
 		}
 
 		var lastFrame = keyframes[keyframes.length - 1];
@@ -547,6 +554,7 @@
 			var animations = [lottieMove];
 
 			lottieMove.then(releaseLockOnce);
+			window.setTimeout(releaseLockOnce, INTRO_HOLD_DURATION + LOTTIE_MOVE_DURATION + 400);
 
 			revealGroups.primary.forEach(function(el, index) {
 				addRevealAnimation(animations, el, {

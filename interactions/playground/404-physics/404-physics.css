@@ -30,6 +30,23 @@ body {
   background: var(--ctx404-light);
 }
 
+/* Placeholder dark footer strip — shapes rest on its top edge */
+.ctx404__footer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 72px;
+  background: var(--ctx404-navy);
+  z-index: 0;
+}
+
+@media (max-width: 767px) {
+  .ctx404__footer {
+    height: 56px;
+  }
+}
+
 /* Physics stage — full viewport overlay, behind content */
 .ctx404__stage {
   position: absolute;
