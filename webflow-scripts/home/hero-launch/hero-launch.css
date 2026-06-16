@@ -17,7 +17,7 @@
 	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete)) [data-hero-intro-after] {
 		opacity: 0;
 		transform: translate3d(0, 34px, 0);
-		animation: heroIntroFailsafe 1ms linear 8000ms forwards;
+		animation: heroIntroFailsafe 1ms linear 4000ms forwards;
 	}
 
 	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar {
@@ -26,7 +26,7 @@
 
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete) .hsp-column-media {
 		opacity: 0;
-		animation: heroIntroMediaFailsafe 1ms linear 8000ms forwards;
+		animation: heroIntroMediaFailsafe 1ms linear 4000ms forwards;
 	}
 
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"].is-hero-intro-running .hsp-column-media,

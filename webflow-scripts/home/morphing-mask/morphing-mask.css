@@ -100,4 +100,21 @@ html:not(.wf-design-mode) [data-lottie-mask]:not([data-lottie-mask-ready="static
 	stroke-opacity: 1 !important;
 }
 
+/* Static/error fallback must match the masked photo (≈49.28% of the stage box, centered),
+   not fill the oversized stage box. Only applies once the stage exists AND we've fallen back. */
+[data-lottie-mask]:has(.lm-stage):is([data-lottie-mask-ready="static"], [data-lottie-mask-ready="error"])
+  > .lottie-builder-placeholder {
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 49.28%;
+	height: auto;
+}
+[data-lottie-mask]:has(.lm-stage):is([data-lottie-mask-ready="static"], [data-lottie-mask-ready="error"])
+  > .lottie-builder-placeholder img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
 /* End Lottie Component */

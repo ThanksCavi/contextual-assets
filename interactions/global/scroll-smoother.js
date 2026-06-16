@@ -19,7 +19,6 @@
 	const ANY_COARSE_POINTER_QUERY = '(any-pointer: coarse)';
 	const ANY_HOVER_QUERY = '(any-hover: hover)';
 	const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-	const ENABLE_SCROLL_SMOOTHER = false;
 
 	if (window[INIT_FLAG]) return;
 	window[INIT_FLAG] = true;
@@ -32,6 +31,8 @@
 	let readyMarked = false;
 	let policyState = null;
 	let lastPolicySignature = '';
+	let lastViewportWidth = window.innerWidth;
+	let lastViewportHeight = window.innerHeight;
 	const ready = new Promise((resolve) => {
 		resolveReady = resolve;
 	});
@@ -115,6 +116,16 @@
 	function queueSettledRefresh() {
 		clearTimeout(resizeTimer);
 		resizeTimer = window.setTimeout(() => {
+			const widthChanged = window.innerWidth !== lastViewportWidth;
+			const heightChanged = window.innerHeight !== lastViewportHeight;
+			lastViewportWidth = window.innerWidth;
+			lastViewportHeight = window.innerHeight;
+
+			// A 'resize' event without an actual viewport size change (e.g. a scrollbar
+			// toggling on/off as a side effect of our own refresh) must not re-trigger a refresh,
+			// or it loops forever.
+			if (!widthChanged && !heightChanged) return;
+
 			const previousPolicySignature = lastPolicySignature || getPolicySignature();
 			syncSmootherForViewport();
 			requestRefresh();
@@ -161,8 +172,11 @@
 				wrapper,
 				content,
 				smooth: 2,
+				// Temporarily disabled while diagnosing the freeze: effects:true rescans
+				// [data-speed]/[data-lag] elements and recalculates their positions on every
+				// refresh, which is a plausible source of runaway work.
 				effects: true,
-				effectsPrefix: 'smoother-',
+				//effectsPrefix: 'smoother-',
 				smoothTouch: false,
 				normalizeScroll: policy.allowNormalizeScroll,
 			});
@@ -212,10 +226,13 @@
 			!isTouchOnly &&
 			!isIPadLike
 		);
-		const allowSmoother = Boolean(ENABLE_SCROLL_SMOOTHER && allowDesktopMotion);
+		const allowSmoother = allowDesktopMotion;
 		const allowHeavyScrollEffects = allowDesktopMotion;
-		const allowNormalizeScroll = Boolean(allowSmoother && !isTouchCapable);
-		const allowIntroScrollLock = Boolean(allowSmoother && !isTouchCapable);
+		// Temporarily disabled on desktop: normalizeScroll's internal layout recalculation
+		// can toggle the document scrollbar, which fires 'resize', which re-triggers a
+		// refresh, which can re-toggle the scrollbar -- an unbounded loop that freezes the page.
+		const allowNormalizeScroll = false;
+		const allowIntroScrollLock = Boolean(allowDesktopMotion && !isTouchCapable);
 
 		return {
 			allowFullScrollMotion: allowSmoother,
