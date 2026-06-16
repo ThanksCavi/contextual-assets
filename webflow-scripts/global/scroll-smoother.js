@@ -171,13 +171,13 @@
 			smoother = ScrollSmoother.create({
 				wrapper,
 				content,
-				smooth: 2,
+				smooth: 5,
 				// Temporarily disabled while diagnosing the freeze: effects:true rescans
 				// [data-speed]/[data-lag] elements and recalculates their positions on every
 				// refresh, which is a plausible source of runaway work.
-				effects: false,
-				effectsPrefix: 'smoother-',
-				smoothTouch: false,
+				effects: true,
+				//effectsPrefix: 'smoother-',
+				//smoothTouch: false,
 				normalizeScroll: policy.allowNormalizeScroll,
 			});
 		}
