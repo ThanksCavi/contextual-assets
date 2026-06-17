@@ -209,13 +209,14 @@
   }
 
   function handleScroll() {
-    if (!manager.hasClientPosition || !canAnimate()) return;
-
     updateViewportPositions();
     refreshActiveZone();
-    manager.targetClientX = manager.lastClientX;
-    manager.targetClientY = manager.lastClientY;
-    requestFrame();
+
+    if (manager.hasClientPosition && canAnimate()) {
+      manager.targetClientX = manager.lastClientX;
+      manager.targetClientY = manager.lastClientY;
+      requestFrame();
+    }
   }
 
   function handleWindowResize() {
