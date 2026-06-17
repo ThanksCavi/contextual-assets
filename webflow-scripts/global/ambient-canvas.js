@@ -2,7 +2,9 @@
 (() => {
   // Use [data-circle-zone] on a single light section or on a shared wrapper
   // around multiple light sections that should render as one seamless field.
+  // Use data-circle-zone="dark" on dark backgrounds for brighter rings.
   const FIELD_SELECTOR = '[data-circle-zone]';
+  const DARK_FIELD_VALUE = 'dark';
   const CANVAS_CLASS = 'circle-field-canvas';
   const INITIALIZED_CLASS = 'is-circle-field-ready';
   const STYLE_ID = 'circle-field-layering-styles';
@@ -31,6 +33,7 @@
   const BASE_OPACITY = 0.045;
   const STATIC_OPACITY_BOOST = 0.6;
   const INTERACTIVE_OPACITY_BOOST = 0.03;
+  const DARK_FIELD_OPACITY_MULTIPLIER = 1.5;
   const STROKE_WIDTH = 1;
   const SIZE_FALLOFF_EXPONENT = 1.52;
   const OPACITY_FALLOFF_EXPONENT = 0.9;
@@ -98,6 +101,7 @@
       viewportBottom: 0,
       points: [],
       field: null,
+      opacityMultiplier: getOpacityMultiplier(section),
     };
 
     zones.set(section, state);
@@ -430,11 +434,11 @@
       );
       const sectionEdgeFade = getSectionEdgeFade(state, point, radius);
 
-      const opacity = (
+      const opacity = clamp((
         BASE_OPACITY +
         opacityLift * STATIC_OPACITY_BOOST +
         influence * INTERACTIVE_OPACITY_BOOST
-      ) * edgeFade * sectionEdgeFade;
+      ) * edgeFade * sectionEdgeFade * state.opacityMultiplier, 0, 1);
 
       if (radius < 0.35 || opacity < 0.002) return;
 
@@ -523,6 +527,12 @@
     const visibleDistance = edgeDistance - radius;
 
     return smoothstep(0, SECTION_EDGE_FADE, visibleDistance);
+  }
+
+  function getOpacityMultiplier(section) {
+    return section.getAttribute('data-circle-zone') === DARK_FIELD_VALUE
+      ? DARK_FIELD_OPACITY_MULTIPLIER
+      : 1;
   }
 
   function getCursorDistanceToTarget() {
