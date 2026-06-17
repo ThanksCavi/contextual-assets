@@ -4,53 +4,53 @@
 
 /* Physics stage — full viewport overlay, behind content */
 .ctx404__stage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  pointer-events: none;
-  z-index: 1;
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	pointer-events: none;
+	z-index: 1;
 }
 
 /* Individual shape wrappers — positioned via JS transform */
 .ctx404__shape {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: block;
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-  will-change: transform;
-  cursor: grab;
-  transition: filter 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: block;
+	pointer-events: auto;
+	touch-action: none;
+	user-select: none;
+	will-change: transform;
+	cursor: grab;
+	transition: filter 0.25s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .ctx404__shape:hover {
-  filter: brightness(1.05) drop-shadow(0 6px 14px rgba(27, 25, 35, 0.12));
+	filter: brightness(1.05) drop-shadow(0 6px 14px rgba(27, 25, 35, 0.12));
 }
 
 .ctx404__shape.is-dragging {
-  cursor: grabbing;
-  filter: brightness(1.08) drop-shadow(0 12px 28px rgba(27, 25, 35, 0.18));
-  z-index: 100;
-  transition: none; /* Disable transition during drag */
+	cursor: grabbing;
+	filter: brightness(1.08) drop-shadow(0 12px 28px rgba(27, 25, 35, 0.18));
+	z-index: 100;
+	transition: none; /* Disable transition during drag */
 }
 
 .ctx404__shape img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  pointer-events: none;
-  user-select: none;
+	width: 100%;
+	height: 100%;
+	display: block;
+	pointer-events: none;
+	user-select: none;
 }
 
 /* Button yellow flash effect when hit by shapes */
 [data-ctx-404-obstacle].is-hit {
-  background-color: var(--ctx404-yellow, #ecf071) !important;
-  color: var(--ctx404-navy, #1b1923) !important;
-  transition: background-color 0.15s ease-out, color 0.15s ease-out;
+	background-color: var(--ctx404-yellow, #ecf071) !important;
+	color: var(--ctx404-navy, #1b1923) !important;
+	transition: background-color 0.15s ease-out, color 0.15s ease-out;
 }
 
 [data-ctx-404-obstacle]:not(.is-hit) {
-  transition: background-color 0.3s ease-out, color 0.3s ease-out;
+	transition: background-color 0.3s ease-out, color 0.3s ease-out;
 }
