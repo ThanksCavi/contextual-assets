@@ -482,10 +482,10 @@
       Bodies.rectangle(vw / 2, floor + t / 2 - 2, vw + t * 2, t, opts),  // floor
       Bodies.rectangle(-b - t / 2, vh / 2, t, vh * 2, opts),             // left wall
       Bodies.rectangle(vw + b + t / 2, vh / 2, t, vh * 2, opts),         // right wall
+      Bodies.rectangle(vw / 2, -60 - t / 2, vw + t * 2, t, opts),        // ceiling
     ];
   }
 
-  // Tagged obstacles detection
   function createObstacles(Bodies, stage) {
     var stageRect = stage.getBoundingClientRect();
     var els = document.querySelectorAll(OBSTACLE_SELECTOR);
@@ -662,7 +662,7 @@
         vel.y = ((last.y - prev.y) / dt) * 6;
 
         // Cap maximum velocity
-        var maxSpeed = 25;
+        var maxSpeed = 15;
         var speed = Math.sqrt(vel.x * vel.x + vel.y * vel.y);
         if (speed > maxSpeed) {
           vel.x = (vel.x / speed) * maxSpeed;
