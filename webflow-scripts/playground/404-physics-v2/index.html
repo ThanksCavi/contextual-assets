@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contextual 404 Physics Playground</title>
+  <link rel="stylesheet" href="./404-physics.css">
+</head>
+<body>
+  <main class="ctx404" data-ctx-404-physics>
+    <section class="ctx404__design" aria-labelledby="ctx404-title">
+      <img class="ctx404__pattern" src="./assets/pattern.png" alt="" aria-hidden="true">
+      <img class="ctx404__logo" src="./assets/logo.png" alt="contextual.io">
+
+      <div class="ctx404__header">
+        <div class="ctx404__tag">Missing</div>
+        <h1 id="ctx404-title" class="ctx404__title">Lost context.</h1>
+        <p class="ctx404__copy">Unlike our AI, our website gets lost sometimes.</p>
+        <a class="ctx404__button" href="/" aria-label="Take me home" data-ctx-404-obstacle>
+          <span class="ctx404__button-icon" aria-hidden="true"></span>
+          <span>Take me home</span>
+        </a>
+      </div>
+
+      <div class="ctx404__stage ctx404__physics-stage" data-ctx-404-physics-stage aria-hidden="true"></div>
+
+      <footer class="ctx404__footer" data-ctx-404-footer aria-hidden="true"></footer>
+    </section>
+  </main>
+
+  <script src="./vendor/matter.min.js"></script>
+  <script src="./404-physics.js"></script>
+</body>
+</html>
