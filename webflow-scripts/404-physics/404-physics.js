@@ -267,6 +267,9 @@
 
       var zoneCenter = (i + 0.5) * zoneW;
       var spawnX = zoneCenter + (Math.random() * 2 - 1) * jitter * zoneW;
+      if (shape.id === 'large-blue-crescent') {
+        spawnX = vw * (0.75 + Math.random() * 0.15);
+      }
       spawnX = clamp(spawnX, sw / 2, vw - sw / 2);
       var spawnY = -sh - 20;
 
