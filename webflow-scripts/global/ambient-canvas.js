@@ -2,7 +2,7 @@
 (() => {
   // Use [data-circle-zone] on a single light section or on a shared wrapper
   // around multiple light sections that should render as one seamless field.
-  // Use data-circle-zone="dark" on dark backgrounds for brighter rings.
+  // Use data-circle-zone="dark" on dark backgrounds for subtler rings.
   const FIELD_SELECTOR = '[data-circle-zone]';
   const DARK_FIELD_VALUE = 'dark';
   const CANVAS_CLASS = 'circle-field-canvas';
@@ -33,7 +33,7 @@
   const BASE_OPACITY = 0.045;
   const STATIC_OPACITY_BOOST = 0.6;
   const INTERACTIVE_OPACITY_BOOST = 0.03;
-  const DARK_FIELD_OPACITY_MULTIPLIER = 1.5;
+  const DARK_FIELD_OPACITY_MULTIPLIER = 0.5;
   const STROKE_WIDTH = 1;
   const SIZE_FALLOFF_EXPONENT = 1.52;
   const OPACITY_FALLOFF_EXPONENT = 0.9;
