@@ -209,14 +209,13 @@
   }
 
   function handleScroll() {
+    if (!manager.hasClientPosition || !canAnimate()) return;
+
     updateViewportPositions();
     refreshActiveZone();
-
-    if (manager.hasClientPosition && canAnimate()) {
-      manager.targetClientX = manager.lastClientX;
-      manager.targetClientY = manager.lastClientY;
-      requestFrame();
-    }
+    manager.targetClientX = manager.lastClientX;
+    manager.targetClientY = manager.lastClientY;
+    requestFrame();
   }
 
   function handleWindowResize() {
@@ -291,21 +290,28 @@
   }
 
   function getZoneAtPoint(clientX, clientY) {
-    const matches = Array.from(zones.values()).filter(state => (
-      clientX >= state.viewportLeft &&
-      clientX <= state.viewportRight &&
-      clientY >= state.viewportTop &&
-      clientY <= state.viewportBottom
-    ));
+    let activeZone = null;
+    let activeArea = Infinity;
 
-    if (!matches.length) return null;
+    for (const state of zones.values()) {
+      if (
+        clientX < state.viewportLeft ||
+        clientX > state.viewportRight ||
+        clientY < state.viewportTop ||
+        clientY > state.viewportBottom
+      ) {
+        continue;
+      }
 
-    return matches.reduce((smallest, state) => {
-      const smallestArea = smallest.width * smallest.height;
       const stateArea = state.width * state.height;
 
-      return stateArea < smallestArea ? state : smallest;
-    });
+      if (stateArea < activeArea) {
+        activeZone = state;
+        activeArea = stateArea;
+      }
+    }
+
+    return activeZone;
   }
 
   function refreshActiveZone() {
@@ -417,9 +423,10 @@
       ? getDynamicFocus(state)
       : getSafeFocusFromPoint(state, getFieldCenter(state));
 
-    points.forEach(point => {
+    for (let index = 0; index < points.length; index += 1) {
+      const point = points[index];
       const normalizedDistance = getNormalizedSpotlightDistance(state.field, point, focus.x, focus.y);
-      if (normalizedDistance > 1) return;
+      if (normalizedDistance > 1) continue;
 
       const falloff = 1 - smoothstep(0, 1, normalizedDistance);
       const sizeLift = Math.pow(falloff, SIZE_FALLOFF_EXPONENT);
@@ -440,13 +447,13 @@
         influence * INTERACTIVE_OPACITY_BOOST
       ) * edgeFade * sectionEdgeFade * state.opacityMultiplier, 0, 1);
 
-      if (radius < 0.35 || opacity < 0.002) return;
+      if (radius < 0.35 || opacity < 0.002) continue;
 
       context.beginPath();
       context.strokeStyle = `rgba(${STROKE_COLOR}, ${opacity})`;
       context.arc(point.x, point.y, radius, 0, Math.PI * 2);
       context.stroke();
-    });
+    }
   }
 
   function isNearViewport(state) {
