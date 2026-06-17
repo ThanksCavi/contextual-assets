@@ -1,67 +1,111 @@
 (function contextual404PhysicsInit() {
   'use strict';
 
-  // ─── CONFIG ────────────────────────────────────────────────────────────────
-  var CONFIG = {
-    shapes: [
-      { id: 'left-navy-crescent',  src: './assets/shape-left-navy-crescent.svg',  width: 236, height: 118, angle:  -90, body: { type: 'rect',   width: 236, height: 118, radius: 24  }, mass: 4.8 },
-      { id: 'blue-ring',           src: './assets/shape-blue-ring.svg',           width: 108, height: 108, angle:    0, body: { type: 'circle', radius: 54                            }, mass: 2   },
-      { id: 'navy-wedge',          src: './assets/shape-navy-wedge.svg',          width: 170, height:  85, angle:   62, body: { type: 'rect',   width: 170, height:  85, radius: 18  }, mass: 3   },
-      { id: 'lavender-dome',       src: './assets/shape-lavender-dome.svg',       width: 207, height: 103, angle:  180, body: { type: 'rect',   width: 207, height: 103, radius: 28  }, mass: 3.4 },
-      { id: 'blue-arch',           src: './assets/shape-blue-arch.svg',           width: 280, height: 140, angle:  180, body: { type: 'rect',   width: 280, height: 140, radius: 28  }, mass: 4   },
-      { id: 'navy-circle',         src: './assets/shape-navy-circle.svg',         width: 149, height: 149, angle:    0, body: { type: 'circle', radius: 74.5                         }, mass: 2.8 },
-      { id: 'small-navy-bowl',     src: './assets/shape-small-navy-bowl.svg',     width: 156, height:  78, angle:   18, body: { type: 'rect',   width: 156, height:  78, radius: 18  }, mass: 2.4 },
-      { id: 'large-blue-crescent', src: './assets/shape-large-blue-crescent.svg', width: 428, height: 214, angle:  150, body: { type: 'rect',   width: 428, height: 214, radius: 36  }, mass: 6   },
-    ],
-
-    layout: {
-      frameWidth:       1440,
-      mobileBreakpoint:  768,
-      mobileScale:       0.6,
-    },
-
-    physics: {
-      gravityScale:  0.001,
-      restitution:   0.48,
-      friction:      0.6,
-      frictionAir:   0.012,
-      throwVelocity: 0.6,
-    },
-
-    bounds: {
-      wallBleed:          12,
-      wallThickness:     320,
-      floorSink:           1,
-      minVisibleFraction:  0.5,
-    },
-
-    spawn: {
-      stagger:     80,  // ms between shapes
-      angleJitter: 20,  // ±deg random rotation at spawn
-      zoneJitter:  0.4, // ±fraction of zone width for x scatter
-    },
-
-    button: {
-      obstacleSelector: '[data-ctx-404-obstacle]',
-      obstacleCategory: 0x0004,
-      chamfer:           12,
-    },
-  };
-
-  // ─── MODULE STATE ──────────────────────────────────────────────────────────
-  var ROOT_SELECTOR  = '[data-ctx-404-physics]';
+  var ROOT_SELECTOR = '[data-ctx-404-physics]';
   var STAGE_SELECTOR = '[data-ctx-404-physics-stage]';
-  var REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+  var OBSTACLE_SELECTOR = '[data-ctx-404-obstacle]';
+  var FOOTER_SELECTOR = '[data-ctx-404-footer]';
+  var REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+  var TILE_BASE = 1440;
+  var FIGMA_HEIGHT = 900;
+  var RESIZE_DELAY = 180;
 
-  var staticMode           = new URLSearchParams(window.location.search).has('static');
-  var prefersReducedMotion = window.matchMedia(REDUCED_MOTION);
-  var resizeTimer          = null;
-  var state                = null;
-  var Matter               = window.Matter;
+  // Entrance (scripted drop-in) tuning. Shapes fall from random heights, in
+  // random order, accelerating like gravity, with a soft landing bounce.
+  var ENTRANCE_TOP_FRACTION = 0.32;   // highest a shape may start (≈1/3 from top)
+  var ENTRANCE_LOW_FRACTION = 0.60;   // lowest start
+  var ENTRANCE_MAX_DELAY = 300;       // spread of random start times
+  var ENTRANCE_BOUNCE_MS = 240;
+
+  var staticMode = new URLSearchParams(window.location.search).has('static');
+  var prefersReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY);
+  var resizeTimer = null;
+  var state = null;
+
+  var Matter = window.Matter;
+
+  // Hero motif — the 8 Figma shapes, in the 1440x900 design frame (x,y = top-left).
+  var SHAPES = [
+    {
+      id: 'left-navy-crescent',
+      src: './assets/shape-left-navy-crescent.svg',
+      x: -36, y: 696, width: 236, height: 118, angle: -90,
+      body: { type: 'rect', width: 184, height: 110, radius: 24 },
+      mass: 4.8,
+    },
+    {
+      id: 'blue-ring',
+      src: './assets/shape-blue-ring.svg',
+      x: 162, y: 792, width: 108, height: 108, angle: 0,
+      body: { type: 'circle', radius: 54 },
+      mass: 2,
+    },
+    {
+      id: 'navy-wedge',
+      src: './assets/shape-navy-wedge.svg',
+      x: 300, y: 742, width: 170, height: 85, angle: 62,
+      body: { type: 'rect', width: 150, height: 74, radius: 18 },
+      mass: 3,
+    },
+    {
+      id: 'lavender-dome',
+      src: './assets/shape-lavender-dome.svg',
+      x: 452, y: 797, width: 207, height: 103, angle: 0,
+      body: { type: 'rect', width: 198, height: 92, radius: 28 },
+      mass: 3.4,
+    },
+    {
+      id: 'blue-arch',
+      src: './assets/shape-blue-arch.svg',
+      x: 573, y: 684, width: 280, height: 140, angle: 180,
+      body: { type: 'rect', width: 260, height: 112, radius: 28 },
+      mass: 4,
+    },
+    {
+      id: 'navy-circle',
+      src: './assets/shape-navy-circle.svg',
+      x: 832, y: 750, width: 149, height: 149, angle: 0,
+      body: { type: 'circle', radius: 74.5 },
+      mass: 2.8,
+    },
+    {
+      id: 'small-navy-bowl',
+      src: './assets/shape-small-navy-bowl.svg',
+      x: 1128, y: 738, width: 156, height: 78, angle: 18,
+      body: { type: 'rect', width: 146, height: 66, radius: 18 },
+      mass: 2.4,
+    },
+    {
+      id: 'large-blue-crescent',
+      src: './assets/shape-large-blue-crescent.svg',
+      x: 1032, y: 646, width: 428, height: 214, angle: 150,
+      body: { type: 'rect', width: 404, height: 174, radius: 36 },
+      mass: 6,
+    },
+  ];
+
+  // Accent shapes — a few MEDIUM shapes (not tiny) that echo the hero vocabulary
+  // and fill the gaps in scale with the rest. Desktop only; skipped on mobile.
+  var ACCENTS = [
+    {
+      id: 'accent-circle-1', src: './assets/shape-navy-circle.svg', desktopOnly: true,
+      x: 332, y: 808, width: 92, height: 92, angle: 0,
+      body: { type: 'circle', radius: 46 }, mass: 2.4,
+    },
+    {
+      id: 'accent-dome-1', src: './assets/shape-lavender-dome.svg', desktopOnly: true,
+      x: 660, y: 840, width: 122, height: 60, angle: 0,
+      body: { type: 'rect', width: 114, height: 54, radius: 18 }, mass: 1.8,
+    },
+    {
+      id: 'accent-ring-1', src: './assets/shape-blue-ring.svg', desktopOnly: true,
+      x: 1000, y: 812, width: 88, height: 88, angle: 0,
+      body: { type: 'circle', radius: 44 }, mass: 1.7,
+    },
+  ];
 
   onReady(init);
 
-  // ─── INIT ──────────────────────────────────────────────────────────────────
   function init() {
     var root = document.querySelector(ROOT_SELECTOR);
     if (!root) return;
@@ -74,9 +118,6 @@
       stage.setAttribute('aria-hidden', 'true');
       root.insertBefore(stage, root.firstChild);
     }
-    if (!stage.classList.contains('ctx404__stage')) {
-      stage.classList.add('ctx404__stage');
-    }
 
     prepareSectionStage(root, stage);
 
@@ -88,276 +129,397 @@
       return;
     }
 
-    state = createWorld(stage);
+    state = createWorld(stage, true);
     bindResize(root, stage);
     bindReducedMotion(root, stage);
 
     window.Contextual404Physics = {
-      refresh: function () { destroyWorld(); state = createWorld(stage); },
+      refresh: function refresh() {
+        destroyWorld();
+        state = createWorld(stage, true);
+      },
       destroy: destroyWorld,
     };
   }
 
-  function onReady(cb) {
+  function onReady(callback) {
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', cb, { once: true });
+      document.addEventListener('DOMContentLoaded', callback, { once: true });
     } else {
-      cb();
+      callback();
     }
   }
 
-  // ─── LAYOUT ────────────────────────────────────────────────────────────────
-  function getGroundY(vh) {
-    var footer = document.querySelector('[data-ctx-404-footer]');
-    if (footer) return footer.getBoundingClientRect().top;
-    return vh;
-  }
+  // --- Layout ---
 
   function computeLayout() {
-    var vw       = Math.max(320, window.innerWidth  || CONFIG.layout.frameWidth);
-    var vh       = Math.max(560, window.innerHeight || 900);
-    var isMobile = vw < CONFIG.layout.mobileBreakpoint;
-    var scale    = isMobile ? CONFIG.layout.mobileScale : 1;
-    var groundY  = getGroundY(vh);
-    return { vw: vw, vh: vh, scale: scale, isMobile: isMobile, groundY: groundY };
+    var vw = Math.max(320, window.innerWidth || TILE_BASE);
+    var vh = Math.max(560, window.innerHeight || FIGMA_HEIGHT);
+    var isMobile = vw < 768;
+    var scale = isMobile ? 0.5 : 1;
+    var deviceClass = isMobile ? 'mobile' : 'desktop';
+    var tile = TILE_BASE * scale;
+    var tileCount = Math.max(1, Math.ceil(vw / tile));
+    var startX = 0;
+    var bleed = 60 * scale;
+    var footerEl = document.querySelector(FOOTER_SELECTOR);
+    var footerHeight = footerEl ? footerEl.getBoundingClientRect().height : 0;
+    var groundY = vh - footerHeight;
+    var sink = (footerHeight > 0 ? 16 : 38) * scale;
+    return { vw: vw, vh: vh, scale: scale, deviceClass: deviceClass, tile: tile, tileCount: tileCount, startX: startX, bleed: bleed, groundY: groundY, sink: sink };
   }
 
-  // ─── STATIC RENDER (reduced-motion / ?static) ──────────────────────────────
+  // Choose shapes based on layout class (desktop gets decorative accents)
+  // Accent shapes — a few MEDIUM shapes (not tiny) that echo the hero vocabulary
+  function getMotif(layout) {
+    return layout.deviceClass === 'mobile' ? SHAPES : SHAPES.concat(ACCENTS);
+  }
+
+  function cloneShapeWithSrc(shape, src) {
+    return {
+      id: shape.id,
+      src: src,
+      x: shape.x,
+      y: shape.y,
+      width: shape.width,
+      height: shape.height,
+      angle: shape.angle,
+      body: shape.body,
+      mass: shape.mass
+    };
+  }
+
+  function computeRestPositions(layout) {
+    var motif = getMotif(layout);
+    var positions = [];
+    for (var t = 0; t < layout.tileCount; t++) {
+      var tileOriginX = layout.startX + t * layout.tile;
+      motif.forEach(function(shape) {
+        var sw = shape.width * layout.scale;
+        var sh = shape.height * layout.scale;
+        var hw = rotatedHalfWidth(shape, layout.scale);
+        var gapFromFloor = (FIGMA_HEIGHT - (shape.y + shape.height)) * layout.scale;
+        var restTopX = tileOriginX + shape.x * layout.scale;
+        var restTopY = layout.groundY + layout.sink - gapFromFloor - sh;
+        var cx = restTopX + sw / 2;
+
+        if (cx + hw < -layout.bleed || cx - hw > layout.vw + layout.bleed) return;
+
+        // Custom color variants for tiled copies to prevent color repetition
+        var src = shape.src;
+        if (t > 0) {
+          if (shape.id === 'blue-ring')          src = './assets/shape-blue-ring-dark.svg';
+          else if (shape.id === 'small-navy-bowl')    src = './assets/shape-small-navy-bowl-lavender.svg';
+          else if (shape.id === 'lavender-dome')      src = './assets/shape-lavender-dome-dark.svg';
+          else if (shape.id === 'blue-arch')          src = './assets/shape-blue-arch-dark.svg';
+          else if (shape.id === 'left-navy-crescent') src = './assets/shape-left-navy-crescent-blue.svg';
+        }
+
+        var resolvedShape = cloneShapeWithSrc(shape, src);
+
+        positions.push({
+          shape: resolvedShape,
+          sw: sw,
+          sh: sh,
+          hw: hw,
+          cx: cx,
+          cy: restTopY + sh / 2,
+        });
+      });
+    }
+    nudgeEdgesToBleed(positions, layout);
+    return positions;
+  }
+
+  // Slide outer shapes to edges so they bleed nicely
+  function nudgeEdgesToBleed(positions, layout) {
+    if (!positions.length) return;
+    var edgeBleed = 44 * layout.scale;
+    var leftMost = positions[0];
+    var rightMost = positions[0];
+    positions.forEach(function(p) {
+      if (p.cx - p.hw < leftMost.cx - leftMost.hw) leftMost = p;
+      if (p.cx + p.hw > rightMost.cx + rightMost.hw) rightMost = p;
+    });
+    var lVisLeft = leftMost.cx - leftMost.hw;
+    if (lVisLeft > -edgeBleed) leftMost.cx -= (lVisLeft + edgeBleed);
+    var rVisRight = rightMost.cx + rightMost.hw;
+    if (rVisRight < layout.vw + edgeBleed) rightMost.cx += (layout.vw + edgeBleed - rVisRight);
+  }
+
+  function rotatedHalfWidth(shape, scale) {
+    var w = shape.width * scale;
+    var h = shape.height * scale;
+    var a = toRadians(shape.angle);
+    return (Math.abs(w * Math.cos(a)) + Math.abs(h * Math.sin(a))) / 2;
+  }
+
+  // --- Static Render ---
+
+  // Renders static shapes directly into positions if prefers-reduced-motion is active
   function renderStatic(stage, layout) {
     stage.replaceChildren();
-    var vw      = layout.vw;
-    var groundY = layout.groundY;
-    var scale   = layout.scale;
-    var sink    = CONFIG.bounds.floorSink;
-    var n       = CONFIG.shapes.length;
-    var zoneW   = vw / n;
-
-    CONFIG.shapes.forEach(function (shape, i) {
-      var sw = shape.width  * scale;
-      var sh = shape.height * scale;
-      var el = createShapeElement(shape, sw, sh);
+    computeRestPositions(layout).forEach(function(pos) {
+      var el = createShapeElement(pos.shape, pos.sw, pos.sh);
       el.style.pointerEvents = 'none';
-      var cx = (i + 0.5) * zoneW;
-      var cy = groundY - sink - sh / 2;
-      applyTransform(el, cx, cy, shape.angle, 'deg', 1, 1, sw, sh);
+      el.style.transform = slotTransform(pos);
       stage.appendChild(el);
     });
   }
 
-  // ─── PHYSICS WORLD ─────────────────────────────────────────────────────────
-  function createWorld(stage) {
-    var Engine    = Matter.Engine;
-    var Runner    = Matter.Runner;
-    var Bodies    = Matter.Bodies;
-    var Body      = Matter.Body;
-    var Composite = Matter.Composite;
-    var Events    = Matter.Events;
+  // --- World ---
 
+  function createWorld(stage, animateIn) {
     var layout = computeLayout();
+    var positions = computeRestPositions(layout);
+
     stage.replaceChildren();
 
+    var elements = positions.map(function(pos) {
+      var el = createShapeElement(pos.shape, pos.sw, pos.sh);
+      stage.appendChild(el);
+      return { element: el, pos: pos, sw: pos.sw, sh: pos.sh, body: null };
+    });
+
+    var world = {
+      stage: stage,
+      layout: layout,
+      elements: elements,
+      deviceClass: layout.deviceClass,
+      tileCount: layout.tileCount,
+      engine: null,
+      runner: null,
+      walls: null,
+      obstacles: null,
+      cleanupDrag: null,
+      entranceRaf: 0,
+      destroyed: false,
+    };
+
+    if (animateIn) {
+      runEntrance(world, function() {
+        if (!world.destroyed) startPhysics(world);
+      });
+    } else {
+      elements.forEach(function(item) {
+        item.element.style.transform = slotTransform(item.pos);
+      });
+      startPhysics(world);
+    }
+
+    return world;
+  }
+
+  function runEntrance(world, onComplete) {
+    var layout = world.layout;
+    var topLimit = layout.vh * ENTRANCE_TOP_FRACTION;
+    var lowLimit = layout.vh * ENTRANCE_LOW_FRACTION;
+    var btn = getObstacleRect(world.stage);
+
+    var items = world.elements.map(function(item) {
+      var pos = item.pos;
+      var slotY = pos.cy - pos.sh / 2;
+      var startY = topLimit + Math.random() * (lowLimit - topLimit);
+      if (btn && pos.cx > btn.left - 90 && pos.cx < btn.right + 90) {
+        startY = Math.max(startY, btn.bottom + 30);
+      }
+      startY = Math.min(startY, slotY - 70);
+      var rise = slotY - startY;
+      return {
+        el: item.element,
+        slotX: pos.cx - pos.sw / 2,
+        slotY: slotY,
+        startY: startY,
+        rise: rise,
+        angle: pos.shape.angle,
+        startAngle: pos.shape.angle + (Math.random() - 0.5) * 26,
+        delay: Math.random() * ENTRANCE_MAX_DELAY,
+        fallDur: 360 + Math.sqrt(rise) * 26,
+        bounceH: Math.min(26, rise * 0.06),
+      };
+    });
+
+    items.forEach(function(it) {
+      it.el.style.transform = entranceTransform(it.slotX, it.startY, it.startAngle, 0.96);
+    });
+
+    var start = null;
+    function frame(now) {
+      if (start === null) start = now;
+      var elapsed = now - start;
+      var done = true;
+      items.forEach(function(it) {
+        var t = elapsed - it.delay;
+        if (t < it.fallDur + ENTRANCE_BOUNCE_MS) done = false;
+        var y, ang, scale;
+        if (t <= 0) {
+          y = it.startY; ang = it.startAngle; scale = 0.96;
+        } else if (t < it.fallDur) {
+          var f = t / it.fallDur;
+          var e = f * f;
+          y = it.startY + it.rise * e;
+          ang = it.startAngle + (it.angle - it.startAngle) * e;
+          scale = 0.96 + 0.04 * e;
+        } else {
+          var tb = clamp((t - it.fallDur) / ENTRANCE_BOUNCE_MS, 0, 1);
+          y = it.slotY - it.bounceH * Math.sin(Math.PI * tb) * (1 - tb);
+          ang = it.angle;
+          scale = 1;
+        }
+        it.el.style.transform = entranceTransform(it.slotX, y, ang, scale);
+      });
+      if (done) { world.entranceRaf = 0; onComplete(); return; }
+      world.entranceRaf = requestAnimationFrame(frame);
+    }
+    world.entranceRaf = requestAnimationFrame(frame);
+  }
+
+  function getObstacleRect(stage) {
+    var el = document.querySelector(OBSTACLE_SELECTOR);
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    var sr = stage.getBoundingClientRect();
+    return { left: r.left - sr.left, right: r.right - sr.left, top: r.top - sr.top, bottom: r.bottom - sr.top };
+  }
+
+  function startPhysics(world) {
+    var Engine = Matter.Engine;
+    var Runner = Matter.Runner;
+    var Bodies = Matter.Bodies;
+    var Body = Matter.Body;
+    var Composite = Matter.Composite;
+    var Events = Matter.Events;
+    var Sleeping = Matter.Sleeping;
+    var layout = world.layout;
+
     var engine = Engine.create({
-      gravity: { x: 0, y: 1, scale: CONFIG.physics.gravityScale },
+      gravity: { x: 0, y: 1, scale: 0.001 },
       enableSleeping: true,
     });
 
+    var bodies = [];
+    world.elements.forEach(function(item) {
+      var shape = item.pos.shape;
+      var opts = {
+        restitution: 0.52,
+        friction: 0.55,
+        frictionAir: 0.010,
+        collisionFilter: { category: 0x0001, mask: 0xFFFF },
+      };
+      if (shape.body.radius) opts.chamfer = { radius: shape.body.radius * layout.scale };
+
+      var body = shape.body.type === 'circle'
+        ? Bodies.circle(item.pos.cx, item.pos.cy, shape.body.radius * layout.scale, opts)
+        : Bodies.rectangle(item.pos.cx, item.pos.cy, shape.body.width * layout.scale, shape.body.height * layout.scale, opts);
+
+      Body.setMass(body, shape.mass);
+      Body.setAngle(body, toRadians(shape.angle));
+      item.body = body;
+      bodies.push(body);
+    });
+
     var walls = createWalls(Bodies, layout);
-    Composite.add(engine.world, walls);
+    var obstacles = createObstacles(Bodies, world.stage);
+    Composite.add(engine.world, bodies.concat(walls, obstacles));
 
-    var obstacles = createObstacles(Bodies, layout);
-    if (obstacles.length) Composite.add(engine.world, obstacles);
+    bodies.forEach(function(b) { Sleeping.set(b, true); });
 
-    var runner = Runner.create();
-    Runner.run(runner, engine);
-
-    var physicsItems = spawnShapes(stage, Bodies, Body, Composite, engine, layout);
-
-    Events.on(engine, 'afterUpdate', function () {
-      physicsItems.forEach(function (item) {
-        rescueOutOfBoundsBody(item, layout, Body);
+    Events.on(engine, 'afterUpdate', function() {
+      world.elements.forEach(function(item) {
+        rescueOutOfBoundsBody(item, world.layout, Body);
         syncElement(item);
       });
     });
 
-    return {
-      stage:        stage,
-      engine:       engine,
-      runner:       runner,
-      walls:        walls,
-      obstacles:    obstacles,
-      layout:       layout,
-      physicsItems: physicsItems,
-      cleanupDrag:  bindPointerDrag(stage, physicsItems, Body),
+    world.elements.forEach(syncElement);
+
+    var runner = Runner.create();
+    Runner.run(runner, engine);
+
+    world.engine = engine;
+    world.runner = runner;
+    world.walls = walls;
+    world.obstacles = obstacles;
+    world.cleanupDrag = bindPointerDrag(world.stage, world.elements, Body);
+
+    // Tab visibility handling to pause runner
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        if (runner) Runner.stop(runner);
+      } else {
+        if (runner && engine) Runner.run(runner, engine);
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    world.cleanupVisibility = function() {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }
 
   function destroyWorld() {
     if (!state) return;
-    Matter.Runner.stop(state.runner);
+    state.destroyed = true;
+    if (state.entranceRaf) cancelAnimationFrame(state.entranceRaf);
+    if (state.runner) Matter.Runner.stop(state.runner);
     if (typeof state.cleanupDrag === 'function') state.cleanupDrag();
-    Matter.Composite.clear(state.engine.world, false, true);
-    Matter.Engine.clear(state.engine);
+    if (typeof state.cleanupVisibility === 'function') state.cleanupVisibility();
+    if (state.engine) {
+      Matter.Composite.clear(state.engine.world, false, true);
+      Matter.Engine.clear(state.engine);
+    }
     state.stage.replaceChildren();
     state = null;
   }
 
-  // ─── SPAWN ─────────────────────────────────────────────────────────────────
-  function shapeById(id) {
-    for (var i = 0; i < CONFIG.shapes.length; i++) {
-      if (CONFIG.shapes[i].id === id) return CONFIG.shapes[i];
-    }
-  }
+  // --- Walls & obstacles ---
 
-  function variantOf(id, newSrc) {
-    var s = shapeById(id);
-    return { id: s.id, src: newSrc, width: s.width, height: s.height,
-             angle: s.angle, body: s.body, mass: s.mass };
-  }
-
-  function getSpawnList(vw) {
-    var base = CONFIG.shapes;
-
-    var extraRing = variantOf('blue-ring',          './assets/shape-blue-ring-dark.svg');
-    var extraBowl = variantOf('small-navy-bowl',    './assets/shape-small-navy-bowl-lavender.svg');
-    var extraDome = variantOf('lavender-dome',      './assets/shape-lavender-dome-dark.svg');
-    var extraArch = variantOf('blue-arch',          './assets/shape-blue-arch-dark.svg');
-    var extraCres = variantOf('left-navy-crescent', './assets/shape-left-navy-crescent-blue.svg');
-
-    if (vw >= 1920) {
-      var extra1920 = base
-        .filter(function(s) { return s.id !== 'large-blue-crescent'; })
-        .map(function(s) {
-          if (s.id === 'blue-ring')          return extraRing;
-          if (s.id === 'small-navy-bowl')    return extraBowl;
-          if (s.id === 'lavender-dome')      return extraDome;
-          if (s.id === 'blue-arch')          return extraArch;
-          if (s.id === 'left-navy-crescent') return extraCres;
-          return s;
-        });
-      return base.concat(extra1920); // 15
-    }
-    if (vw >= 1760) return base.concat([
-      shapeById('navy-circle'),
-      extraDome,
-      extraRing,
-      extraBowl,
-    ]); // 12
-    if (vw >= 1440) return base.concat([extraRing, extraBowl]); // 10
-    return base; // 8
-  }
-
-  // Shapes drop from above the viewport in staggered left-to-right zones.
-  // Physics handles all settling — no pre-placed sleeping bodies.
-  function spawnShapes(stage, Bodies, Body, Composite, engine, layout) {
-    var vw      = layout.vw;
-    var scale   = layout.scale;
-    var shapes  = getSpawnList(vw);
-    var n       = shapes.length;
-    var zoneW   = vw / n;
-    var stagger = CONFIG.spawn.stagger;
-    var jitter  = CONFIG.spawn.zoneJitter;
-    var aJitter = CONFIG.spawn.angleJitter;
-    var items   = [];
-
-    shapes.forEach(function (shape, i) {
-      var sc = scale;
-      var sb = shape.body;
-      var sw = shape.width  * sc;
-      var sh = shape.height * sc;
-
-      var zoneCenter = (i + 0.5) * zoneW;
-      var spawnX = zoneCenter + (Math.random() * 2 - 1) * jitter * zoneW;
-      if (shape.id === 'large-blue-crescent') {
-        spawnX = vw * (0.75 + Math.random() * 0.15);
-      }
-      spawnX = clamp(spawnX, sw / 2, vw - sw / 2);
-      var spawnY = -sh - 20;
-
-      var opts = {
-        isStatic:    false,
-        restitution: CONFIG.physics.restitution,
-        friction:    CONFIG.physics.friction,
-        frictionAir: CONFIG.physics.frictionAir,
-        collisionFilter: { category: 0x0001, mask: 0xFFFF },
-        label: shape.id,
-      };
-      if (sb.radius && sb.type !== 'circle') {
-        opts.chamfer = { radius: sb.radius * sc };
-      }
-
-      var body;
-      if (sb.type === 'circle') {
-        body = Bodies.circle(spawnX, spawnY, sb.radius * sc, opts);
-      } else {
-        body = Bodies.rectangle(spawnX, spawnY, sb.width * sc, sb.height * sc, opts);
-      }
-      Body.setMass(body, shape.mass);
-      Body.setAngle(body, toRadians(shape.angle + (Math.random() * 2 - 1) * aJitter));
-
-      var el = createShapeElement(shape, sw, sh);
-      stage.appendChild(el);
-
-      var item = { element: el, body: body, sw: sw, sh: sh, shape: shape };
-      items.push(item);
-      syncElement(item); // position element above viewport before body enters world
-
-      window.setTimeout(function () {
-        Composite.add(engine.world, body);
-      }, i * stagger);
-    });
-
-    return items;
-  }
-
-  // ─── WALLS & OBSTACLES ─────────────────────────────────────────────────────
   function createWalls(Bodies, layout) {
-    var t    = CONFIG.bounds.wallThickness;
-    var wb   = CONFIG.bounds.wallBleed;
-    var gy   = layout.groundY;
-    var sk   = CONFIG.bounds.floorSink;
-    var vw   = layout.vw;
-    var vh   = layout.vh;
+    var t = 320;
     var opts = { isStatic: true, restitution: 0.18, friction: 0.82, render: { visible: false } };
+    var vw = layout.vw;
+    var vh = layout.vh;
+    var b = layout.bleed;
+    var floor = layout.groundY + layout.sink;
     return [
-      Bodies.rectangle(vw / 2,          gy + sk + t / 2, vw + t * 2, t,      opts), // floor
-      Bodies.rectangle(-wb - t / 2,     vh / 2,           t,          vh * 2, opts), // left wall
-      Bodies.rectangle(vw + wb + t / 2, vh / 2,           t,          vh * 2, opts), // right wall
+      Bodies.rectangle(vw / 2, floor + t / 2 - 2, vw + t * 2, t, opts),  // floor
+      Bodies.rectangle(-b - t / 2, vh / 2, t, vh * 2, opts),             // left wall
+      Bodies.rectangle(vw + b + t / 2, vh / 2, t, vh * 2, opts),         // right wall
     ];
   }
 
-  function createObstacles(Bodies, layout) {
-    var selector = CONFIG.button.obstacleSelector;
-    var category = CONFIG.button.obstacleCategory;
-    var chamfer  = CONFIG.button.chamfer;
-    var result   = [];
-    document.querySelectorAll(selector).forEach(function (el) {
-      var r = el.getBoundingClientRect();
-      if (!r.width || !r.height) return;
-      result.push(Bodies.rectangle(
-        r.left + r.width  / 2,
-        r.top  + r.height / 2,
+  // Tagged obstacles detection
+  function createObstacles(Bodies, stage) {
+    var stageRect = stage.getBoundingClientRect();
+    var els = document.querySelectorAll(OBSTACLE_SELECTOR);
+    var obstacles = [];
+    for (var i = 0; i < els.length; i++) {
+      var r = els[i].getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      obstacles.push(Bodies.rectangle(
+        r.left - stageRect.left + r.width / 2,
+        r.top - stageRect.top + r.height / 2,
         r.width, r.height,
         {
-          isStatic:        true,
-          restitution:     0.2,
-          friction:        0.8,
-          collisionFilter: { category: category, mask: 0xFFFF },
-          chamfer:         { radius: chamfer },
-          label:           'obstacle',
-          render:          { visible: false },
+          isStatic: true,
+          restitution: 0.4,
+          friction: 0.6,
+          chamfer: { radius: Math.min(12, r.height / 2) },
+          render: { visible: false },
         }
       ));
-    });
-    return result;
+    }
+    return obstacles;
   }
 
-  // ─── DOM SYNC ──────────────────────────────────────────────────────────────
+  // --- DOM ---
+
   function createShapeElement(shape, sw, sh) {
-    var el  = document.createElement('div');
+    var el = document.createElement('div');
     var img = document.createElement('img');
     el.className = 'ctx404__shape';
     el.dataset.ctxShape = shape.id;
-    el.style.width  = sw + 'px';
+    el.style.width = sw + 'px';
     el.style.height = sh + 'px';
 
     var src = shape.src;
@@ -365,81 +527,59 @@
       var baseUrl = window.CTX_404_ASSETS_BASE_URL || 'https://thankscavi.github.io/contextual-assets/webflow-scripts/404-physics/';
       src = baseUrl + src.substring(2);
     }
-    img.src       = src;
-    img.alt       = '';
+
+    img.src = src;
+    img.alt = '';
     img.draggable = false;
     el.appendChild(img);
     return el;
   }
 
-  function applyTransform(el, cx, cy, angle, angleUnit, scaleX, scaleY, sw, sh) {
-    var x   = cx - sw / 2;
-    var y   = cy - sh / 2;
-    var rot = angle + (angleUnit === 'deg' ? 'deg' : 'rad');
-    el.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0) rotate(' + rot + ') scaleX(' + scaleX + ') scaleY(' + scaleY + ')';
+  // slot transform helper
+  function slotTransform(pos) {
+    return 'translate3d(' + (pos.cx - pos.sw / 2) + 'px, ' + (pos.cy - pos.sh / 2) + 'px, 0) rotate(' + pos.shape.angle + 'deg)';
+  }
+
+  function entranceTransform(x, y, angleDeg, scale) {
+    return 'translate3d(' + x + 'px, ' + y + 'px, 0) rotate(' + angleDeg + 'deg) scale(' + scale + ')';
   }
 
   function syncElement(item) {
+    if (!item.body) return;
     var x = item.body.position.x - item.sw / 2;
     var y = item.body.position.y - item.sh / 2;
-    item.element.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0) rotate(' + item.body.angle + 'rad)';
+    item.element.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0) rotate(' + item.body.angle + 'rad)';
   }
 
+  // Keep shapes in bounds
   function rescueOutOfBoundsBody(item, layout, Body) {
     var body = item.body;
-    if (body.isStatic) return;
-
-    var vw     = layout.vw;
-    var vh     = layout.vh;
-    var margin = Math.max(item.sw, item.sh, 200);
-    var lost   = (
+    var margin = Math.max(item.sw, item.sh, 160);
+    var isLost = (
       body.position.x < -margin ||
-      body.position.x > vw + margin ||
-      body.position.y > vh + margin
+      body.position.x > layout.vw + margin ||
+      body.position.y < -margin ||
+      body.position.y > layout.vh + margin
     );
-    if (lost) {
-      Body.setPosition(body, {
-        x: clamp(body.position.x, item.sw / 2, vw - item.sw / 2),
-        y: clamp(body.position.y, -item.sh,    layout.groundY - item.sh / 2),
-      });
-      Body.setVelocity(body, { x: 0, y: 0 });
-      Body.setAngularVelocity(body, 0);
-      return;
-    }
-
-    // Visibility guard for sleeping bodies only
-    if (!body.isSleeping) return;
-    var minFrac = CONFIG.bounds.minVisibleFraction;
-    var hw = item.sw / 2;
-    var hh = item.sh / 2;
-    var bx = body.position.x;
-    var by = body.position.y;
-    var visW = Math.min(bx + hw, vw) - Math.max(bx - hw, 0);
-    var visH = Math.min(by + hh, layout.groundY) - Math.max(by - hh, 0);
-    if (visW < 0) visW = 0;
-    if (visH < 0) visH = 0;
-    var frac = (visW * visH) / (item.sw * item.sh);
-    if (frac < minFrac) {
-      Body.setPosition(body, {
-        x: clamp(bx, hw, vw - hw),
-        y: clamp(by, hh, layout.groundY - hh),
-      });
-    }
+    if (!isLost) return;
+    Body.setPosition(body, {
+      x: clamp(body.position.x, item.sw / 2, layout.vw - item.sw / 2),
+      y: clamp(body.position.y, item.sh / 2, layout.vh - item.sh / 2),
+    });
+    Body.setVelocity(body, { x: 0, y: 0 });
+    Body.setAngularVelocity(body, 0);
   }
 
-  // ─── DRAG ──────────────────────────────────────────────────────────────────
-  function bindPointerDrag(stage, elements, Body) {
-    var active   = null;
-    var origMask = 0xFFFF;
-    var obstCat  = CONFIG.button.obstacleCategory;
-    var throwVel = CONFIG.physics.throwVelocity;
+  // --- Drag ---
 
-    function getWorldPt(event) {
-      var r = stage.getBoundingClientRect();
-      return { x: event.clientX - r.left, y: event.clientY - r.top };
+  function bindPointerDrag(stage, elements, Body) {
+    var active = null;
+
+    function getWorldPoint(event, rect) {
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
     }
 
-    function onDown(event) {
+    function handlePointerDown(event) {
       var shapeEl = event.target.closest && event.target.closest('.ctx404__shape');
       if (!shapeEl) return;
 
@@ -447,97 +587,167 @@
       for (var i = 0; i < elements.length; i++) {
         if (elements[i].element === shapeEl) { item = elements[i]; break; }
       }
-      if (!item) return;
+      if (!item || !item.body) return;
 
-      var pt = getWorldPt(event);
+      var stageRect = stage.getBoundingClientRect();
+      var pt = getWorldPoint(event, stageRect);
       active = {
         pointerId: event.pointerId,
-        item:      item,
-        offsetX:   pt.x - item.body.position.x,
-        offsetY:   pt.y - item.body.position.y,
+        item: item,
+        offsetX: pt.x - item.body.position.x,
+        offsetY: pt.y - item.body.position.y,
+        stageRect: stageRect,
+        trail: [{ x: item.body.position.x, y: item.body.position.y, t: performance.now() }],
+        origCollisionFilter: item.body.collisionFilter
       };
 
       stage.setPointerCapture(event.pointerId);
+      item.element.classList.add('is-dragging');
       document.body.style.cursor = 'grabbing';
+      
       if (Matter.Sleeping) Matter.Sleeping.set(item.body, false);
       Body.setVelocity(item.body, { x: 0, y: 0 });
       Body.setAngularVelocity(item.body, 0);
 
-      origMask = item.body.collisionFilter.mask;
+      // Disable ALL collisions during drag
       item.body.collisionFilter = {
         category: item.body.collisionFilter.category,
-        mask:     origMask & ~obstCat,
+        mask: 0x0000
       };
 
       event.preventDefault();
     }
 
-    function onMove(event) {
+    function handlePointerMove(event) {
       if (!active || event.pointerId !== active.pointerId) return;
 
-      var pt   = getWorldPt(event);
+      var pt = getWorldPoint(event, active.stageRect);
       var body = active.item.body;
-      var hw   = (body.bounds.max.x - body.bounds.min.x) / 2;
-      var hh   = (body.bounds.max.y - body.bounds.min.y) / 2;
-      var vw   = window.innerWidth;
-      var vh   = window.innerHeight;
+      var hw = active.item.sw / 2;
+      var hh = active.item.sh / 2;
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
       var nextX = clamp(pt.x - active.offsetX, hw, vw - hw);
       var nextY = clamp(pt.y - active.offsetY, hh, vh - hh);
 
-      Body.setVelocity(body, {
-        x: (nextX - body.position.x) * throwVel,
-        y: (nextY - body.position.y) * throwVel,
-      });
+      // Add to position trail
+      var now = performance.now();
+      active.trail.push({ x: nextX, y: nextY, t: now });
+      if (active.trail.length > 5) active.trail.shift();
+
+      // Instantly position and override gravity velocity buildup
       Body.setPosition(body, { x: nextX, y: nextY });
+      Body.setVelocity(body, { x: 0, y: 0 });
+      Body.setAngularVelocity(body, 0);
+      
       event.preventDefault();
     }
 
-    function onUp(event) {
+    function handlePointerUp(event) {
       if (!active || event.pointerId !== active.pointerId) return;
       if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+      
+      active.item.element.classList.remove('is-dragging');
       document.body.style.cursor = '';
 
-      active.item.body.collisionFilter = {
-        category: active.item.body.collisionFilter.category,
-        mask:     origMask,
-      };
+      // Restore collisions
+      if (active.origCollisionFilter) {
+        active.item.body.collisionFilter = active.origCollisionFilter;
+      }
+
+      // Calculate throw velocity from trail
+      var trail = active.trail;
+      var vel = { x: 0, y: 0 };
+      if (trail.length >= 2) {
+        var last = trail[trail.length - 1];
+        var prev = trail[Math.max(0, trail.length - 3)];
+        var dt = (last.t - prev.t) || 16.67;
+        vel.x = ((last.x - prev.x) / dt) * 6; // scale factor
+        vel.y = ((last.y - prev.y) / dt) * 6;
+
+        // Cap maximum velocity
+        var maxSpeed = 25;
+        var speed = Math.sqrt(vel.x * vel.x + vel.y * vel.y);
+        if (speed > maxSpeed) {
+          vel.x = (vel.x / speed) * maxSpeed;
+          vel.y = (vel.y / speed) * maxSpeed;
+        }
+      }
+
+      Body.setVelocity(active.item.body, vel);
+
+      // Add slight premium spin rotation on throw
+      var angularVel = vel.x * 0.005;
+      Body.setAngularVelocity(active.item.body, clamp(angularVel, -0.15, 0.15));
+
       active = null;
     }
 
-    stage.addEventListener('pointerdown',   onDown);
-    stage.addEventListener('pointermove',   onMove);
-    stage.addEventListener('pointerup',     onUp);
-    stage.addEventListener('pointercancel', onUp);
+    stage.addEventListener('pointerdown', handlePointerDown);
+    stage.addEventListener('pointermove', handlePointerMove);
+    stage.addEventListener('pointerup', handlePointerUp);
+    stage.addEventListener('pointercancel', handlePointerUp);
 
-    return function cleanup() {
-      stage.removeEventListener('pointerdown',   onDown);
-      stage.removeEventListener('pointermove',   onMove);
-      stage.removeEventListener('pointerup',     onUp);
-      stage.removeEventListener('pointercancel', onUp);
+    return function cleanupPointerDrag() {
+      stage.removeEventListener('pointerdown', handlePointerDown);
+      stage.removeEventListener('pointermove', handlePointerMove);
+      stage.removeEventListener('pointerup', handlePointerUp);
+      stage.removeEventListener('pointercancel', handlePointerUp);
     };
   }
 
-  // ─── RESIZE ────────────────────────────────────────────────────────────────
+  // --- Resize ---
+
   function bindResize(root, stage) {
-    window.addEventListener('resize', function () {
+    window.addEventListener('resize', function() {
       window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(function () { handleResize(root, stage); }, 180);
+      resizeTimer = window.setTimeout(function() {
+        handleResize(root, stage);
+      }, RESIZE_DELAY);
     }, { passive: true });
   }
 
   function handleResize(root, stage) {
+    var layout = computeLayout();
+
     if (!state) {
-      renderStatic(stage, computeLayout());
+      renderStatic(stage, layout);
       return;
     }
+
+    if (layout.tileCount === state.tileCount && layout.deviceClass === state.deviceClass && state.engine) {
+      var Composite = Matter.Composite;
+      var Bodies = Matter.Bodies;
+      var Body = Matter.Body;
+
+      state.walls.concat(state.obstacles).forEach(function(b) {
+        Composite.remove(state.engine.world, b);
+      });
+      state.walls = createWalls(Bodies, layout);
+      state.obstacles = createObstacles(Bodies, stage);
+      Composite.add(state.engine.world, state.walls.concat(state.obstacles));
+
+      var positions = computeRestPositions(layout);
+      state.elements.forEach(function(item, i) {
+        item.pos = positions[i];
+        if (item.body && item.body.isSleeping) {
+          Body.setPosition(item.body, { x: positions[i].cx, y: positions[i].cy });
+          Body.setAngle(item.body, toRadians(positions[i].shape.angle));
+        }
+      });
+      state.layout = layout;
+      return;
+    }
+
     destroyWorld();
-    state = createWorld(stage);
+    state = createWorld(stage, false);
   }
 
-  // ─── REDUCED-MOTION ────────────────────────────────────────────────────────
+  // --- Reduced-motion ---
+
   function bindReducedMotion(root, stage) {
     if (!prefersReducedMotion.addEventListener) return;
-    prefersReducedMotion.addEventListener('change', function (event) {
+    prefersReducedMotion.addEventListener('change', function(event) {
       if (event.matches) {
         root.setAttribute('data-static', 'true');
         destroyWorld();
@@ -548,17 +758,43 @@
     });
   }
 
-  // ─── UTILITIES ─────────────────────────────────────────────────────────────
+  // --- Utilities ---
+
   function prepareSectionStage(root, stage) {
-    if (stage.parentElement !== root) root.insertBefore(stage, root.firstChild);
-    if (window.getComputedStyle(root).position === 'static') root.style.position = 'relative';
+    if (stage.parentElement !== root) {
+      root.insertBefore(stage, root.firstChild);
+    }
+    if (window.getComputedStyle(root).position === 'static') {
+      root.style.position = 'relative';
+    }
   }
 
-  function toRadians(deg) { return deg * Math.PI / 180; }
-
-  function clamp(v, lo, hi) {
-    if (hi < lo) return (lo + hi) / 2;
-    return Math.min(Math.max(v, lo), hi);
+  // Polyfill Object.assign if needed for older environments
+  if (typeof Object.assign !== 'function') {
+    Object.assign = function(target) {
+      if (target == null) throw new TypeError('Cannot convert undefined or null to object');
+      var to = Object(target);
+      for (var index = 1; index < arguments.length; index++) {
+        var nextSource = arguments[index];
+        if (nextSource != null) {
+          for (var nextKey in nextSource) {
+            if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+              to[nextKey] = nextSource[nextKey];
+            }
+          }
+        }
+      }
+      return to;
+    };
   }
 
+  function toRadians(degrees) {
+    return degrees * Math.PI / 180;
+  }
+
+  // helper function to clamp a value between a min and max
+  function clamp(value, min, max) {
+    if (max < min) return (min + max) / 2;
+    return Math.min(Math.max(value, min), max);
+  }
 }());
