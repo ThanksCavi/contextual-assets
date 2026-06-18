@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 Physics — Local Dev Harness</title>
+  <link rel="stylesheet" href="./404-physics.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #f5f4f0;
+      font-family: system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Mirror the live layout structure */
+    .ctx404 {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ctx404__design {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header holds the CTA button */
+    .ctx404__header {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 64px;
+    }
+
+    .ctx404__button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: #1B1923;
+      color: #fff;
+      border-radius: 100px;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Stage is the physics overlay (positioned by JS/CSS) */
+    .ctx404__stage {
+      /* positioned absolute by CSS, inset:0 */
+    }
+
+    /* Footer — give it a real height so the physics floor sits correctly */
+    .ctx404__footer {
+      margin-top: auto; /* pin to bottom of the flex column so the physics floor sits at the viewport bottom */
+      height: 80px;
+      background: #f5f4f0;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      position: relative;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<main class="ctx404" data-ctx-404-physics>
+  <section class="ctx404__design">
+
+    <div class="ctx404__header">
+      <a class="ctx404__button" href="/" data-ctx-404-obstacle>
+        <span>Take me home</span>
+      </a>
+    </div>
+
+    <!-- Stage div is created by JS if absent; we include it here so harness is explicit -->
+    <div class="ctx404__stage" data-ctx-404-physics-stage aria-hidden="true"></div>
+
+    <footer class="ctx404__footer" data-ctx-404-footer aria-hidden="true">
+      Dev harness — local only
+    </footer>
+
+  </section>
+</main>
+
+<!-- The script appends "assets/…" itself, so point the base at the folder that CONTAINS assets/ -->
+<script>window.CTX_404_ASSETS_BASE_URL = './';</script>
+<script src="./vendor/matter.min.js"></script>
+<script src="./404-physics.js"></script>
+
+</body>
+</html>

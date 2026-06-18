@@ -1,0 +1,45 @@
+/* ── 404 Physics — stage & shape styles ────────────────────────────────
+   Everything else (typography, buttons, footer, layout) is handled
+   by Webflow Designer classes. Only physics-specific rules live here. */
+
+/* Physics stage — full viewport overlay, behind content */
+.ctx404__stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Individual shape wrappers — positioned via JS transform */
+.ctx404__shape {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+  cursor: grab;
+  transition: filter 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ctx404__shape:hover {
+  filter: brightness(1.05) drop-shadow(0 6px 14px rgba(27, 25, 35, 0.12));
+}
+
+.ctx404__shape.is-dragging {
+  cursor: grabbing;
+  filter: brightness(1.08) drop-shadow(0 12px 28px rgba(27, 25, 35, 0.18));
+  z-index: 100;
+  transition: none; /* Disable transition during drag */
+}
+
+.ctx404__shape img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}

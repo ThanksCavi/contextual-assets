@@ -50,11 +50,6 @@
       hitMinSpeed:       6,   // px/frame threshold to trigger button reaction
       hitCooldown:       350, // ms cooldown between button reactions
     },
-
-    drag: {
-      pushEnabled:  true, // master flag: false => fall back to mask=0x0000 (no push)
-      maxPushSpeed: 18,   // px/frame cap on push velocity fed to neighbours (anti-explosion)
-    },
   };
 
   // ─── MODULE STATE ──────────────────────────────────────────────────────────
@@ -510,39 +505,13 @@
     // Pin the dragged body every engine tick.
     beforeUpdateFn = function () {
       if (!active) return;
-      var body = active.item.body;
-      Body.setPosition(body, { x: active.targetX, y: active.targetY });
-      if (CONFIG.drag.pushEnabled) {
-        // Compute per-tick delta and clamp to maxPushSpeed to prevent explosion
-        var dx = active.targetX - active.prevPinnedX;
-        var dy = active.targetY - active.prevPinnedY;
-        var mag = Math.sqrt(dx * dx + dy * dy);
-        var cap = CONFIG.drag.maxPushSpeed;
-        if (mag > cap) {
-          var ratio = cap / mag;
-          dx *= ratio;
-          dy *= ratio;
-        }
-        // Feed velocity so the contact solver gives neighbours a realistic push impulse
-        Body.setVelocity(body, { x: dx, y: dy });
-        // Keep the static pusher awake in case the user holds still then shoves
-        Matter.Sleeping.set(body, false);
-        active.prevPinnedX = active.targetX;
-        active.prevPinnedY = active.targetY;
-      } else {
-        Body.setVelocity(body, { x: 0, y: 0 });
-        Body.setAngularVelocity(body, 0);
-      }
+      Body.setPosition(active.item.body, { x: active.targetX, y: active.targetY });
+      Body.setVelocity(active.item.body, { x: 0, y: 0 });
+      Body.setAngularVelocity(active.item.body, 0);
     };
     Matter.Events.on(engine, 'beforeUpdate', beforeUpdateFn);
 
     function onDown(event) {
-      // Safety: a previous drag that never released cleanly (lost pointer
-      // capture, released off-window, second pointer) would otherwise leave its
-      // body static/non-colliding and "stuck" mid-air. Restore it first so a
-      // body can never be orphaned in the pusher state.
-      if (active) abortActive();
-
       var shapeEl = event.target.closest && event.target.closest('.ctx404__shape');
       if (!shapeEl) return;
 
@@ -561,58 +530,28 @@
       Body.setVelocity(item.body, { x: 0, y: 0 });
       Body.setAngularVelocity(item.body, 0);
 
-      // Save original collision filter (used by both push paths and release)
+      // Disable all collisions for the dragged body
       var savedFilter = {
         category: item.body.collisionFilter.category,
         mask:     item.body.collisionFilter.mask,
         group:    item.body.collisionFilter.group,
       };
-
-      var savedMass    = item.body.mass;
-      var isPusher     = CONFIG.drag.pushEnabled;
-
-      if (isPusher) {
-        // Make this body an immovable kinematic pusher: static so the solver
-        // never moves it back, but it still transmits position corrections to
-        // dynamic neighbours. Set mask AFTER setStatic (setStatic does not
-        // touch collisionFilter, but ordering is explicit for safety).
-        Body.setStatic(item.body, true);
-        item.body.collisionFilter = {
-          category: savedFilter.category,
-          mask:     0xFFFF & ~CONFIG.button.obstacleCategory,
-          group:    savedFilter.group,
-        };
-        // Wake the whole pile: a static body does not wake sleeping neighbours
-        // on its own — Matter only wakes sleepers on contact with a moving,
-        // non-static body. Without this the pusher passes through settled shapes.
-        for (var w = 0; w < elements.length; w++) {
-          if (!elements[w].body.isStatic) {
-            Matter.Sleeping.set(elements[w].body, false);
-          }
-        }
-      } else {
-        // Legacy path: disable all collisions so the dragged body passes through
-        item.body.collisionFilter = {
-          category: savedFilter.category,
-          mask:     0x0000,
-          group:    savedFilter.group,
-        };
-      }
+      item.body.collisionFilter = {
+        category: savedFilter.category,
+        mask:     0x0000,
+        group:    savedFilter.group,
+      };
 
       active = {
-        pointerId:    event.pointerId,
-        item:         item,
-        stageRect:    stageRect,
-        offsetX:      ptX - item.body.position.x,
-        offsetY:      ptY - item.body.position.y,
-        targetX:      item.body.position.x,
-        targetY:      item.body.position.y,
-        savedFilter:  savedFilter,
-        savedMass:    savedMass,
-        isPusher:     isPusher,
-        prevPinnedX:  item.body.position.x,
-        prevPinnedY:  item.body.position.y,
-        trail:        [{ x: ptX, y: ptY, t: performance.now() }],
+        pointerId:   event.pointerId,
+        item:        item,
+        stageRect:   stageRect,
+        offsetX:     ptX - item.body.position.x,
+        offsetY:     ptY - item.body.position.y,
+        targetX:     item.body.position.x,
+        targetY:     item.body.position.y,
+        savedFilter: savedFilter,
+        trail:       [{ x: ptX, y: ptY, t: performance.now() }],
       };
 
       stage.setPointerCapture(event.pointerId);
@@ -658,15 +597,6 @@
       document.body.style.cursor = '';
       active.item.element.classList.remove('is-dragging');
 
-      // Restore dynamic state for the pusher path before applying throw
-      if (active.isPusher) {
-        Body.setStatic(active.item.body, false);
-        // setStatic(false) restores from body._original which predates our custom
-        // setMass call — re-apply the saved mass explicitly to ensure throw feels
-        // correct and body isn't unexpectedly light.
-        Body.setMass(active.item.body, active.savedMass);
-      }
-
       // Restore collision filter
       active.item.body.collisionFilter = active.savedFilter;
 
@@ -701,40 +631,26 @@
       active = null;
     }
 
-    // Restore an in-flight drag's body to a safe DYNAMIC state without applying
-    // a throw. Used when a drag is interrupted (stale pointer on a new press,
-    // resize, world teardown) so a body is never left static/non-colliding.
-    function abortActive() {
-      if (!active) return;
-      if (stage.hasPointerCapture(active.pointerId)) stage.releasePointerCapture(active.pointerId);
-      active.item.element.classList.remove('is-dragging');
-      if (active.isPusher) {
-        Body.setStatic(active.item.body, false);
-        Body.setMass(active.item.body, active.savedMass);
-      }
-      active.item.body.collisionFilter = active.savedFilter;
-      document.body.style.cursor = '';
-      active = null;
-    }
-
     stage.addEventListener('pointerdown',   onDown);
     stage.addEventListener('pointermove',   onMove);
     stage.addEventListener('pointerup',     onUp);
     stage.addEventListener('pointercancel', onUp);
-    // Backstop: a release that doesn't reach the stage (pointer left the window,
-    // capture silently dropped) must still end the drag, or the body stays stuck.
-    document.addEventListener('pointerup',     onUp);
-    document.addEventListener('pointercancel', onUp);
 
     function cleanup() {
-      // Cancel any in-flight drag (restores its body to safe dynamic state)
-      abortActive();
+      // Cancel any in-flight drag
+      if (active) {
+        if (stage.hasPointerCapture(active.pointerId)) {
+          stage.releasePointerCapture(active.pointerId);
+        }
+        active.item.element.classList.remove('is-dragging');
+        active.item.body.collisionFilter = active.savedFilter;
+        active = null;
+      }
+      document.body.style.cursor = '';
       stage.removeEventListener('pointerdown',   onDown);
       stage.removeEventListener('pointermove',   onMove);
       stage.removeEventListener('pointerup',     onUp);
       stage.removeEventListener('pointercancel', onUp);
-      document.removeEventListener('pointerup',     onUp);
-      document.removeEventListener('pointercancel', onUp);
       // Remove the beforeUpdate pin handler
       Matter.Events.off(engine, 'beforeUpdate', beforeUpdateFn);
       beforeUpdateFn = null;

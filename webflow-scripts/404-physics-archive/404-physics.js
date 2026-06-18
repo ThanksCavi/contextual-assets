@@ -26,7 +26,6 @@
       friction:      0.6,
       frictionAir:   0.012,
       throwVelocity: 0.6,
-      maxThrow:      22,   // px/frame cap on release velocity
     },
 
     bounds: {
@@ -34,7 +33,6 @@
       wallThickness:     320,
       floorSink:           1,
       minVisibleFraction:  0.5,
-      minVisibleTop:       0.35, // min fraction of shape kept visible below the top edge
     },
 
     spawn: {
@@ -47,13 +45,6 @@
       obstacleSelector: '[data-ctx-404-obstacle]',
       obstacleCategory: 0x0004,
       chamfer:           12,
-      hitMinSpeed:       6,   // px/frame threshold to trigger button reaction
-      hitCooldown:       350, // ms cooldown between button reactions
-    },
-
-    drag: {
-      pushEnabled:  true, // master flag: false => fall back to mask=0x0000 (no push)
-      maxPushSpeed: 18,   // px/frame cap on push velocity fed to neighbours (anti-explosion)
     },
   };
 
@@ -67,7 +58,6 @@
   var resizeTimer          = null;
   var state                = null;
   var Matter               = window.Matter;
-  var entranceSettled      = false; // gating flag for button impact reaction
 
   onReady(init);
 
@@ -182,71 +172,27 @@
 
     var physicsItems = spawnShapes(stage, Bodies, Body, Composite, engine, layout);
 
-    // Gate button reaction until entrance cascade has settled (~1.2 s after init)
-    entranceSettled = false;
-    var entranceTimer = window.setTimeout(function () { entranceSettled = true; }, 1200);
-
-    // Button impact reaction: detect collisions with obstacle bodies
-    var buttonLastHit = 0;
-    var obstacleEls   = document.querySelectorAll(CONFIG.button.obstacleSelector);
-
-    Events.on(engine, 'collisionStart', function (event) {
-      if (!entranceSettled) return;
-      var now = performance.now();
-      if (now - buttonLastHit < CONFIG.button.hitCooldown) return;
-      var pairs = event.pairs;
-      for (var p = 0; p < pairs.length; p++) {
-        var pair = pairs[p];
-        // Match obstacles by label (robust across soft re-anchors, which create
-        // fresh obstacle bodies with new ids) rather than a cached id map.
-        var aIsObstacle = pair.bodyA.label === 'obstacle';
-        var bIsObstacle = pair.bodyB.label === 'obstacle';
-        if (!aIsObstacle && !bIsObstacle) continue;
-        var bShape = aIsObstacle ? pair.bodyB : pair.bodyA;
-        var speed  = Math.sqrt(bShape.velocity.x * bShape.velocity.x + bShape.velocity.y * bShape.velocity.y);
-        if (speed < CONFIG.button.hitMinSpeed) continue;
-        buttonLastHit = now;
-        obstacleEls.forEach(function (el) {
-          if (!window.matchMedia(REDUCED_MOTION).matches) {
-            el.classList.add('is-hit');
-            window.setTimeout(function () { el.classList.remove('is-hit'); }, CONFIG.button.hitCooldown);
-          }
-        });
-        break; // one event per collision batch is enough
-      }
-    });
-
     Events.on(engine, 'afterUpdate', function () {
       physicsItems.forEach(function (item) {
-        // Mark entry: once the body is fully below the top edge
-        if (!item.hasEntered && item.body.position.y - item.sh / 2 >= 0) {
-          item.hasEntered = true;
-        }
-        rescueOutOfBoundsBody(item, state.layout, Body);
-        enforceCeiling(item, Body);
+        rescueOutOfBoundsBody(item, layout, Body);
         syncElement(item);
       });
     });
 
-    var dragResult = bindPointerDrag(stage, physicsItems, Body, engine);
-
     return {
-      stage:             stage,
-      engine:            engine,
-      runner:            runner,
-      walls:             walls,
-      obstacles:         obstacles,
-      layout:            layout,
-      physicsItems:      physicsItems,
-      cleanupDrag:       dragResult.cleanup,
-      entranceTimer:     entranceTimer,
+      stage:        stage,
+      engine:       engine,
+      runner:       runner,
+      walls:        walls,
+      obstacles:    obstacles,
+      layout:       layout,
+      physicsItems: physicsItems,
+      cleanupDrag:  bindPointerDrag(stage, physicsItems, Body),
     };
   }
 
   function destroyWorld() {
     if (!state) return;
-    window.clearTimeout(state.entranceTimer);
-    entranceSettled = false;
     Matter.Runner.stop(state.runner);
     if (typeof state.cleanupDrag === 'function') state.cleanupDrag();
     Matter.Composite.clear(state.engine.world, false, true);
@@ -351,7 +297,7 @@
       var el = createShapeElement(shape, sw, sh);
       stage.appendChild(el);
 
-      var item = { element: el, body: body, sw: sw, sh: sh, shape: shape, hasEntered: false };
+      var item = { element: el, body: body, sw: sw, sh: sh, shape: shape };
       items.push(item);
       syncElement(item); // position element above viewport before body enters world
 
@@ -439,22 +385,6 @@
     item.element.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0) rotate(' + item.body.angle + 'rad)';
   }
 
-  // Soft ceiling: once a shape has entered the viewport, keep ≥35% visible below the top edge.
-  // Entrance bodies (hasEntered=false) are exempt so they still fall in from above.
-  function enforceCeiling(item, Body) {
-    if (!item.hasEntered) return;
-    var body       = item.body;
-    var minVisible = CONFIG.bounds.minVisibleTop; // 0.35
-    // Minimum center Y that keeps minVisible fraction of the shape below y=0
-    var minCenterY = -(0.5 - minVisible) * item.sh;
-    if (body.position.y < minCenterY) {
-      Body.setPosition(body, { x: body.position.x, y: minCenterY });
-      if (body.velocity.y < 0) {
-        Body.setVelocity(body, { x: body.velocity.x, y: body.velocity.y * -0.3 });
-      }
-    }
-  }
-
   function rescueOutOfBoundsBody(item, layout, Body) {
     var body = item.body;
     if (body.isStatic) return;
@@ -465,8 +395,7 @@
     var lost   = (
       body.position.x < -margin ||
       body.position.x > vw + margin ||
-      body.position.y > vh + margin ||
-      (item.hasEntered && body.position.y < -margin) // far above, only after entry
+      body.position.y > vh + margin
     );
     if (lost) {
       Body.setPosition(body, {
@@ -499,50 +428,18 @@
   }
 
   // ─── DRAG ──────────────────────────────────────────────────────────────────
-  // Kinematic pin drag: body is moved to the target in the engine's beforeUpdate
-  // tick, not inside the pointer event. This decouples the pointer stream from
-  // the engine tick, eliminates forced reflows (no getBoundingClientRect in
-  // pointermove), and prevents gravity drift on press-and-hold.
-  function bindPointerDrag(stage, elements, Body, engine) {
-    var active          = null; // holds drag state while a pointer is down
-    var beforeUpdateFn  = null; // ref kept so we can remove it on cleanup
+  function bindPointerDrag(stage, elements, Body) {
+    var active   = null;
+    var origMask = 0xFFFF;
+    var obstCat  = CONFIG.button.obstacleCategory;
+    var throwVel = CONFIG.physics.throwVelocity;
 
-    // Pin the dragged body every engine tick.
-    beforeUpdateFn = function () {
-      if (!active) return;
-      var body = active.item.body;
-      Body.setPosition(body, { x: active.targetX, y: active.targetY });
-      if (CONFIG.drag.pushEnabled) {
-        // Compute per-tick delta and clamp to maxPushSpeed to prevent explosion
-        var dx = active.targetX - active.prevPinnedX;
-        var dy = active.targetY - active.prevPinnedY;
-        var mag = Math.sqrt(dx * dx + dy * dy);
-        var cap = CONFIG.drag.maxPushSpeed;
-        if (mag > cap) {
-          var ratio = cap / mag;
-          dx *= ratio;
-          dy *= ratio;
-        }
-        // Feed velocity so the contact solver gives neighbours a realistic push impulse
-        Body.setVelocity(body, { x: dx, y: dy });
-        // Keep the static pusher awake in case the user holds still then shoves
-        Matter.Sleeping.set(body, false);
-        active.prevPinnedX = active.targetX;
-        active.prevPinnedY = active.targetY;
-      } else {
-        Body.setVelocity(body, { x: 0, y: 0 });
-        Body.setAngularVelocity(body, 0);
-      }
-    };
-    Matter.Events.on(engine, 'beforeUpdate', beforeUpdateFn);
+    function getWorldPt(event) {
+      var r = stage.getBoundingClientRect();
+      return { x: event.clientX - r.left, y: event.clientY - r.top };
+    }
 
     function onDown(event) {
-      // Safety: a previous drag that never released cleanly (lost pointer
-      // capture, released off-window, second pointer) would otherwise leave its
-      // body static/non-colliding and "stuck" mid-air. Restore it first so a
-      // body can never be orphaned in the pusher state.
-      if (active) abortActive();
-
       var shapeEl = event.target.closest && event.target.closest('.ctx404__shape');
       if (!shapeEl) return;
 
@@ -552,168 +449,58 @@
       }
       if (!item) return;
 
-      // Cache stage rect once on pointerdown — never inside pointermove
-      var stageRect = stage.getBoundingClientRect();
-      var ptX = event.clientX - stageRect.left;
-      var ptY = event.clientY - stageRect.top;
-
-      if (Matter.Sleeping) Matter.Sleeping.set(item.body, false);
-      Body.setVelocity(item.body, { x: 0, y: 0 });
-      Body.setAngularVelocity(item.body, 0);
-
-      // Save original collision filter (used by both push paths and release)
-      var savedFilter = {
-        category: item.body.collisionFilter.category,
-        mask:     item.body.collisionFilter.mask,
-        group:    item.body.collisionFilter.group,
-      };
-
-      var savedMass    = item.body.mass;
-      var isPusher     = CONFIG.drag.pushEnabled;
-
-      if (isPusher) {
-        // Make this body an immovable kinematic pusher: static so the solver
-        // never moves it back, but it still transmits position corrections to
-        // dynamic neighbours. Set mask AFTER setStatic (setStatic does not
-        // touch collisionFilter, but ordering is explicit for safety).
-        Body.setStatic(item.body, true);
-        item.body.collisionFilter = {
-          category: savedFilter.category,
-          mask:     0xFFFF & ~CONFIG.button.obstacleCategory,
-          group:    savedFilter.group,
-        };
-        // Wake the whole pile: a static body does not wake sleeping neighbours
-        // on its own — Matter only wakes sleepers on contact with a moving,
-        // non-static body. Without this the pusher passes through settled shapes.
-        for (var w = 0; w < elements.length; w++) {
-          if (!elements[w].body.isStatic) {
-            Matter.Sleeping.set(elements[w].body, false);
-          }
-        }
-      } else {
-        // Legacy path: disable all collisions so the dragged body passes through
-        item.body.collisionFilter = {
-          category: savedFilter.category,
-          mask:     0x0000,
-          group:    savedFilter.group,
-        };
-      }
-
+      var pt = getWorldPt(event);
       active = {
-        pointerId:    event.pointerId,
-        item:         item,
-        stageRect:    stageRect,
-        offsetX:      ptX - item.body.position.x,
-        offsetY:      ptY - item.body.position.y,
-        targetX:      item.body.position.x,
-        targetY:      item.body.position.y,
-        savedFilter:  savedFilter,
-        savedMass:    savedMass,
-        isPusher:     isPusher,
-        prevPinnedX:  item.body.position.x,
-        prevPinnedY:  item.body.position.y,
-        trail:        [{ x: ptX, y: ptY, t: performance.now() }],
+        pointerId: event.pointerId,
+        item:      item,
+        offsetX:   pt.x - item.body.position.x,
+        offsetY:   pt.y - item.body.position.y,
       };
 
       stage.setPointerCapture(event.pointerId);
       document.body.style.cursor = 'grabbing';
-      item.element.classList.add('is-dragging');
+      if (Matter.Sleeping) Matter.Sleeping.set(item.body, false);
+      Body.setVelocity(item.body, { x: 0, y: 0 });
+      Body.setAngularVelocity(item.body, 0);
+
+      origMask = item.body.collisionFilter.mask;
+      item.body.collisionFilter = {
+        category: item.body.collisionFilter.category,
+        mask:     origMask & ~obstCat,
+      };
+
       event.preventDefault();
     }
 
     function onMove(event) {
       if (!active || event.pointerId !== active.pointerId) return;
 
-      // Use stable half-extents from item dimensions, not body.bounds (avoids
-      // rotation-dependent AABB which causes clamping oscillation / jitter).
-      var hw = active.item.sw / 2;
-      var hh = active.item.sh / 2;
-      var vw = active.stageRect.width;  // viewport width as seen at grab time
-      var vh = active.stageRect.height;
+      var pt   = getWorldPt(event);
+      var body = active.item.body;
+      var hw   = (body.bounds.max.x - body.bounds.min.x) / 2;
+      var hh   = (body.bounds.max.y - body.bounds.min.y) / 2;
+      var vw   = window.innerWidth;
+      var vh   = window.innerHeight;
+      var nextX = clamp(pt.x - active.offsetX, hw, vw - hw);
+      var nextY = clamp(pt.y - active.offsetY, hh, vh - hh);
 
-      var ptX = event.clientX - active.stageRect.left;
-      var ptY = event.clientY - active.stageRect.top;
-
-      // Update target; clamp within stage bounds
-      active.targetX = clamp(ptX - active.offsetX, hw, vw - hw);
-      active.targetY = clamp(ptY - active.offsetY, hh, vh - hh);
-
-      // Trail for throw velocity — keep last 5 entries
-      var now = performance.now();
-      active.trail.push({ x: ptX, y: ptY, t: now });
-      if (active.trail.length > 5) active.trail.shift();
-
+      Body.setVelocity(body, {
+        x: (nextX - body.position.x) * throwVel,
+        y: (nextY - body.position.y) * throwVel,
+      });
+      Body.setPosition(body, { x: nextX, y: nextY });
       event.preventDefault();
     }
 
     function onUp(event) {
       if (!active || event.pointerId !== active.pointerId) return;
-      releaseActive(event.pointerId);
-    }
-
-    function releaseActive(pointerId) {
-      if (!active) return;
-
-      if (stage.hasPointerCapture(pointerId)) stage.releasePointerCapture(pointerId);
+      if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
       document.body.style.cursor = '';
-      active.item.element.classList.remove('is-dragging');
 
-      // Restore dynamic state for the pusher path before applying throw
-      if (active.isPusher) {
-        Body.setStatic(active.item.body, false);
-        // setStatic(false) restores from body._original which predates our custom
-        // setMass call — re-apply the saved mass explicitly to ensure throw feels
-        // correct and body isn't unexpectedly light.
-        Body.setMass(active.item.body, active.savedMass);
-      }
-
-      // Restore collision filter
-      active.item.body.collisionFilter = active.savedFilter;
-
-      // Compute throw velocity from trail (last vs ~3rd-from-last entry)
-      var trail = active.trail;
-      var vx = 0, vy = 0;
-      if (trail.length >= 2) {
-        var newPt = trail[trail.length - 1];
-        var oldPt = trail[Math.max(0, trail.length - 3)];
-        var dt    = newPt.t - oldPt.t;
-        if (dt > 0) {
-          // Convert px/ms → px/frame (assuming 60 Hz = ~16.67 ms/frame)
-          var msPerFrame = 1000 / 60;
-          vx = (newPt.x - oldPt.x) / dt * msPerFrame;
-          vy = (newPt.y - oldPt.y) / dt * msPerFrame;
-        }
-      }
-
-      // Cap speed so hard flicks can't escape containment
-      var speed = Math.sqrt(vx * vx + vy * vy);
-      var cap   = CONFIG.physics.maxThrow;
-      if (speed > cap) {
-        var ratio = cap / speed;
-        vx *= ratio;
-        vy *= ratio;
-      }
-
-      Body.setVelocity(active.item.body, { x: vx, y: vy });
-      // Add subtle spin proportional to horizontal throw speed
-      Body.setAngularVelocity(active.item.body, clamp(vx * 0.004, -0.12, 0.12));
-
-      active = null;
-    }
-
-    // Restore an in-flight drag's body to a safe DYNAMIC state without applying
-    // a throw. Used when a drag is interrupted (stale pointer on a new press,
-    // resize, world teardown) so a body is never left static/non-colliding.
-    function abortActive() {
-      if (!active) return;
-      if (stage.hasPointerCapture(active.pointerId)) stage.releasePointerCapture(active.pointerId);
-      active.item.element.classList.remove('is-dragging');
-      if (active.isPusher) {
-        Body.setStatic(active.item.body, false);
-        Body.setMass(active.item.body, active.savedMass);
-      }
-      active.item.body.collisionFilter = active.savedFilter;
-      document.body.style.cursor = '';
+      active.item.body.collisionFilter = {
+        category: active.item.body.collisionFilter.category,
+        mask:     origMask,
+      };
       active = null;
     }
 
@@ -721,26 +508,13 @@
     stage.addEventListener('pointermove',   onMove);
     stage.addEventListener('pointerup',     onUp);
     stage.addEventListener('pointercancel', onUp);
-    // Backstop: a release that doesn't reach the stage (pointer left the window,
-    // capture silently dropped) must still end the drag, or the body stays stuck.
-    document.addEventListener('pointerup',     onUp);
-    document.addEventListener('pointercancel', onUp);
 
-    function cleanup() {
-      // Cancel any in-flight drag (restores its body to safe dynamic state)
-      abortActive();
+    return function cleanup() {
       stage.removeEventListener('pointerdown',   onDown);
       stage.removeEventListener('pointermove',   onMove);
       stage.removeEventListener('pointerup',     onUp);
       stage.removeEventListener('pointercancel', onUp);
-      document.removeEventListener('pointerup',     onUp);
-      document.removeEventListener('pointercancel', onUp);
-      // Remove the beforeUpdate pin handler
-      Matter.Events.off(engine, 'beforeUpdate', beforeUpdateFn);
-      beforeUpdateFn = null;
-    }
-
-    return { cleanup: cleanup };
+    };
   }
 
   // ─── RESIZE ────────────────────────────────────────────────────────────────
@@ -756,66 +530,8 @@
       renderStatic(stage, computeLayout());
       return;
     }
-
-    var newLayout    = computeLayout();
-    var oldSpawnLen  = state.physicsItems.length;
-    var newSpawnLen  = getSpawnList(newLayout.vw).length;
-
-    // Same shape-count bucket: soft re-anchor (no re-drop).
-    // cleanupDrag cancels any active drag and tears down the old beforeUpdate pin;
-    // softReanchor re-binds a fresh one.
-    if (newSpawnLen === oldSpawnLen) {
-      if (typeof state.cleanupDrag === 'function') state.cleanupDrag();
-      state.cleanupDrag = null; // prevent destroyWorld from calling it again
-      softReanchor(newLayout);
-      return;
-    }
-
-    // Different bucket: full rebuild (re-drop acceptable here).
-    // destroyWorld will call cleanupDrag, so let it.
     destroyWorld();
     state = createWorld(stage);
-  }
-
-  // Soft re-anchor: reposition walls/obstacles for new viewport, clamp out-of-bounds
-  // dynamic bodies. Does NOT destroy the world or re-drop shapes.
-  function softReanchor(newLayout) {
-    var Bodies    = Matter.Bodies;
-    var Body      = Matter.Body;
-    var Composite = Matter.Composite;
-
-    // Remove old walls and obstacles from the world
-    state.walls.forEach(function (w) { Composite.remove(state.engine.world, w); });
-    state.obstacles.forEach(function (ob) { Composite.remove(state.engine.world, ob); });
-
-    // Create new walls/obstacles for the new layout
-    var newWalls     = createWalls(Bodies, newLayout);
-    var newObstacles = createObstacles(Bodies, newLayout);
-    Composite.add(state.engine.world, newWalls);
-    if (newObstacles.length) Composite.add(state.engine.world, newObstacles);
-
-    // Re-clamp any out-of-bounds dynamic bodies into the new viewport
-    state.physicsItems.forEach(function (item) {
-      var body = item.body;
-      if (body.isStatic) return;
-      var hw = item.sw / 2;
-      var hh = item.sh / 2;
-      var newX = clamp(body.position.x, hw, newLayout.vw - hw);
-      var newY = clamp(body.position.y, hh, newLayout.groundY - hh);
-      if (newX !== body.position.x || newY !== body.position.y) {
-        Body.setPosition(body, { x: newX, y: newY });
-        Body.setVelocity(body, { x: 0, y: 0 });
-      }
-    });
-
-    // Update state references
-    state.walls     = newWalls;
-    state.obstacles = newObstacles;
-    state.layout    = newLayout;
-
-    // Re-bind drag with current engine (new cleanup fn replaces old one)
-    var dragResult  = bindPointerDrag(state.stage, state.physicsItems, Body, state.engine);
-    state.cleanupDrag = dragResult.cleanup;
   }
 
   // ─── REDUCED-MOTION ────────────────────────────────────────────────────────
