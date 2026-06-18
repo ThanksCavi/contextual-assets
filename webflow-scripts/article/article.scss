@@ -77,6 +77,10 @@
 		margin-top: 40px;
 		margin-bottom: 40px;
 	}
+
+	.w-embed:has(> table) {
+		overflow-x: auto;
+	}
 	
 	.w-embed,
 	figure,
@@ -354,6 +358,12 @@
 	}
 	
 	&.is-dark {
+		.w-embed:has(> table) {
+			--horizontal-scrollbar-track: rgba(255, 255, 255, 0.16);
+			--horizontal-scrollbar-thumb: var(--_system-colors---accent, #ecf071);
+			--horizontal-scrollbar-thumb-hover: #f4f78d;
+		}
+
 		table {
 			border-color: transparent;
 			background: linear-gradient(var(--_system-colors---white--white-5), var(--_system-colors---white--white-5)),
@@ -385,8 +395,6 @@
 	}
 	
 	@media (max-width: 767px) {
-		overflow-x: auto;
-		
 		table {
 			min-width: 640px;
 		}

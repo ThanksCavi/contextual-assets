@@ -11,7 +11,8 @@
   [data-horizontal-scroll],
   [data-horizontal-scroll] *,
   [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *
+  [data-horizontal-scroll-dark] *,
+  .article .w-embed:has(> table)
 ) {
   scrollbar-color: var(--horizontal-scrollbar-thumb) var(--horizontal-scrollbar-track);
   scrollbar-width: thin;
@@ -21,7 +22,8 @@
   [data-horizontal-scroll],
   [data-horizontal-scroll] *,
   [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *
+  [data-horizontal-scroll-dark] *,
+  .article .w-embed:has(> table)
 )::-webkit-scrollbar:horizontal {
   height: var(--horizontal-scrollbar-size) !important;
   background: transparent !important;
@@ -31,7 +33,8 @@
   [data-horizontal-scroll],
   [data-horizontal-scroll] *,
   [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *
+  [data-horizontal-scroll-dark] *,
+  .article .w-embed:has(> table)
 )::-webkit-scrollbar-track:horizontal {
   border: 0 !important;
   border-radius: var(--horizontal-scrollbar-radius) !important;
@@ -43,7 +46,8 @@
   [data-horizontal-scroll],
   [data-horizontal-scroll] *,
   [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *
+  [data-horizontal-scroll-dark] *,
+  .article .w-embed:has(> table)
 )::-webkit-scrollbar-thumb:horizontal {
   border: 0 !important;
   border-radius: var(--horizontal-scrollbar-radius) !important;
@@ -55,12 +59,13 @@
   [data-horizontal-scroll],
   [data-horizontal-scroll] *,
   [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *
+  [data-horizontal-scroll-dark] *,
+  .article .w-embed:has(> table)
 )::-webkit-scrollbar-thumb:horizontal:hover {
   background: var(--horizontal-scrollbar-thumb-hover) !important;
 }
 
-:where([data-horizontal-scroll-dark]) {
+:where([data-horizontal-scroll-dark], .article.is-dark .w-embed:has(> table)) {
   --horizontal-scrollbar-track: rgba(255, 255, 255, 0.16);
   --horizontal-scrollbar-thumb: var(--_system-colors---accent, #ecf071);
   --horizontal-scrollbar-thumb-hover: #f4f78d;
