@@ -396,8 +396,8 @@
 			extraBowl,
 			crescent,
 		]); // 12, crescent last
-		if (vw >= 1440) return baseSans.concat([extraRing, extraBowl, crescent]); // 10, crescent last
-		return base; // 8, crescent already last
+		if (vw >= 1441) return baseSans.concat([extraRing, extraBowl, crescent]); // 10, crescent last
+		return base; // 8 — exactly 1440 (and below) stays on the Figma reference layout
 	}
 
 	// Horizontal x-span of the CTA button, read from the obstacle element. Used to
