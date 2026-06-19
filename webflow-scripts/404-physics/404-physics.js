@@ -367,10 +367,8 @@
 				if (s.id === 'left-navy-crescent') return extraCres;
 				return s;
 			});
-			// extraCres and extraRing both map to center zones (button area) due to array structure;
-			// shift each two positions right so navy-wedge occupies zone 7 instead
-			extra1920.splice(2, 0, extra1920.splice(0, 1)[0]); // extraCres: zone 7 → 9
-			extra1920.splice(3, 0, extra1920.splice(0, 1)[0]); // extraRing: zone 7 → 10
+			// move extraRing from zone 8 to zone 10 so blue extraCres stays at zone 7, breaking dark cluster at zones 5–6
+			extra1920.splice(3, 0, extra1920.splice(1, 1)[0]); // extraRing: zone 8 → 10
 			return baseSans.concat(extra1920).concat([crescent]); // 15, crescent last
 		}
 		if (vw >= 1760) return baseSans.concat([
