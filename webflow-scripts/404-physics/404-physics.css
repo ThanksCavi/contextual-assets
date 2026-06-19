@@ -9,6 +9,7 @@
 	width: 100%;
 	pointer-events: none;
 	z-index: 1;
+	overflow: hidden;
 }
 
 /* Individual shape wrappers — positioned via JS transform */
