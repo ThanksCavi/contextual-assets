@@ -355,6 +355,7 @@
 		var extraDome = variantOf('lavender-dome', './assets/shape-lavender-dome-dark.svg');
 		var extraArch = variantOf('blue-arch', './assets/shape-blue-arch-dark.svg');
 		var extraCres = variantOf('left-navy-crescent', './assets/shape-left-navy-crescent-blue.svg');
+		extraCres.angle = -130; // more tilted spawn → less stable on flat surfaces like the button
 
 		// crescent is always last so it gets the rightmost spawn zone on every breakpoint
 		if (vw >= 1920) {
@@ -366,6 +367,9 @@
 				if (s.id === 'left-navy-crescent') return extraCres;
 				return s;
 			});
+			// extraCres lands at zone 7 (center = button) due to array structure;
+			// move it to zone 9 (right-of-center) by shifting it two positions right
+			extra1920.splice(2, 0, extra1920.splice(0, 1)[0]);
 			return baseSans.concat(extra1920).concat([crescent]); // 15, crescent last
 		}
 		if (vw >= 1760) return baseSans.concat([

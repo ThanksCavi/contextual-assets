@@ -65,6 +65,7 @@
 }
 .article .w-embed:has(> table) {
   overflow-x: auto;
+  padding-bottom: 12px;
 }
 .article .w-embed:first-child,
 .article figure:first-child,
@@ -94,13 +95,34 @@
 .article h6:last-child {
   margin-bottom: 0;
 }
+.article h2 strong,
+.article h3 strong,
+.article h4 strong,
+.article h5 strong,
+.article h6 strong {
+  font-weight: inherit;
+  color: var(--_system-colors---primary);
+}
+.article h2 strong:first-child,
+.article h3 strong:first-child,
+.article h4 strong:first-child,
+.article h5 strong:first-child,
+.article h6 strong:first-child {
+  display: inline-block;
+  padding-right: 0.65em;
+}
+.article li strong,
+.article p strong {
+  font-weight: inherit;
+  color: var(--_system-colors---light);
+}
 .article ol,
 .article ul {
   padding-left: 1.65em;
   row-gap: 12px;
   display: flex;
   flex-direction: column;
-  margin-top: 40px;
+  margin-top: 32px;
   margin-bottom: 60px;
 }
 .article ul li {
