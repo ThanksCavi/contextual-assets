@@ -370,10 +370,11 @@
 			// Tune purely by reordering this list — no splice juggling.
 			var navyWedge = shapeById('navy-wedge');
 			var navyCircle = shapeById('navy-circle');
+			var blueWedge = variantOf('navy-wedge', './assets/shape-navy-wedge-blue.svg');
 			return [
 				shapeById('left-navy-crescent'), // 0  dark, wide  — left anchor
 				shapeById('lavender-dome'),      // 1  lavender
-				navyWedge,                       // 2  dark
+				blueWedge,                       // 2  blue (accent on the left half)
 				navyCircle,                      // 3  dark
 				shapeById('blue-arch'),          // 4  blue, large
 				extraDome,                       // 5  dark
