@@ -105,6 +105,8 @@
 			stagger: 80,  // ms between shapes
 			angleJitter: 20,  // ±deg random rotation at spawn
 			zoneJitter: 0.4, // ±fraction of zone width for x scatter
+			buttonBandWidth: 1760, // min vw at which the button-column guard is active
+			buttonBandMargin: 48,  // px padding added around the button's x-span
 		},
 
 		button: {
@@ -355,21 +357,36 @@
 		var extraDome = variantOf('lavender-dome', './assets/shape-lavender-dome-dark.svg');
 		var extraArch = variantOf('blue-arch', './assets/shape-blue-arch-dark.svg');
 		var extraCres = variantOf('left-navy-crescent', './assets/shape-left-navy-crescent-blue.svg');
-		extraCres.angle = -130; // more tilted spawn → less stable on flat surfaces like the button
 
 		// crescent is always last so it gets the rightmost spawn zone on every breakpoint
 		if (vw >= 1920) {
-			var extra1920 = baseSans.map(function (s) {
-				if (s.id === 'blue-ring') return extraRing;
-				if (s.id === 'small-navy-bowl') return extraBowl;
-				if (s.id === 'lavender-dome') return extraDome;
-				if (s.id === 'blue-arch') return extraArch;
-				if (s.id === 'left-navy-crescent') return extraCres;
-				return s;
-			});
-			// move extraRing from zone 8 to zone 10 so blue extraCres stays at zone 7, breaking dark cluster at zones 5–6
-			extra1920.splice(3, 0, extra1920.splice(1, 1)[0]); // extraRing: zone 8 → 10
-			return baseSans.concat(extra1920).concat([crescent]); // 15, crescent last
+			// Explicit, hand-ordered 15-shape sequence (the designer's pattern made
+			// readable). Each index maps to a left→right spawn zone. Rules:
+			//   • colour and size alternate — no two big dark shapes sit adjacent;
+			//   • the centre indices (6–8, the zones above the button) hold only
+			//     small/light shapes, so the button-band guard in spawnShapes only ever
+			//     nudges unobtrusive shapes;
+			//   • the large blue crescent stays last (right anchor).
+			// Tune purely by reordering this list — no splice juggling.
+			var navyWedge = shapeById('navy-wedge');
+			var navyCircle = shapeById('navy-circle');
+			return [
+				shapeById('left-navy-crescent'), // 0  dark, wide  — left anchor
+				shapeById('lavender-dome'),      // 1  lavender
+				navyWedge,                       // 2  dark
+				navyCircle,                      // 3  dark
+				shapeById('blue-arch'),          // 4  blue, large
+				extraDome,                       // 5  dark
+				extraBowl,                       // 6  lavender, small ┐ centre band
+				extraRing,                       // 7  dark, small     │ (above button)
+				shapeById('small-navy-bowl'),    // 8  dark, small     ┘
+				extraCres,                       // 9  blue, wide
+				navyWedge,                       // 10 dark
+				shapeById('blue-ring'),          // 11 blue, small
+				extraArch,                       // 12 dark, large
+				navyCircle,                      // 13 dark
+				crescent,                        // 14 blue, huge — right anchor
+			];
 		}
 		if (vw >= 1760) return baseSans.concat([
 			shapeById('navy-circle'),
@@ -380,6 +397,18 @@
 		]); // 12, crescent last
 		if (vw >= 1440) return baseSans.concat([extraRing, extraBowl, crescent]); // 10, crescent last
 		return base; // 8, crescent already last
+	}
+
+	// Horizontal x-span of the CTA button, read from the obstacle element. Used to
+	// keep shapes from raining straight down the button's column (where they could
+	// come to rest on it). Returns null if no button is present.
+	function getButtonBand() {
+		var el = document.querySelector(CONFIG.button.obstacleSelector);
+		if (!el) return null;
+		var r = el.getBoundingClientRect();
+		if (!r.width) return null;
+		var m = CONFIG.spawn.buttonBandMargin;
+		return {left: r.left - m, right: r.right + m};
 	}
 
 	// Shapes drop from above the viewport in staggered left-to-right zones.
@@ -393,6 +422,9 @@
 		var stagger = CONFIG.spawn.stagger;
 		var jitter = CONFIG.spawn.zoneJitter;
 		var aJitter = CONFIG.spawn.angleJitter;
+		// Wide screens only: keep spawns out of the button's column so nothing can
+		// settle on the CTA (replaces the old per-width angle/friction/splice hacks).
+		var band = vw >= CONFIG.spawn.buttonBandWidth ? getButtonBand() : null;
 		var items = [];
 
 		shapes.forEach(function (shape, i) {
@@ -404,6 +436,13 @@
 			var zoneCenter = (i + 0.5) * zoneW;
 			var spawnX = zoneCenter + (Math.random() * 2 - 1) * jitter * zoneW;
 			spawnX = clamp(spawnX, sw / 2, vw - sw / 2);
+			// Push any spawn that lands over the button's column out to the nearer
+			// band edge (offset by half the shape so it clears the button entirely).
+			if (band && spawnX > band.left && spawnX < band.right) {
+				var toLeft = (spawnX - band.left) <= (band.right - spawnX);
+				spawnX = toLeft ? band.left - sw / 2 : band.right + sw / 2;
+				spawnX = clamp(spawnX, sw / 2, vw - sw / 2);
+			}
 			var spawnY = -sh - 20;
 
 			var opts = {
