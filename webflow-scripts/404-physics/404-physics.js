@@ -367,9 +367,10 @@
 				if (s.id === 'left-navy-crescent') return extraCres;
 				return s;
 			});
-			// extraCres lands at zone 7 (center = button) due to array structure;
-			// move it to zone 9 (right-of-center) by shifting it two positions right
-			extra1920.splice(2, 0, extra1920.splice(0, 1)[0]);
+			// extraCres and extraRing both map to center zones (button area) due to array structure;
+			// shift each two positions right so navy-wedge occupies zone 7 instead
+			extra1920.splice(2, 0, extra1920.splice(0, 1)[0]); // extraCres: zone 7 → 9
+			extra1920.splice(3, 0, extra1920.splice(0, 1)[0]); // extraRing: zone 7 → 10
 			return baseSans.concat(extra1920).concat([crescent]); // 15, crescent last
 		}
 		if (vw >= 1760) return baseSans.concat([
@@ -474,7 +475,7 @@
 				{
 					isStatic: true,
 					restitution: 0.2,
-					friction: 0.8,
+					friction: 0.1,
 					collisionFilter: {category: category, mask: 0xFFFF},
 					chamfer: {radius: chamfer},
 					label: 'obstacle',
