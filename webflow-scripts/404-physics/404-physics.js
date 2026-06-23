@@ -72,7 +72,7 @@
 				src: './assets/shape-large-blue-crescent.svg',
 				width: 428,
 				height: 214,
-				angle: 150,
+				angle: 150, // arc opens downward at entry (matches the Figma reference)
 				body: {type: 'rect', width: 428, height: 214, radius: 36},
 				mass: 6
 			},
@@ -105,7 +105,7 @@
 			stagger: 80,  // ms between shapes
 			angleJitter: 20,  // ±deg random rotation at spawn
 			zoneJitter: 0.4, // ±fraction of zone width for x scatter
-			buttonBandWidth: 1760, // min vw at which the button-column guard is active
+			buttonBandWidth: 1440, // min vw at which the button-column guard is active
 			buttonBandMargin: 48,  // px padding added around the button's x-span
 		},
 
@@ -423,8 +423,8 @@
 		var stagger = CONFIG.spawn.stagger;
 		var jitter = CONFIG.spawn.zoneJitter;
 		var aJitter = CONFIG.spawn.angleJitter;
-		// Wide screens only: keep spawns out of the button's column so nothing can
-		// settle on the CTA (replaces the old per-width angle/friction/splice hacks).
+		// Desktop widths (>= buttonBandWidth): keep spawns out of the button's column
+		// so nothing can settle on the CTA (replaces the old angle/friction/splice hacks).
 		var band = vw >= CONFIG.spawn.buttonBandWidth ? getButtonBand() : null;
 		var items = [];
 
