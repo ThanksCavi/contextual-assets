@@ -37,6 +37,7 @@
 
   onMotionReady(initPage);
   window.addEventListener('scroll', queueActiveNavUpdate, { passive: true });
+  window.addEventListener('hashchange', handleHashChange);
   window.addEventListener('resize', queueRefresh);
   window.addEventListener(MOTION_POLICY_CHANGE_EVENT, queueRefresh);
   window.addEventListener(STICKY_REFRESH_EVENT, handleStickySidebarRefresh);
@@ -91,21 +92,26 @@
   }
 
   function setupAnchorScroll() {
-    state.navItems.forEach((item) => {
-      if (item.dataset.ssNavInit === 'true') return;
-      item.dataset.ssNavInit = 'true';
+    if (!state.nav || state.nav.dataset.ssNavInit === 'true') return;
 
-      item.addEventListener('click', (event) => {
-        const targetId = getNavTargetId(item);
-        const target = getSectionById(targetId);
-        if (!target) return;
+    state.nav.dataset.ssNavInit = 'true';
+    state.nav.addEventListener('click', handleNavClick, true);
+  }
 
-        event.preventDefault();
-        setActiveNavItem(targetId);
-        updateHash(targetId);
-        scrollToSection(target);
-      });
-    });
+  function handleNavClick(event) {
+    const item = event.target.closest(NAV_ITEM_SELECTOR);
+    if (!item || !state.nav.contains(item)) return;
+
+    const targetId = getNavTargetId(item);
+    const target = getSectionById(targetId);
+    if (!target) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    setActiveNavItem(targetId);
+    updateHash(targetId);
+    scrollToSection(target);
   }
 
   function setupShareLinks() {
@@ -190,6 +196,15 @@
       state.scrollRaf = null;
       updateActiveNavFromScroll();
     });
+  }
+
+  function handleHashChange() {
+    const targetId = getHashTargetId();
+    const target = getSectionById(targetId);
+    if (!target) return;
+
+    setActiveNavItem(targetId);
+    scrollToSection(target, { forceAuto: true });
   }
 
   function updateActiveNavFromScroll() {
