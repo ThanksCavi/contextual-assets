@@ -15,6 +15,8 @@
   const RESIZE_REFRESH_DELAY_MS = 160;
   const DEFAULT_TOP_OFFSET = 100;
   const ACTIVE_LINE_RATIO = 0.45;
+  const ACTIVE_SCROLL_SETTLE_TOLERANCE_PX = 4;
+  const ACTIVE_SCROLL_LOCK_TIMEOUT_MS = 2600;
 
   if (window[INIT_FLAG]) return;
   window[INIT_FLAG] = true;
@@ -27,6 +29,8 @@
     sections: [],
     navItems: [],
     scrollRaf: null,
+    activeLockId: '',
+    activeLockRaf: null,
   };
 
   let resizeTimer = null;
@@ -109,7 +113,7 @@
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
-    setActiveNavItem(targetId);
+    lockActiveNavUntilSettled(targetId, target);
     updateHash(targetId);
     scrollToSection(target);
   }
@@ -155,7 +159,7 @@
     const target = getSectionById(targetId);
     if (!target) return;
 
-    setActiveNavItem(targetId);
+    lockActiveNavUntilSettled(targetId, target);
 
     requestAnimationFrame(() => {
       scrollToSection(target, { forceAuto: true });
@@ -190,6 +194,11 @@
   }
 
   function queueActiveNavUpdate() {
+    if (state.activeLockId) {
+      setActiveNavItem(state.activeLockId);
+      return;
+    }
+
     if (state.scrollRaf) return;
 
     state.scrollRaf = requestAnimationFrame(() => {
@@ -203,11 +212,48 @@
     const target = getSectionById(targetId);
     if (!target) return;
 
-    setActiveNavItem(targetId);
+    lockActiveNavUntilSettled(targetId, target);
     scrollToSection(target, { forceAuto: true });
   }
 
+  function lockActiveNavUntilSettled(activeId, target) {
+    if (!activeId || !target) return;
+
+    if (state.activeLockRaf) {
+      cancelAnimationFrame(state.activeLockRaf);
+      state.activeLockRaf = null;
+    }
+
+    state.activeLockId = activeId;
+    setActiveNavItem(activeId);
+
+    const startedAt = Date.now();
+
+    const checkSettled = () => {
+      const targetTop = target.getBoundingClientRect().top;
+      const targetOffset = getTopOffset();
+      const isSettled = Math.abs(targetTop - targetOffset) <= ACTIVE_SCROLL_SETTLE_TOLERANCE_PX;
+      const timedOut = Date.now() - startedAt >= ACTIVE_SCROLL_LOCK_TIMEOUT_MS;
+
+      if (isSettled || timedOut) {
+        state.activeLockId = '';
+        state.activeLockRaf = null;
+        setActiveNavItem(activeId);
+        return;
+      }
+
+      state.activeLockRaf = requestAnimationFrame(checkSettled);
+    };
+
+    state.activeLockRaf = requestAnimationFrame(checkSettled);
+  }
+
   function updateActiveNavFromScroll() {
+    if (state.activeLockId) {
+      setActiveNavItem(state.activeLockId);
+      return;
+    }
+
     if (state.sections.length === 0 || state.navItems.length === 0) return;
 
     const offset = getTopOffset();
