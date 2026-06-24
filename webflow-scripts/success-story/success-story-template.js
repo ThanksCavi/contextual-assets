@@ -1,9 +1,12 @@
-// Case Study Template
+// Success Story Template
 (() => {
-  const NAV_SELECTOR = '[data-case-study-nav]';
-  const SECTION_SELECTOR = '.story-content-block[data-anchor-section]';
-  const NAV_ITEM_SELECTOR = '.story-nav-item[data-anchor-link]';
+  const INIT_FLAG = '__contextualSuccessStoryTemplateInit';
+  const ROOT_SELECTOR = '[data-ss-template="success-stories"]';
+  const NAV_SELECTOR = '.ss-story-nav';
+  const NAV_ITEM_SELECTOR = '.ss-story-nav a[href^="#"]';
+  const SECTION_SELECTOR = '.ss-section[id][data-ss-section]';
   const SHARE_SELECTOR = '[data-share]';
+  const STICKY_SIDEBAR_SELECTOR = '[data-sticky-sidebar]';
 
   const ACTIVE_CLASS = 'is-active';
   const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -11,27 +14,33 @@
   const STICKY_REFRESH_EVENT = 'contextual:sticky-sidebar-refresh';
   const RESIZE_REFRESH_DELAY_MS = 160;
   const DEFAULT_TOP_OFFSET = 100;
+  const ACTIVE_LINE_RATIO = 0.45;
+
+  if (window[INIT_FLAG]) return;
+  window[INIT_FLAG] = true;
 
   const state = {
     isReady: false,
+    root: null,
+    nav: null,
+    sidebar: null,
     sections: [],
     navItems: [],
-    nav: null,
-    observer: null,
+    scrollRaf: null,
   };
 
   let resizeTimer = null;
 
-  window.CaseStudyTemplate = {
+  window.SuccessStoryTemplate = {
     refresh,
   };
 
   onMotionReady(initPage);
+  window.addEventListener('scroll', queueActiveNavUpdate, { passive: true });
   window.addEventListener('resize', queueRefresh);
   window.addEventListener(MOTION_POLICY_CHANGE_EVENT, queueRefresh);
   window.addEventListener(STICKY_REFRESH_EVENT, handleStickySidebarRefresh);
 
-  // Init after ScrollSmoother has decided whether desktop motion is enabled.
   function onMotionReady(callback) {
     if (window.ContextualHomeMotion?.ready) {
       window.ContextualHomeMotion.ready.then(callback);
@@ -53,64 +62,54 @@
     }
   }
 
-  // Page setup: active nav, anchor scrolling, and share links.
   function initPage() {
     if (state.isReady) return;
 
-    state.sections = Array.from(document.querySelectorAll(SECTION_SELECTOR));
-    state.navItems = Array.from(document.querySelectorAll(NAV_ITEM_SELECTOR));
-    state.nav = document.querySelector(NAV_SELECTOR);
+    collectElements();
 
-    if (state.sections.length === 0 && state.navItems.length === 0 && !state.nav && document.querySelectorAll(SHARE_SELECTOR).length === 0) {
+    if (state.sections.length === 0 && state.navItems.length === 0 && document.querySelectorAll(SHARE_SELECTOR).length === 0) {
       return;
     }
 
     state.isReady = true;
     setupShareLinks();
-    setupActiveNav();
     setupAnchorScroll();
     refreshStickySidebar();
+    updateActiveNavFromScroll();
+    scrollToInitialHash();
     requestGlobalRefresh();
   }
 
-  // Active nav: mirrors the old template IntersectionObserver behavior.
-  function setupActiveNav() {
-    if (state.sections.length === 0 || state.navItems.length === 0 || !('IntersectionObserver' in window)) {
-      updateActiveNavFromScroll();
-      return;
-    }
-
-    state.observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveNavItem(entry.target.dataset.anchorSection);
-        }
-      });
-    }, {
-      rootMargin: '-45% 0px -45% 0px',
-      threshold: 0,
-    });
-
-    state.sections.forEach((section) => state.observer.observe(section));
+  function collectElements() {
+    state.root = document.querySelector(ROOT_SELECTOR);
+    state.nav = document.querySelector(NAV_SELECTOR);
+    state.sidebar = state.nav ? state.nav.closest(STICKY_SIDEBAR_SELECTOR) : document.querySelector(STICKY_SIDEBAR_SELECTOR);
+    state.sections = Array.from((state.root || document).querySelectorAll(SECTION_SELECTOR))
+      .filter((section) => section.dataset.ssEmpty !== 'true');
+    state.navItems = Array.from(document.querySelectorAll(NAV_ITEM_SELECTOR))
+      .filter((item) => getNavTargetId(item) && item.dataset.ssEmpty !== 'true');
   }
 
-  // Anchor links: route scrolling through ScrollSmoother when it is active.
   function setupAnchorScroll() {
     state.navItems.forEach((item) => {
+      if (item.dataset.ssNavInit === 'true') return;
+      item.dataset.ssNavInit = 'true';
+
       item.addEventListener('click', (event) => {
-        const target = getSectionById(item.dataset.anchorLink);
+        const targetId = getNavTargetId(item);
+        const target = getSectionById(targetId);
         if (!target) return;
 
         event.preventDefault();
-        setActiveNavItem(item.dataset.anchorLink);
+        setActiveNavItem(targetId);
+        updateHash(targetId);
         scrollToSection(target);
       });
     });
   }
 
-  // Share links: preserves the existing X, LinkedIn, and email behavior.
   function setupShareLinks() {
-    const url = encodeURIComponent(window.location.href);
+    const url = encodeURIComponent(window.location.href.split('#')[0]);
     const title = encodeURIComponent(document.title);
     const links = {
       x: `https://twitter.com/intent/tweet?url=${url}&text=${title}`,
@@ -131,47 +130,73 @@
     });
   }
 
-  // Public refresh hook for Webflow/CMS layout changes.
   function refresh() {
+    collectElements();
+
     if (!state.isReady) {
       initPage();
       return;
     }
 
+    setupAnchorScroll();
     refreshStickySidebar();
     updateActiveNavFromScroll();
     requestGlobalRefresh();
   }
 
-  function scrollToSection(target) {
-    const smoother = getSmoother();
-    const offset = getTopOffset();
-    const shouldSmooth = !window.matchMedia(REDUCED_MOTION_QUERY).matches;
+  function scrollToInitialHash() {
+    const targetId = getHashTargetId();
+    const target = getSectionById(targetId);
+    if (!target) return;
 
+    setActiveNavItem(targetId);
+
+    requestAnimationFrame(() => {
+      scrollToSection(target, { forceAuto: true });
+    });
+  }
+
+  function scrollToSection(target, options = {}) {
+    const offset = getTopOffset();
+    const shouldSmooth = !options.forceAuto && !window.matchMedia(REDUCED_MOTION_QUERY).matches;
+    const behavior = shouldSmooth ? 'smooth' : 'auto';
+    const position = `top ${offset}px`;
+
+    if (window.ContextualHomeMotion?.scrollTo) {
+      window.ContextualHomeMotion.scrollTo(target, {
+        behavior,
+        position,
+      });
+      return;
+    }
+
+    const smoother = getSmoother();
     if (smoother && typeof smoother.scrollTo === 'function') {
-      smoother.scrollTo(target, shouldSmooth, `top ${offset}px`);
+      smoother.scrollTo(target, shouldSmooth, position);
       return;
     }
 
     window.scrollTo({
       top: getDocumentScrollTop() + target.getBoundingClientRect().top - offset,
       left: 0,
-      behavior: shouldSmooth ? 'smooth' : 'auto',
+      behavior,
     });
   }
 
-  function setActiveNavItem(activeId) {
-    if (!activeId) return;
+  function queueActiveNavUpdate() {
+    if (state.scrollRaf) return;
 
-    state.navItems.forEach((item) => {
-      item.classList.toggle(ACTIVE_CLASS, item.dataset.anchorLink === activeId);
+    state.scrollRaf = requestAnimationFrame(() => {
+      state.scrollRaf = null;
+      updateActiveNavFromScroll();
     });
   }
 
   function updateActiveNavFromScroll() {
     if (state.sections.length === 0 || state.navItems.length === 0) return;
 
-    const activationY = getTopOffset() + (window.innerHeight - getTopOffset()) * 0.45;
+    const offset = getTopOffset();
+    const activationY = offset + (window.innerHeight - offset) * ACTIVE_LINE_RATIO;
     let activeSection = state.sections[0];
 
     state.sections.forEach((section) => {
@@ -180,7 +205,22 @@
       }
     });
 
-    setActiveNavItem(activeSection.dataset.anchorSection);
+    setActiveNavItem(activeSection.id);
+  }
+
+  function setActiveNavItem(activeId) {
+    if (!activeId) return;
+
+    state.navItems.forEach((item) => {
+      const isActive = getNavTargetId(item) === activeId;
+      item.classList.toggle(ACTIVE_CLASS, isActive);
+
+      if (isActive) {
+        item.setAttribute('aria-current', 'true');
+      } else {
+        item.removeAttribute('aria-current');
+      }
+    });
   }
 
   function queueRefresh() {
@@ -189,13 +229,13 @@
   }
 
   function refreshStickySidebar() {
-    if (window.ContextualStickySidebar?.refresh && state.nav) {
-      window.ContextualStickySidebar.refresh(state.nav);
+    if (window.ContextualStickySidebar?.refresh && state.sidebar) {
+      window.ContextualStickySidebar.refresh(state.sidebar);
     }
   }
 
   function handleStickySidebarRefresh(event) {
-    if (!state.nav || event.detail?.sidebar !== state.nav) return;
+    if (state.sidebar && event.detail?.sidebar && event.detail.sidebar !== state.sidebar) return;
     updateActiveNavFromScroll();
   }
 
@@ -211,8 +251,20 @@
     }
   }
 
+  function getNavTargetId(item) {
+    const href = item.getAttribute('href') || '';
+    if (!href.startsWith('#') || href === '#') return '';
+
+    return decodeHash(href.slice(1));
+  }
+
+  function getHashTargetId() {
+    const hash = window.location.hash || '';
+    return hash.length > 1 ? decodeHash(hash.slice(1)) : '';
+  }
+
   function getSectionById(id) {
-    return id ? document.querySelector(`${SECTION_SELECTOR}[data-anchor-section="${escapeAttributeValue(id)}"]`) : null;
+    return id ? document.getElementById(id) : null;
   }
 
   function getSmoother() {
@@ -222,23 +274,35 @@
   }
 
   function getTopOffset() {
-    if (window.ContextualStickySidebar?.getTopOffset && state.nav) {
-      return window.ContextualStickySidebar.getTopOffset(state.nav);
+    if (window.ContextualStickySidebar?.getTopOffset && state.sidebar) {
+      return window.ContextualStickySidebar.getTopOffset(state.sidebar);
     }
 
     return getComputedTopOffset();
   }
 
   function getComputedTopOffset() {
-    if (!state.nav) return DEFAULT_TOP_OFFSET;
+    const target = state.nav || state.sidebar;
+    if (!target) return DEFAULT_TOP_OFFSET;
 
-    const value = Number.parseFloat(window.getComputedStyle(state.nav).top);
+    const value = Number.parseFloat(window.getComputedStyle(target).top);
     return Number.isFinite(value) ? value : DEFAULT_TOP_OFFSET;
   }
 
-  function escapeAttributeValue(value) {
-    if (window.CSS?.escape) return window.CSS.escape(value);
-    return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  function updateHash(targetId) {
+    if (!targetId || window.location.hash === `#${targetId}`) return;
+
+    if (window.history?.pushState) {
+      window.history.pushState(null, '', `#${targetId}`);
+    }
+  }
+
+  function decodeHash(value) {
+    try {
+      return decodeURIComponent(value);
+    } catch (error) {
+      return value;
+    }
   }
 
   function getDocumentScrollTop() {
