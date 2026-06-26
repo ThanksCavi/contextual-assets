@@ -7,12 +7,16 @@
   const SECTION_SELECTOR = '.ss-section[id][data-ss-section]';
   const SHARE_SELECTOR = '[data-share]';
   const STICKY_SIDEBAR_SELECTOR = '[data-sticky-sidebar]';
+  const LAYOUT_STABILITY_SELECTOR = '.story-content-section, .story-closing, .related-stories';
+  const LAYOUT_MEDIA_SELECTOR = 'img, iframe, video';
 
   const ACTIVE_CLASS = 'is-active';
   const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
   const MOTION_POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
   const STICKY_REFRESH_EVENT = 'contextual:sticky-sidebar-refresh';
   const RESIZE_REFRESH_DELAY_MS = 160;
+  const LAYOUT_REFRESH_DELAY_MS = 80;
+  const LAYOUT_SIZE_EPSILON_PX = 1;
   const DEFAULT_TOP_OFFSET = 100;
   const ACTIVE_LINE_RATIO = 0.45;
   const ACTIVE_SCROLL_SETTLE_TOLERANCE_PX = 4;
@@ -31,6 +35,11 @@
     scrollRaf: null,
     activeLockId: '',
     activeLockRaf: null,
+    layoutObserver: null,
+    layoutRefreshTimer: null,
+    layoutElementSizes: new WeakMap(),
+    observedLayoutElements: new WeakSet(),
+    observedMediaElements: new WeakSet(),
   };
 
   let resizeTimer = null;
@@ -79,6 +88,7 @@
     state.isReady = true;
     setupShareLinks();
     setupAnchorScroll();
+    setupLayoutStabilityRefresh();
     refreshStickySidebar();
     updateActiveNavFromScroll();
     scrollToInitialHash();
@@ -149,6 +159,7 @@
     }
 
     setupAnchorScroll();
+    setupLayoutStabilityRefresh();
     refreshStickySidebar();
     updateActiveNavFromScroll();
     requestGlobalRefresh();
@@ -286,6 +297,139 @@
     resizeTimer = window.setTimeout(refresh, RESIZE_REFRESH_DELAY_MS);
   }
 
+  function setupLayoutStabilityRefresh() {
+    // Lazy CMS media can change section heights after downstream pins are measured.
+    const elements = getLayoutStabilityElements();
+    if (elements.length === 0) return;
+
+    observeLayoutElements(elements);
+    observeMediaElements(elements);
+  }
+
+  function getLayoutStabilityElements() {
+    const elements = Array.from(document.querySelectorAll(LAYOUT_STABILITY_SELECTOR));
+
+    if (state.root?.matches?.(LAYOUT_STABILITY_SELECTOR)) {
+      elements.unshift(state.root);
+    }
+
+    return elements;
+  }
+
+  function observeLayoutElements(elements) {
+    if (!('ResizeObserver' in window)) return;
+
+    if (!state.layoutObserver) {
+      state.layoutObserver = new ResizeObserver(handleLayoutResize);
+    }
+
+    elements.forEach((element) => {
+      if (state.observedLayoutElements.has(element)) return;
+
+      state.observedLayoutElements.add(element);
+      state.layoutElementSizes.set(element, getElementSize(element));
+      state.layoutObserver.observe(element);
+    });
+  }
+
+  function handleLayoutResize(entries) {
+    let shouldRefresh = false;
+
+    entries.forEach((entry) => {
+      const previous = state.layoutElementSizes.get(entry.target);
+      const next = getElementSize(entry.target);
+
+      state.layoutElementSizes.set(entry.target, next);
+
+      if (!previous) return;
+
+      const widthChanged = Math.abs(next.width - previous.width) >= LAYOUT_SIZE_EPSILON_PX;
+      const heightChanged = Math.abs(next.height - previous.height) >= LAYOUT_SIZE_EPSILON_PX;
+
+      if (widthChanged || heightChanged) {
+        shouldRefresh = true;
+      }
+    });
+
+    if (shouldRefresh) {
+      queueLayoutStabilityRefresh();
+    }
+  }
+
+  function observeMediaElements(elements) {
+    elements.forEach((element) => {
+      element.querySelectorAll(LAYOUT_MEDIA_SELECTOR).forEach(bindMediaRefresh);
+    });
+  }
+
+  function bindMediaRefresh(element) {
+    if (state.observedMediaElements.has(element)) return;
+
+    state.observedMediaElements.add(element);
+
+    if (element instanceof HTMLImageElement) {
+      if (element.complete && element.naturalWidth > 0) {
+        refreshWhenImageDecoded(element);
+        return;
+      }
+
+      element.addEventListener('load', queueLayoutStabilityRefresh, { once: true });
+      element.addEventListener('error', queueLayoutStabilityRefresh, { once: true });
+      return;
+    }
+
+    if (element instanceof HTMLVideoElement) {
+      if (element.readyState >= 1) {
+        queueLayoutStabilityRefresh();
+        return;
+      }
+
+      element.addEventListener('loadedmetadata', queueLayoutStabilityRefresh, { once: true });
+      element.addEventListener('error', queueLayoutStabilityRefresh, { once: true });
+      return;
+    }
+
+    element.addEventListener('load', queueLayoutStabilityRefresh, { once: true });
+  }
+
+  function refreshWhenImageDecoded(image) {
+    if (typeof image.decode !== 'function') {
+      queueLayoutStabilityRefresh();
+      return;
+    }
+
+    image.decode()
+      .then(queueLayoutStabilityRefresh)
+      .catch(queueLayoutStabilityRefresh);
+  }
+
+  function queueLayoutStabilityRefresh() {
+    clearTimeout(state.layoutRefreshTimer);
+
+    state.layoutRefreshTimer = window.setTimeout(() => {
+      state.layoutRefreshTimer = null;
+      refreshAfterLayoutStabilizes();
+    }, LAYOUT_REFRESH_DELAY_MS);
+  }
+
+  function refreshAfterLayoutStabilizes() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        refreshStickySidebar();
+        updateActiveNavFromScroll();
+        requestGlobalRefresh({ delay: 0, waitForFonts: false });
+      });
+    });
+  }
+
+  function getElementSize(element) {
+    const rect = element.getBoundingClientRect();
+    return {
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
   function refreshStickySidebar() {
     if (window.ContextualStickySidebar?.refresh && state.sidebar) {
       window.ContextualStickySidebar.refresh(state.sidebar);
@@ -297,9 +441,9 @@
     updateActiveNavFromScroll();
   }
 
-  function requestGlobalRefresh() {
+  function requestGlobalRefresh(options = {}) {
     if (window.ContextualHomeMotion?.requestRefresh) {
-      window.ContextualHomeMotion.requestRefresh();
+      window.ContextualHomeMotion.requestRefresh(options);
       return;
     }
 
