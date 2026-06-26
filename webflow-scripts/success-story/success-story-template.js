@@ -3,7 +3,7 @@
   const INIT_FLAG = '__contextualSuccessStoryTemplateInit';
   const ROOT_SELECTOR = '[data-ss-template="success-stories"]';
   const NAV_SELECTOR = '.ss-story-nav';
-  const NAV_ITEM_SELECTOR = '.ss-story-nav a[href^="#"]';
+  const NAV_ITEM_SELECTOR = '.ss-story-nav a[href^="#"], .ss-story-nav [data-anchor-link], .ss-story-nav [data-ss-anchor-link]';
   const SECTION_SELECTOR = '.ss-section[id][data-ss-section]';
   const SHARE_SELECTOR = '[data-share]';
   const STICKY_SIDEBAR_SELECTOR = '[data-sticky-sidebar]';
@@ -168,29 +168,26 @@
 
   function scrollToSection(target, options = {}) {
     const offset = getTopOffset();
-    const shouldSmooth = !options.forceAuto && !window.matchMedia(REDUCED_MOTION_QUERY).matches;
-    const behavior = shouldSmooth ? 'smooth' : 'auto';
+    const smoother = getSmoother();
     const position = `top ${offset}px`;
 
-    if (window.ContextualHomeMotion?.scrollTo) {
-      window.ContextualHomeMotion.scrollTo(target, {
-        behavior,
-        position,
-      });
+    if (smoother && typeof smoother.scrollTo === 'function') {
+      // ScrollSmoother smooth jumps move native scroll ahead of the visual
+      // transform, which can activate downstream pinned ScrollTriggers early.
+      smoother.scrollTo(target, false, position);
+      refreshScrollTriggersAfterProgrammaticScroll();
       return;
     }
 
-    const smoother = getSmoother();
-    if (smoother && typeof smoother.scrollTo === 'function') {
-      smoother.scrollTo(target, shouldSmooth, position);
-      return;
-    }
+    const shouldSmooth = !options.forceAuto && !window.matchMedia(REDUCED_MOTION_QUERY).matches;
 
     window.scrollTo({
       top: getDocumentScrollTop() + target.getBoundingClientRect().top - offset,
       left: 0,
-      behavior,
+      behavior: shouldSmooth ? 'smooth' : 'auto',
     });
+
+    refreshScrollTriggersAfterProgrammaticScroll();
   }
 
   function queueActiveNavUpdate() {
@@ -312,7 +309,19 @@
     }
   }
 
+  function refreshScrollTriggersAfterProgrammaticScroll() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.ScrollTrigger?.sort?.();
+        window.ScrollTrigger?.refresh?.(true);
+      });
+    });
+  }
+
   function getNavTargetId(item) {
+    const explicitId = (item.dataset.anchorLink || item.dataset.ssAnchorLink || '').trim();
+    if (explicitId) return explicitId;
+
     const href = item.getAttribute('href') || '';
     if (!href.startsWith('#') || href === '#') return '';
 
