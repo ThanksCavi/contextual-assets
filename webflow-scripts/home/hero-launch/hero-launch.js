@@ -16,21 +16,21 @@
 	var READY_TIMEOUT = 5500;
 	var MOTION_READY_TIMEOUT = 1200;
 	var PAGE_SETTLE_TIMEOUT = 700;
-	var INTRO_HOLD_DURATION = 2200;
+	var INTRO_HOLD_DURATION = 1250;
 	var LOTTIE_MOVE_DURATION = 1350;
-	var FIELD_REVEAL_DELAY = 2460;
-	var PRIMARY_REVEAL_DELAY = 2820;
-	var SECONDARY_REVEAL_DELAY = 3260;
-	var NAV_REVEAL_DELAY = 3220;
-	var AFTER_REVEAL_DELAY = 3660;
-	var PRIMARY_REVEAL_DURATION = 1650;
-	var SECONDARY_REVEAL_DURATION = 1500;
+	var FIELD_REVEAL_DELAY = 1550;
+	var PRIMARY_REVEAL_DELAY = 1700;
+	var SECONDARY_REVEAL_DELAY = 2100;
+	var NAV_REVEAL_DELAY = 2050;
+	var AFTER_REVEAL_DELAY = 2450;
+	var PRIMARY_REVEAL_DURATION = 1850;
+	var SECONDARY_REVEAL_DURATION = 1650;
 	var NAV_REVEAL_DURATION = 1350;
 	var AFTER_REVEAL_DURATION = 1450;
 	var PRIMARY_STAGGER = 115;
 	var SECONDARY_STAGGER = 105;
 	var MOVE_EASE = 'cubic-bezier(0.19, 1, 0.22, 1)';
-	var REVEAL_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+	var REVEAL_EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
 	var NAV_REVEAL_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 	var SCROLL_LOCK_CLASS = 'is-hero-intro-scroll-locked';
 	var stableLayoutPromise = null;
@@ -558,8 +558,8 @@
 
 			revealGroups.primary.forEach(function(el, index) {
 				addRevealAnimation(animations, el, {
-					fromTransform: 'translate3d(0, 34px, 0)',
-					settleTransform: 'translate3d(0, -3px, 0)',
+					fromTransform: 'translate3d(0, 24px, 0)',
+					settleTransform: 'translate3d(0, 0, 0)',
 					duration: PRIMARY_REVEAL_DURATION,
 					delay: PRIMARY_REVEAL_DELAY + index * PRIMARY_STAGGER,
 					easing: REVEAL_EASE
@@ -568,8 +568,8 @@
 
 			revealGroups.secondary.forEach(function(el, index) {
 				addRevealAnimation(animations, el, {
-					fromTransform: 'translate3d(0, 30px, 0)',
-					settleTransform: 'translate3d(0, -2px, 0)',
+					fromTransform: 'translate3d(0, 24px, 0)',
+					settleTransform: 'translate3d(0, 0, 0)',
 					duration: SECONDARY_REVEAL_DURATION,
 					delay: SECONDARY_REVEAL_DELAY + index * SECONDARY_STAGGER,
 					easing: REVEAL_EASE
@@ -588,8 +588,8 @@
 
 			revealGroups.after.forEach(function(el, index) {
 				addRevealAnimation(animations, el, {
-					fromTransform: 'translate3d(0, 36px, 0)',
-					settleTransform: 'translate3d(0, -2px, 0)',
+					fromTransform: 'translate3d(0, 24px, 0)',
+					settleTransform: 'translate3d(0, 0, 0)',
 					duration: AFTER_REVEAL_DURATION,
 					delay: AFTER_REVEAL_DELAY + index * SECONDARY_STAGGER,
 					easing: REVEAL_EASE
