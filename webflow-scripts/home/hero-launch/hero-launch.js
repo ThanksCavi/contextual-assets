@@ -21,17 +21,17 @@
 	var FIELD_REVEAL_DELAY = 1550;
 	var PRIMARY_REVEAL_DELAY = 1700;
 	var SECONDARY_REVEAL_DELAY = 2100;
-	var NAV_REVEAL_DELAY = 2050;
+	var NAV_REVEAL_DELAY = 1500;
 	var AFTER_REVEAL_DELAY = 2450;
 	var PRIMARY_REVEAL_DURATION = 1850;
 	var SECONDARY_REVEAL_DURATION = 1650;
-	var NAV_REVEAL_DURATION = 1350;
+	var NAV_REVEAL_DURATION = 1600;
 	var AFTER_REVEAL_DURATION = 1450;
 	var PRIMARY_STAGGER = 115;
 	var SECONDARY_STAGGER = 105;
 	var MOVE_EASE = 'cubic-bezier(0.19, 1, 0.22, 1)';
 	var REVEAL_EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
-	var NAV_REVEAL_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+	var NAV_REVEAL_EASE = REVEAL_EASE;
 	var SCROLL_LOCK_CLASS = 'is-hero-intro-scroll-locked';
 	var stableLayoutPromise = null;
 
@@ -579,7 +579,7 @@
 			if (revealGroups.nav) {
 				addRevealAnimation(animations, revealGroups.nav, {
 					fromTransform: 'translate3d(0, -22px, 0)',
-					settleTransform: 'translate3d(0, 2px, 0)',
+					settleTransform: 'translate3d(0, 0, 0)',
 					duration: NAV_REVEAL_DURATION,
 					delay: NAV_REVEAL_DELAY,
 					easing: NAV_REVEAL_EASE
