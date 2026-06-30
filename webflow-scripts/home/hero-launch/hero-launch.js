@@ -33,6 +33,8 @@
 	var REVEAL_EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
 	var NAV_REVEAL_EASE = REVEAL_EASE;
 	var SCROLL_LOCK_CLASS = 'is-hero-intro-scroll-locked';
+	var REVEAL_ACTIVE_CLASS = 'is-hero-intro-reveal-active';
+	var REVEAL_COMPLETION_BUFFER = 120;
 	var stableLayoutPromise = null;
 
 	function onReady(fn) {
@@ -242,8 +244,6 @@
 		lottieShell.style.willChange = 'transform';
 
 		revealGroups.all.forEach(function(el) {
-			el.style.opacity = '0';
-			el.style.transform = el === revealGroups.nav ? 'translate3d(0, -22px, 0)' : 'translate3d(0, 34px, 0)';
 			el.style.willChange = 'opacity, transform';
 		});
 	}
@@ -259,11 +259,16 @@
 			el.style.transform = '';
 			el.style.filter = '';
 			el.style.willChange = '';
+			el.style.removeProperty('--hero-intro-delay');
+			el.style.removeProperty('--hero-intro-duration');
+			el.style.removeProperty('--hero-intro-ease');
+			el.style.removeProperty('--hero-intro-from-y');
 		});
 	}
 
 	function revealStatic(hero, lottieShell, revealElements, options) {
 		hero.classList.remove('is-hero-intro-running');
+		hero.classList.remove(REVEAL_ACTIVE_CLASS);
 		hero.classList.add('is-hero-intro-static');
 		hero.classList.add('is-hero-intro-field-visible');
 		hero.setAttribute('data-hero-intro-ready', 'static');
@@ -491,27 +496,58 @@
 		return wait((options.delay || 0) + (options.duration || 0));
 	}
 
-	function addRevealAnimation(animations, el, options) {
-		animations.push(animateElement(el, [
-			{
-				opacity: 0,
-				transform: options.fromTransform
-			},
-			{
-				opacity: 0.86,
-				transform: options.settleTransform,
-				offset: 0.72
-			},
-			{
-				opacity: 1,
-				transform: 'translate3d(0, 0, 0)'
-			}
-		], {
-			duration: options.duration,
-			delay: options.delay,
-			easing: options.easing,
-			fill: 'forwards'
-		}));
+	function prepareRevealElement(el, options) {
+		if (!el) return 0;
+
+		el.style.setProperty('--hero-intro-delay', options.delay + 'ms');
+		el.style.setProperty('--hero-intro-duration', options.duration + 'ms');
+		el.style.setProperty('--hero-intro-ease', options.easing);
+		el.style.setProperty('--hero-intro-from-y', options.fromY);
+		el.style.willChange = 'opacity, transform';
+
+		return options.delay + options.duration;
+	}
+
+	function prepareRevealTimings(revealGroups) {
+		var maxRevealTime = 0;
+
+		revealGroups.primary.forEach(function(el, index) {
+			maxRevealTime = Math.max(maxRevealTime, prepareRevealElement(el, {
+				fromY: '24px',
+				duration: PRIMARY_REVEAL_DURATION,
+				delay: PRIMARY_REVEAL_DELAY + index * PRIMARY_STAGGER,
+				easing: REVEAL_EASE
+			}));
+		});
+
+		revealGroups.secondary.forEach(function(el, index) {
+			maxRevealTime = Math.max(maxRevealTime, prepareRevealElement(el, {
+				fromY: '24px',
+				duration: SECONDARY_REVEAL_DURATION,
+				delay: SECONDARY_REVEAL_DELAY + index * SECONDARY_STAGGER,
+				easing: REVEAL_EASE
+			}));
+		});
+
+		if (revealGroups.nav) {
+			maxRevealTime = Math.max(maxRevealTime, prepareRevealElement(revealGroups.nav, {
+				fromY: '-22px',
+				duration: NAV_REVEAL_DURATION,
+				delay: NAV_REVEAL_DELAY,
+				easing: NAV_REVEAL_EASE
+			}));
+		}
+
+		revealGroups.after.forEach(function(el, index) {
+			maxRevealTime = Math.max(maxRevealTime, prepareRevealElement(el, {
+				fromY: '24px',
+				duration: AFTER_REVEAL_DURATION,
+				delay: AFTER_REVEAL_DELAY + index * SECONDARY_STAGGER,
+				easing: REVEAL_EASE
+			}));
+		});
+
+		return maxRevealTime + REVEAL_COMPLETION_BUFFER;
 	}
 
 	function runIntro(hero, lottieShell, revealGroups, releaseIntroScroll) {
@@ -532,6 +568,7 @@
 
 		var start = getIntroTransform(rect);
 		var startTransform = 'translate3d(' + start.x.toFixed(2) + 'px, ' + start.y.toFixed(2) + 'px, 0) scale(' + start.scale.toFixed(3) + ')';
+		var revealDuration = prepareRevealTimings(revealGroups);
 
 		hero.classList.add('is-hero-intro-running');
 		setInitialStyles(lottieShell, revealGroups);
@@ -551,55 +588,20 @@
 				easing: MOVE_EASE,
 				fill: 'forwards'
 			});
-			var animations = [lottieMove];
+			var revealMove = nextFrame().then(function() {
+				hero.classList.add(REVEAL_ACTIVE_CLASS);
+				return wait(revealDuration);
+			});
+			var animations = [lottieMove, revealMove];
 
 			lottieMove.then(releaseLockOnce);
 			window.setTimeout(releaseLockOnce, INTRO_HOLD_DURATION + LOTTIE_MOVE_DURATION + 400);
-
-			revealGroups.primary.forEach(function(el, index) {
-				addRevealAnimation(animations, el, {
-					fromTransform: 'translate3d(0, 24px, 0)',
-					settleTransform: 'translate3d(0, 0, 0)',
-					duration: PRIMARY_REVEAL_DURATION,
-					delay: PRIMARY_REVEAL_DELAY + index * PRIMARY_STAGGER,
-					easing: REVEAL_EASE
-				});
-			});
-
-			revealGroups.secondary.forEach(function(el, index) {
-				addRevealAnimation(animations, el, {
-					fromTransform: 'translate3d(0, 24px, 0)',
-					settleTransform: 'translate3d(0, 0, 0)',
-					duration: SECONDARY_REVEAL_DURATION,
-					delay: SECONDARY_REVEAL_DELAY + index * SECONDARY_STAGGER,
-					easing: REVEAL_EASE
-				});
-			});
-
-			if (revealGroups.nav) {
-				addRevealAnimation(animations, revealGroups.nav, {
-					fromTransform: 'translate3d(0, -22px, 0)',
-					settleTransform: 'translate3d(0, 0, 0)',
-					duration: NAV_REVEAL_DURATION,
-					delay: NAV_REVEAL_DELAY,
-					easing: NAV_REVEAL_EASE
-				});
-			}
-
-			revealGroups.after.forEach(function(el, index) {
-				addRevealAnimation(animations, el, {
-					fromTransform: 'translate3d(0, 24px, 0)',
-					settleTransform: 'translate3d(0, 0, 0)',
-					duration: AFTER_REVEAL_DURATION,
-					delay: AFTER_REVEAL_DELAY + index * SECONDARY_STAGGER,
-					easing: REVEAL_EASE
-				});
-			});
 
 			return Promise.all(animations);
 		}).then(function() {
 			releaseLockOnce();
 			hero.classList.remove('is-hero-intro-running');
+			hero.classList.remove(REVEAL_ACTIVE_CLASS);
 			hero.classList.add('is-hero-intro-complete');
 			hero.setAttribute('data-hero-intro-ready', 'complete');
 			clearInlineStyles(lottieShell, revealGroups.all);

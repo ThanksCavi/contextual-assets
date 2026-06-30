@@ -12,21 +12,31 @@
 		opacity: 1;
 	}
 
-	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-running):not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar,
-	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-running):not(.is-hero-intro-static):not(.is-hero-intro-complete) [data-hero-intro-reveal],
-	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-running):not(.is-hero-intro-static):not(.is-hero-intro-complete)) [data-hero-intro-after] {
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"]:not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar,
+	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"]:not(.is-hero-intro-static):not(.is-hero-intro-complete) [data-hero-intro-reveal],
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"]:not(.is-hero-intro-static):not(.is-hero-intro-complete)) [data-hero-intro-after] {
 		opacity: 0;
-		transform: translate3d(0, 34px, 0);
-		animation: heroIntroFailsafe 1ms linear 4000ms forwards;
+		transform: translate3d(0, var(--hero-intro-from-y, 24px), 0);
+		transition-duration: var(--hero-intro-duration, 1500ms);
+		transition-property: opacity, transform;
+		transition-timing-function: var(--hero-intro-ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+		transition-delay: var(--hero-intro-delay, 0ms);
+		will-change: opacity, transform;
 	}
 
-	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-running):not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar {
-		transform: translate3d(0, -22px, 0);
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"]:not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar {
+		--hero-intro-from-y: -22px;
 	}
 
-	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-running):not(.is-hero-intro-static):not(.is-hero-intro-complete) .hsp-column-media {
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"].is-hero-intro-reveal-active:not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar,
+	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"].is-hero-intro-reveal-active:not(.is-hero-intro-static):not(.is-hero-intro-complete) [data-hero-intro-reveal],
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"].is-hero-intro-reveal-active:not(.is-hero-intro-static):not(.is-hero-intro-complete)) [data-hero-intro-after] {
+		opacity: 1;
+		transform: none;
+	}
+
+	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"]:not(.is-hero-intro-running):not(.is-hero-intro-static):not(.is-hero-intro-complete) .hsp-column-media {
 		opacity: 0;
-		animation: heroIntroMediaFailsafe 1ms linear 4000ms forwards;
 	}
 
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"].is-hero-intro-running:not(.is-hero-intro-static):not(.is-hero-intro-complete) .hsp-column-media {
@@ -63,16 +73,4 @@
 	}
 }
 
-@keyframes heroIntroFailsafe {
-	to {
-		opacity: 1;
-		transform: none;
-	}
-}
-
-@keyframes heroIntroMediaFailsafe {
-	to {
-		opacity: 1;
-	}
-}
 /* End Hero Lottie Intro */
