@@ -611,7 +611,8 @@
 
 	function init() {
 		var hero = document.querySelector(HERO_SELECTOR);
-		if (!hero || hero.hasAttribute('data-hero-intro-ready')) return;
+		var readyState = hero && hero.getAttribute('data-hero-intro-ready');
+		if (!hero || (readyState && readyState !== 'pending')) return;
 
 		hero.setAttribute('data-hero-intro-ready', 'pending');
 
