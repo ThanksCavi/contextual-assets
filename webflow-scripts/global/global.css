@@ -1,0 +1,75 @@
+.button.button-icon-animate {
+  --button-icon-animate-gap: 17px;
+  --button-icon-animate-label-max: 18ch;
+  column-gap: 0;
+  transition:
+    filter 0.5s cubic-bezier(0.445, 0.05, 0.55, 0.95),
+    column-gap 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.button.button-icon-animate .button-label-animate {
+  display: block;
+  max-inline-size: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-0.35em);
+  transition:
+    max-inline-size 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease-out,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.button.button-icon-animate:is(:hover, :focus-visible) {
+  column-gap: var(--button-icon-animate-gap);
+}
+
+.button.button-icon-animate:is(:hover, :focus-visible) .button-label-animate {
+  max-inline-size: var(--button-icon-animate-label-max);
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    max-inline-size 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease-out 0.06s,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1) 0.04s;
+}
+
+@supports (interpolate-size: allow-keywords) {
+  .button.button-icon-animate .button-label-animate {
+    interpolate-size: allow-keywords;
+    inline-size: 0;
+    max-inline-size: none;
+    transition:
+      inline-size 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease-out,
+      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .button.button-icon-animate:is(:hover, :focus-visible) .button-label-animate {
+    inline-size: auto;
+    transition:
+      inline-size 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease-out 0.06s,
+      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1) 0.04s;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .button.button-icon-animate {
+    column-gap: var(--button-icon-animate-gap);
+  }
+
+  .button.button-icon-animate .button-label-animate {
+    inline-size: auto;
+    max-inline-size: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button.button-icon-animate,
+  .button.button-icon-animate .button-label-animate {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+  }
+}
