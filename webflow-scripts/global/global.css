@@ -1,14 +1,14 @@
-/* ANIMATED ICON BUTTON */
-.button.button-icon-animate {
-  --button-icon-animate-gap: 17px;
-  --button-icon-animate-label-max: 18ch;
+/* BUTTON EXPAND */
+.button.button-expand {
+  --button-expand-gap: 17px;
+  --button-expand-label-max: 18ch;
   column-gap: 0;
   transition:
     filter 0.5s cubic-bezier(0.445, 0.05, 0.55, 0.95),
     column-gap 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.button.button-icon-animate .button-label-animate {
+.button.button-expand .button-expand-label {
   display: block;
   max-inline-size: 0;
   overflow: hidden;
@@ -20,12 +20,14 @@
     transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.button.button-icon-animate:is(:hover, :focus-visible) {
-  column-gap: var(--button-icon-animate-gap);
+.button.button-expand:is(:hover, :focus-visible),
+[data-hover-reveal]:is(:hover, :focus-within) .button.button-expand {
+  column-gap: var(--button-expand-gap);
 }
 
-.button.button-icon-animate:is(:hover, :focus-visible) .button-label-animate {
-  max-inline-size: var(--button-icon-animate-label-max);
+.button.button-expand:is(:hover, :focus-visible) .button-expand-label,
+[data-hover-reveal]:is(:hover, :focus-within) .button.button-expand .button-expand-label {
+  max-inline-size: var(--button-expand-label-max);
   opacity: 1;
   transform: translateX(0);
   transition:
@@ -36,7 +38,7 @@
 
 /* INTRINSIC WIDTH */
 @supports (interpolate-size: allow-keywords) {
-  .button.button-icon-animate .button-label-animate {
+  .button.button-expand .button-expand-label {
     interpolate-size: allow-keywords;
     inline-size: 0;
     max-inline-size: none;
@@ -46,7 +48,8 @@
       transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .button.button-icon-animate:is(:hover, :focus-visible) .button-label-animate {
+  .button.button-expand:is(:hover, :focus-visible) .button-expand-label,
+  [data-hover-reveal]:is(:hover, :focus-within) .button.button-expand .button-expand-label {
     inline-size: auto;
     transition:
       inline-size 0.34s cubic-bezier(0.22, 1, 0.36, 1),
@@ -57,11 +60,11 @@
 
 /* TOUCH FALLBACK */
 @media (hover: none), (pointer: coarse) {
-  .button.button-icon-animate {
-    column-gap: var(--button-icon-animate-gap);
+  .button.button-expand {
+    column-gap: var(--button-expand-gap);
   }
 
-  .button.button-icon-animate .button-label-animate {
+  .button.button-expand .button-expand-label {
     inline-size: auto;
     max-inline-size: none;
     opacity: 1;
@@ -71,8 +74,8 @@
 
 /* REDUCED MOTION */
 @media (prefers-reduced-motion: reduce) {
-  .button.button-icon-animate,
-  .button.button-icon-animate .button-label-animate {
+  .button.button-expand,
+  .button.button-expand .button-expand-label {
     transition-duration: 1ms;
     transition-delay: 0ms;
   }
