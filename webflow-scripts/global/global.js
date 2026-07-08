@@ -4,6 +4,7 @@
   const TRIGGER_SELECTOR = '[data-faq-trigger]';
   const PANEL_SELECTOR = '[data-faq-panel]';
   const ANSWER_SELECTOR = '[data-faq-answer]';
+  const OPEN_FIRST_VALUE_SELECTOR = '[data-faq-open-first-value]';
   const INIT_FLAG = 'faqReady';
   const OPEN_FIRST_ATTR = 'faqOpenFirst';
   const STATE_ATTR = 'faqState';
@@ -59,11 +60,26 @@
 
   function applyInitialState(root) {
     const items = getItems(root);
-    const shouldOpenFirst = root.dataset[OPEN_FIRST_ATTR] === 'true';
+    const shouldOpenFirst = getOpenFirstValue(root);
 
     items.forEach((item, index) => {
       setItemState(item, shouldOpenFirst && index === 0, {animate: false});
     });
+  }
+
+  function getOpenFirstValue(root) {
+    const mirror = root.querySelector(OPEN_FIRST_VALUE_SELECTOR);
+    const mirrorValue = parseBooleanLike(mirror ? mirror.textContent : '');
+    if (typeof mirrorValue === 'boolean') return mirrorValue;
+
+    return root.dataset[OPEN_FIRST_ATTR] === 'true';
+  }
+
+  function parseBooleanLike(value) {
+    const normalizedValue = String(value || '').trim().toLowerCase();
+    if (['true', '1', 'yes', 'open'].includes(normalizedValue)) return true;
+    if (['false', '0', 'no', 'closed'].includes(normalizedValue)) return false;
+    return null;
   }
 
   function handleRootClick(event) {
