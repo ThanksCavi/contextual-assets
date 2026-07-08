@@ -31,6 +31,7 @@
     root.dataset[INIT_FLAG] = 'true';
     root.dataset.faqInstance = root.dataset.faqInstance || String(++rootCounter);
     root.addEventListener('click', handleRootClick);
+    root.addEventListener('keydown', handleRootKeydown);
 
     setupItems(root);
     applyInitialState(root);
@@ -69,7 +70,21 @@
     const trigger = event.target.closest(TRIGGER_SELECTOR);
     if (!trigger) return;
 
-    const root = event.currentTarget;
+    event.preventDefault();
+    toggleItem(event.currentTarget, trigger);
+  }
+
+  function handleRootKeydown(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+
+    const trigger = event.target.closest(TRIGGER_SELECTOR);
+    if (!trigger) return;
+
+    event.preventDefault();
+    toggleItem(event.currentTarget, trigger);
+  }
+
+  function toggleItem(root, trigger) {
     if (!root.contains(trigger)) return;
 
     const item = trigger.closest(ITEM_SELECTOR);
