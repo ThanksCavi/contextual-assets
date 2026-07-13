@@ -87,6 +87,10 @@
 	transition: opacity 440ms ease;
 }
 
+.industry-card[data-wf--industry-card--variant='link-card']::before {
+	display: none !important;
+}
+
 .industry-card .ip-button {
 	transition:
 			opacity 440ms ease,
