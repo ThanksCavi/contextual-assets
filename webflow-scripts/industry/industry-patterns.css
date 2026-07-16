@@ -1,0 +1,56 @@
+/* Industry Patterns Accordion */
+[data-industry-pattern-summary],
+[data-industry-pattern-details] {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  transition:
+    grid-template-rows 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease;
+}
+
+[data-industry-pattern-summary] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+[data-industry-pattern-details] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-industry-pattern-summary] > *,
+[data-industry-pattern-details] > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+[data-industry-pattern].is-open [data-industry-pattern-summary] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-industry-pattern].is-open [data-industry-pattern-details] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+[data-industry-pattern-toggle][hidden] {
+  display: none !important;
+}
+
+[data-industry-pattern-toggle]:focus-visible,
+[data-industry-pattern-details]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-industry-pattern-summary],
+  [data-industry-pattern-details] {
+    transition: none;
+  }
+}
