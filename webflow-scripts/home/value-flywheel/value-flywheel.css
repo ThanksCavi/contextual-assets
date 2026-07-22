@@ -185,15 +185,6 @@
     overflow: visible;
     transform-origin: 0 0;
     pointer-events: none;
-    transition: opacity 0.4s ease;
-  }
-
-  [data-sa-root].is-sa-transition .sa-arrow-top,
-  [data-sa-root].is-sa-transition .sa-arrow-bottom,
-  [data-sa-root].is-sa-final .sa-arrow-top,
-  [data-sa-root].is-sa-final .sa-arrow-bottom {
-    opacity: 0;
-    pointer-events: none;
   }
 
   [data-sa-root].is-sa-ready .sa-arrow-top {

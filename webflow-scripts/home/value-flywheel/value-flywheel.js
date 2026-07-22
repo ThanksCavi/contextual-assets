@@ -53,14 +53,15 @@
   };
 
   const TIMING = {
-    branchDraw: { start: 0.04, duration: 0.24, arrowheadStart: 0.24, arrowheadDuration: 0.10 },
+    introArrow: { lineDuration: 0.9, arrowheadStart: 0.9, arrowheadDuration: 0.2 },
+    branchDraw: { start: 0.04, duration: 0.24, arrowheadStart: 0.28, arrowheadDuration: 0.10 },
     blueCardsExit: { start: 0.36, duration: 0.46 },
     branchFade: { start: 0.72, duration: 0.16 },
     finalCard: { start: 0.24, duration: 0.62 },
     sourceOverlay: { start: 0.48, duration: 0.25 },
     finalReveal: { start: 0.58, duration: 0.24 },
     finalMedia: { start: 0.64, duration: 0.30, startOpacity: 0.72, startScale: 0.92, startRotation: -4 },
-    finalArrow: { start: 0.92, duration: 0.16, arrowheadStart: 1.05, arrowheadDuration: 0.05 },
+    finalArrow: { start: 0.92, duration: 0.16, arrowheadStart: 1.08, arrowheadDuration: 0.05 },
     finalHold: { start: 0.94, duration: 0.11 },
     outcomeCard: { start: 'top 92%', end: 'bottom 18%', y: 96, opacityDuration: 0.35, moveDuration: 1.00 },
   };
@@ -625,16 +626,16 @@
     tl.to(lines, {
       opacity: (_, target) => getStoredTargetOpacity(target),
       strokeDashoffset: 0,
-      duration: 0.9,
+      duration: TIMING.introArrow.lineDuration,
       ease: 'power2.out',
     }, 0);
 
     if (arrowheads.length > 0) {
       tl.to(arrowheads, {
         opacity: (_, target) => getStoredTargetOpacity(target),
-        duration: 0.2,
+        duration: TIMING.introArrow.arrowheadDuration,
         ease: 'power2.out',
-      }, 0.72);
+      }, TIMING.introArrow.arrowheadStart);
     }
 
     state.introLineTween = tl;
