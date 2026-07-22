@@ -24,6 +24,13 @@ test('keeps branch-arrow opacity under GSAP control', () => {
   );
 });
 
+test('keeps dash-animation geometry in the SVG coordinate system', () => {
+  assert.doesNotMatch(
+    styles,
+    /\[data-sa-line\][\s\S]{0,200}vector-effect:\s*non-scaling-stroke/
+  );
+});
+
 test('reveals each arrowhead only after its line draw completes', () => {
   const timing = readTiming();
 

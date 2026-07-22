@@ -199,7 +199,6 @@
 
   [data-sa-root].is-sa-ready [data-sa-line] {
     stroke-width: var(--sa-line-width, 1px);
-    vector-effect: non-scaling-stroke;
     pointer-events: none;
   }
 
