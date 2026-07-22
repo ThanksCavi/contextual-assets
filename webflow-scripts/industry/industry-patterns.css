@@ -42,6 +42,21 @@
   display: none !important;
 }
 
+/* Card height stays constant between states: in Figma both the closed card
+   (4132:5555) and the open one (4132:5898) are 587px tall. The blue header
+   shrinks 200px -> 136px on open, absorbing the height the expanded details
+   add — without this the card grows and pushes the page content down. */
+.industry-pattern-card-header {
+  transition:
+    padding-top 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding-bottom 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-industry-pattern].is-open .industry-pattern-card-header {
+  padding-top: clamp(10px, 100vw * 16 / 1440, 16px);
+  padding-bottom: clamp(10px, 100vw * 16 / 1440, 16px);
+}
+
 [data-industry-pattern-toggle]:focus-visible,
 [data-industry-pattern-details]:focus-visible {
   outline: 2px solid currentColor;
@@ -50,7 +65,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   [data-industry-pattern-summary],
-  [data-industry-pattern-details] {
+  [data-industry-pattern-details],
+  .industry-pattern-card-header {
     transition: none;
   }
 }
