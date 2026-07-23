@@ -48,3 +48,25 @@ test('reveals each arrowhead only after its line draw completes', () => {
     'Final arrowhead starts before its lines finish'
   );
 });
+
+test('fades branch arrows as the moving cards begin to cover them', () => {
+  const timing = readTiming();
+  const arrowheadEnd = timing.branchDraw.arrowheadStart + timing.branchDraw.arrowheadDuration;
+  const fadeEnd = timing.branchFade.start + timing.branchFade.duration;
+  const overlapStart = timing.blueCardsExit.start + 0.02;
+  const fullOverlap = timing.blueCardsExit.start + 0.12;
+  const epsilon = 1e-9;
+
+  assert.ok(
+    Math.abs(timing.branchFade.start - arrowheadEnd) < epsilon,
+    'Branch fade should begin as soon as the arrowhead reveal finishes'
+  );
+  assert.ok(
+    timing.branchFade.start <= overlapStart + epsilon,
+    'Branch fade starts after the moving cards begin to cover the arrows'
+  );
+  assert.ok(
+    fadeEnd <= fullOverlap + epsilon,
+    'Branch arrows remain visible after the moving cards cover them'
+  );
+});

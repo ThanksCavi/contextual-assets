@@ -56,7 +56,7 @@
     introArrow: { lineDuration: 0.9, arrowheadStart: 0.9, arrowheadDuration: 0.2 },
     branchDraw: { start: 0.04, duration: 0.24, arrowheadStart: 0.28, arrowheadDuration: 0.10 },
     blueCardsExit: { start: 0.36, duration: 0.46 },
-    branchFade: { start: 0.72, duration: 0.16 },
+    branchFade: { start: 0.38, duration: 0.10 },
     finalCard: { start: 0.24, duration: 0.62 },
     sourceOverlay: { start: 0.48, duration: 0.25 },
     finalReveal: { start: 0.58, duration: 0.24 },
