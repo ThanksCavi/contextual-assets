@@ -1,4 +1,4 @@
-/* Who We Are (/dev-draft) — page-scoped interaction styles.
+/* Who We Are (/who-we-are) — page-scoped interaction styles.
    Only `.wwa-*` selectors. Rules live here (not in the Designer) when they need a
    parent-state or pseudo-element selector that the Webflow style panel cannot express. */
 
@@ -81,37 +81,73 @@
   }
 }
 
-.wwa-values-pager-button {
+/* Disabled dims the arrow, not the button: the design keeps both pills visible,
+   and a `soft` pill at 35% opacity on the dark section disappears entirely. */
+.wwa-values-pager-icon,
+.wwa-values-pager-icon-prev {
   transition: opacity 0.2s ease;
 }
 
 .wwa-values-pager-button.is-disabled {
-  opacity: 0.35;
   pointer-events: none;
 }
 
-/* ----------------------------------------------------------------- News (2.7)
-   Chips keep their box while fading, so swapping in the CTA shifts nothing. */
-.wwa-news-card-chip {
-  transition: opacity 0.25s ease;
+.wwa-values-pager-button.is-disabled .wwa-values-pager-icon,
+.wwa-values-pager-button.is-disabled .wwa-values-pager-icon-prev {
+  opacity: 0.35;
 }
 
+/* ----------------------------------------------------------------- News (2.7)
+   The hover choreography mirrors Related Blogs on /news/news-template: the title
+   lifts, the chips sink away behind a blur, and the CTA rises into their place.
+   The lift is 10px — the value the design shows (Figma 4120-2642), not the 4px
+   Related Blogs uses. */
+.wwa-news-card {
+  --wwa-news-hover-duration: 520ms;
+  --wwa-news-hover-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wwa-news-card-title {
+  transition: transform var(--wwa-news-hover-duration) var(--wwa-news-hover-ease);
+}
+
+.wwa-news-card-chip,
 .wwa-news-card-cta {
-  transition: opacity 0.25s ease, visibility 0.25s;
+  transition:
+    opacity var(--wwa-news-hover-duration) var(--wwa-news-hover-ease),
+    transform var(--wwa-news-hover-duration) var(--wwa-news-hover-ease),
+    filter var(--wwa-news-hover-duration) var(--wwa-news-hover-ease);
+}
+
+/* The CTA is anchored to the bottom of the chip row, so the transform carries
+   both the horizontal centring and the rise. */
+.wwa-news-card-cta {
+  transform: translate(-50%, 16px);
+}
+
+.wwa-news-card:hover .wwa-news-card-title,
+.wwa-news-card:focus-visible .wwa-news-card-title {
+  transform: translate3d(0, -10px, 0);
 }
 
 .wwa-news-card:hover .wwa-news-card-chip,
 .wwa-news-card:focus-visible .wwa-news-card-chip {
   opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  filter: blur(2px);
 }
 
 .wwa-news-card:hover .wwa-news-card-cta,
 .wwa-news-card:focus-visible .wwa-news-card-cta {
   opacity: 1;
-  visibility: visible;
+  transform: translate(-50%, 0);
 }
 
-.wwa-news-card-cta-icon {
+/* Both arrows are the same glyph: the card CTA draws it on a 14×11 box, the
+   section link on the 1em square the design system gives .text-button. */
+.wwa-news-card-cta-icon,
+.wwa-news-head .text-button-icon-before {
+  background-color: currentColor;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2014%2011'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0%206.219h9.527L6.651%209l1.391%201.438L13.438%205.219%208.043%200%206.651%201.438%209.527%204.219H0v2z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2014%2011'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0%206.219h9.527L6.651%209l1.391%201.438L13.438%205.219%208.043%200%206.651%201.438%209.527%204.219H0v2z'/%3E%3C/svg%3E");
   -webkit-mask-repeat: no-repeat;
@@ -143,9 +179,11 @@
   .wwa-trust-card-button,
   .wwa-playbook-card-detail,
   .wwa-playbook-detail-close,
+  .wwa-news-card-title,
   .wwa-news-card-chip,
   .wwa-news-card-cta,
-  .wwa-values-pager-button {
+  .wwa-values-pager-icon,
+  .wwa-values-pager-icon-prev {
     transition: none !important;
   }
 }
