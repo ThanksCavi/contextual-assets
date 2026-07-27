@@ -6,95 +6,61 @@
    The card drives the CTA: the button has no hover of its own by design. */
 .wwa-trust-card,
 .wwa-trust-card-button {
-  transition: background-color 0.25s ease, color 0.25s ease;
+	transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .wwa-trust-card:hover .wwa-trust-card-button,
 .wwa-trust-card:focus-within .wwa-trust-card-button {
-  background-color: var(--_system-colors---accent);
-  color: var(--_colors---body);
+	background-color: var(--_system-colors---accent);
+	color: var(--_colors---body);
 }
 
 /* ------------------------------------------------------------- Playbook (2.2)
    The detail panel is an overlay inset 10px, so opening never changes card height. */
 .wwa-playbook-card-detail {
-  transition: opacity 0.3s ease, visibility 0.3s;
+	transition: opacity 0.3s ease, visibility 0.3s;
 }
 
 .wwa-playbook-card.is-open .wwa-playbook-card-detail {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Plus and close glyphs are drawn from two bars so the open state is a real
-   rotation rather than a swapped character. */
-.wwa-playbook-card-plus::before,
-.wwa-playbook-card-plus::after,
-.wwa-playbook-detail-close::before,
-.wwa-playbook-detail-close::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  background-color: var(--_system-colors---black);
-  transform: translate(-50%, -50%);
-}
-
-.wwa-playbook-card-plus::before {
-  width: 14px;
-  height: 2px;
-}
-
-.wwa-playbook-card-plus::after {
-  width: 2px;
-  height: 14px;
-}
-
-.wwa-playbook-detail-close::before {
-  width: 15px;
-  height: 2px;
-}
-
-.wwa-playbook-detail-close::after {
-  width: 2px;
-  height: 15px;
+	opacity: 1;
+	visibility: visible;
 }
 
 .wwa-playbook-detail-close {
-  transition: transform 0.3s ease;
+	transition: transform 0.3s ease;
 }
 
 .wwa-playbook-card.is-open .wwa-playbook-detail-close {
-  transform: rotate(45deg);
+	transform: rotate(45deg);
 }
 
 /* --------------------------------------------------------------- Values (2.4)
    The design shows no scrollbar next to the arrows, so it is hidden from the
    breakpoint where the arrows are the affordance and kept below it. */
 @media (min-width: 992px) {
-  .wwa-values-grid {
-    scrollbar-width: none;
-  }
+	.wwa-values-grid {
+		scrollbar-width: none;
+	}
 
-  .wwa-values-grid::-webkit-scrollbar {
-    display: none;
-  }
+	.wwa-values-grid::-webkit-scrollbar {
+		display: none;
+	}
 }
 
 /* Disabled dims the arrow, not the button: the design keeps both pills visible,
    and a `soft` pill at 35% opacity on the dark section disappears entirely. */
 .wwa-values-pager-icon,
 .wwa-values-pager-icon-prev {
-  transition: opacity 0.2s ease;
+	transition: opacity 0.2s ease;
 }
 
 .wwa-values-pager-button.is-disabled {
-  pointer-events: none;
+	pointer-events: none;
 }
 
 .wwa-values-pager-button.is-disabled .wwa-values-pager-icon,
 .wwa-values-pager-button.is-disabled .wwa-values-pager-icon-prev {
-  opacity: 0.35;
+	opacity: 0.35;
 }
 
 /* ----------------------------------------------------------------- News (2.7)
@@ -103,75 +69,74 @@
    The lift is 10px — the value the design shows (Figma 4120-2642), not the 4px
    Related Blogs uses. */
 .wwa-news-card {
-  --wwa-news-hover-duration: 520ms;
-  --wwa-news-hover-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	--wwa-news-hover-duration: 520ms;
+	--wwa-news-hover-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .wwa-news-card-title {
-  transition: transform var(--wwa-news-hover-duration) var(--wwa-news-hover-ease);
+	transition: transform var(--wwa-news-hover-duration) var(--wwa-news-hover-ease);
 }
 
 .wwa-news-card-chip,
 .wwa-news-card-cta {
-  transition:
-    opacity var(--wwa-news-hover-duration) var(--wwa-news-hover-ease),
-    transform var(--wwa-news-hover-duration) var(--wwa-news-hover-ease),
-    filter var(--wwa-news-hover-duration) var(--wwa-news-hover-ease);
+	transition: opacity var(--wwa-news-hover-duration) var(--wwa-news-hover-ease),
+	transform var(--wwa-news-hover-duration) var(--wwa-news-hover-ease),
+	filter var(--wwa-news-hover-duration) var(--wwa-news-hover-ease);
 }
 
 /* The CTA is anchored to the bottom of the chip row, so the transform carries
    both the horizontal centring and the rise. */
 .wwa-news-card-cta {
-  transform: translate(-50%, 16px);
+	transform: translate(-50%, 16px);
 }
 
 .wwa-news-card:hover .wwa-news-card-title,
 .wwa-news-card:focus-visible .wwa-news-card-title {
-  transform: translate3d(0, -10px, 0);
+	transform: translate3d(0, -10px, 0);
 }
 
 .wwa-news-card:hover .wwa-news-card-chip,
 .wwa-news-card:focus-visible .wwa-news-card-chip {
-  opacity: 0;
-  transform: translate3d(0, 10px, 0);
-  filter: blur(2px);
+	opacity: 0;
+	transform: translate3d(0, 10px, 0);
+	filter: blur(2px);
 }
 
 .wwa-news-card:hover .wwa-news-card-cta,
 .wwa-news-card:focus-visible .wwa-news-card-cta {
-  opacity: 1;
-  transform: translate(-50%, 0);
+	opacity: 1;
+	transform: translate(-50%, 0);
 }
 
 /* The head stays a row down to 479px. The label must not break across two lines
    — the underline would follow it under both — and the button must not shrink
    below that width either, because .text-button clips its own overflow. */
 .wwa-news-head .text-button {
-  flex: none;
+	flex: none;
 }
 
 .wwa-news-head .text-button-label {
-  white-space: nowrap;
+	white-space: nowrap;
 }
 
 /* Both arrows are the same glyph: the card CTA draws it on a 14×11 box, the
    section link on the 1em square the design system gives .text-button. */
 .wwa-news-card-cta-icon,
 .wwa-news-head .text-button-icon-before {
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2014%2011'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0%206.219h9.527L6.651%209l1.391%201.438L13.438%205.219%208.043%200%206.651%201.438%209.527%204.219H0v2z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2014%2011'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0%206.219h9.527L6.651%209l1.391%201.438L13.438%205.219%208.043%200%206.651%201.438%209.527%204.219H0v2z'/%3E%3C/svg%3E");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-position: center;
-  mask-position: center;
+	background-color: currentColor;
+	-webkit-mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2014%2011'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0%206.219h9.527L6.651%209l1.391%201.438L13.438%205.219%208.043%200%206.651%201.438%209.527%204.219H0v2z'/%3E%3C/svg%3E");
+	mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2014%2011'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0%206.219h9.527L6.651%209l1.391%201.438L13.438%205.219%208.043%200%206.651%201.438%209.527%204.219H0v2z'/%3E%3C/svg%3E");
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	-webkit-mask-position: center;
+	mask-position: center;
 }
 
 /* -------------------------------------------------------------- Gallery (2.8) */
 .wwa-gallery-row {
-  will-change: transform;
+	will-change: transform;
 }
 
 /* --------------------------------------------------------- Focus visibility
@@ -180,21 +145,21 @@
 .wwa-team-card:focus-visible,
 .wwa-news-card:focus-visible,
 .wwa-values-pager-button:focus-visible {
-  outline: 2px solid var(--_system-colors---primary);
-  outline-offset: 4px;
+	outline: 2px solid var(--_system-colors---primary);
+	outline-offset: 4px;
 }
 
 /* ------------------------------------------------------------ Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .wwa-trust-card,
-  .wwa-trust-card-button,
-  .wwa-playbook-card-detail,
-  .wwa-playbook-detail-close,
-  .wwa-news-card-title,
-  .wwa-news-card-chip,
-  .wwa-news-card-cta,
-  .wwa-values-pager-icon,
-  .wwa-values-pager-icon-prev {
-    transition: none !important;
-  }
+	.wwa-trust-card,
+	.wwa-trust-card-button,
+	.wwa-playbook-card-detail,
+	.wwa-playbook-detail-close,
+	.wwa-news-card-title,
+	.wwa-news-card-chip,
+	.wwa-news-card-cta,
+	.wwa-values-pager-icon,
+	.wwa-values-pager-icon-prev {
+		transition: none !important;
+	}
 }
