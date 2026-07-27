@@ -143,6 +143,12 @@
   transform: translate(-50%, 0);
 }
 
+/* The head stays a row down to 479px, where the label would otherwise break
+   across two lines and take the underline with it. */
+.wwa-news-head .text-button-label {
+  white-space: nowrap;
+}
+
 /* Both arrows are the same glyph: the card CTA draws it on a 14×11 box, the
    section link on the 1em square the design system gives .text-button. */
 .wwa-news-card-cta-icon,
