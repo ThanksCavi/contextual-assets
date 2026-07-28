@@ -16,15 +16,62 @@
 }
 
 /* ------------------------------------------------------------- Playbook (2.2)
-   The detail panel is an overlay inset 10px. The page-specific height script
-   grows an open card only when its revealed copy needs more vertical room. */
+   The card is a two-row grid: the closed face and the revealed detail share the
+   top row, the +/× control owns the bottom one. Both faces stay in flow — the
+   hidden one is `visibility: hidden`, which still occupies its cell — so the row
+   is always as tall as the taller of the two and the card never changes height
+   when it opens. Cards stretch to the grid row, so all three match the tallest.
+   Longer or shorter copy just resizes the row; nothing clips, nothing jumps. */
+.wwa-playbook-card {
+	display: grid;
+	grid-template-columns: 100%;
+	grid-template-rows: 1fr auto;
+	align-items: stretch;
+	justify-items: stretch;
+}
+
+.wwa-playbook-card-face,
 .wwa-playbook-card-detail {
+	grid-area: 1 / 1;
+	z-index: 2;
 	transition: opacity 0.3s ease, visibility 0.3s;
+}
+
+/* The yellow panel is inset 10px from the card edge and has to sit behind the
+   control as well as the copy, so it is a layer of its own rather than the
+   detail's own background. */
+.wwa-playbook-card:before {
+	content: "";
+	z-index: 1;
+	background-color: var(--_system-colors---accent);
+	border-radius: 10px;
+	position: absolute;
+	inset: 10px;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.wwa-playbook-card.is-open:before {
+	opacity: 1;
+}
+
+/* The card's own 40px padding already places the detail copy where the design
+   wants it, and the control's 33px padding-top keeps the last line clear of it. */
+.wwa-playbook-card-detail {
+	position: static;
+	padding: 0;
+	background-color: transparent;
+	overflow: visible;
 }
 
 .wwa-playbook-card.is-open .wwa-playbook-card-detail {
 	opacity: 1;
 	visibility: visible;
+}
+
+.wwa-playbook-card.is-open .wwa-playbook-card-face {
+	opacity: 0;
+	visibility: hidden;
 }
 
 .wwa-playbook-detail-close {
@@ -182,6 +229,8 @@
 @media (prefers-reduced-motion: reduce) {
 	.wwa-trust-card,
 	.wwa-trust-card-button,
+	.wwa-playbook-card:before,
+	.wwa-playbook-card-face,
 	.wwa-playbook-card-detail,
 	.wwa-playbook-detail-close,
 	.wwa-news-card-title,
