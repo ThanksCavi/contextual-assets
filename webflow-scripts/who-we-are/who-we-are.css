@@ -16,7 +16,8 @@
 }
 
 /* ------------------------------------------------------------- Playbook (2.2)
-   The detail panel is an overlay inset 10px, so opening never changes card height. */
+   The detail panel is an overlay inset 10px. The page-specific height script
+   grows an open card only when its revealed copy needs more vertical room. */
 .wwa-playbook-card-detail {
 	transition: opacity 0.3s ease, visibility 0.3s;
 }
@@ -27,11 +28,12 @@
 }
 
 .wwa-playbook-detail-close {
+	transform: rotate(45deg);
 	transition: transform 0.3s ease;
 }
 
 .wwa-playbook-card.is-open .wwa-playbook-detail-close {
-	transform: rotate(45deg);
+	transform: rotate(0deg);
 }
 
 /* --------------------------------------------------------------- Values (2.4)
