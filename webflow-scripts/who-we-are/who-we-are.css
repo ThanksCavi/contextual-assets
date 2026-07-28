@@ -64,6 +64,8 @@
    affordance at every width. Snapping stops a swipe on a card edge, so the
    slider never comes to rest mid-card. */
 .wwa-values-grid {
+	height: auto;
+	align-items: stretch;
 	scroll-snap-type: x mandatory;
 	scrollbar-width: none;
 }
