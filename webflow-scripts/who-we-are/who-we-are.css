@@ -35,16 +35,41 @@
 }
 
 /* --------------------------------------------------------------- Values (2.4)
-   The design shows no scrollbar next to the arrows, so it is hidden from the
-   breakpoint where the arrows are the affordance and kept below it. */
-@media (min-width: 992px) {
-	.wwa-values-grid {
-		scrollbar-width: none;
-	}
+   The row is a slider over a native scroll container. The card takes a share of
+   the track instead of the fixed 440px the Designer can express, so the same
+   markup shows three cards, then two, then one with the next peeking in. The
+   20px subtracted here is the `gap` the Designer sets on .wwa-values-grid. */
+.wwa-values-card {
+	flex: 0 0 calc((100% - 40px) / 3);
+	scroll-snap-align: start;
+}
 
-	.wwa-values-grid::-webkit-scrollbar {
-		display: none;
+@media (max-width: 1199px) {
+	.wwa-values-card {
+		flex-basis: calc((100% - 20px) / 2);
 	}
+}
+
+/* One card and a peek of the next. It never grows past the 440px the design
+   gives a card, and the side padding drops so the text keeps its measure. */
+@media (max-width: 767px) {
+	.wwa-values-card {
+		flex-basis: min(100% - 56px, 440px);
+		padding-left: 32px;
+		padding-right: 32px;
+	}
+}
+
+/* The design shows no scrollbar: the arrows and the peeking card are the
+   affordance at every width. Snapping stops a swipe on a card edge, so the
+   slider never comes to rest mid-card. */
+.wwa-values-grid {
+	scroll-snap-type: x mandatory;
+	scrollbar-width: none;
+}
+
+.wwa-values-grid::-webkit-scrollbar {
+	display: none;
 }
 
 /* Disabled dims the arrow, not the button: the design keeps both pills visible,
