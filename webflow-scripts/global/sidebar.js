@@ -2,15 +2,19 @@
  * Generic sticky sidebar pinning for ScrollSmoother pages.
  *
  * Required markup:
- * - [data-sticky-sidebar-layout] on the shared layout row/container
+ * - [data-sticky-layout] on the shared layout row/container
  * - [data-sticky-sidebar] on the sidebar element to pin
- * - [data-sticky-sidebar-content] on the main content column
+ * - [data-sticky-content] on the main content column
+ *
+ * Legacy [data-sticky-sidebar-layout] / [data-sticky-sidebar-content] are still
+ * accepted as a fallback for pages not yet renamed. See docs/tech-debt.md.
  */
 (() => {
   const INIT_FLAG = '__contextualStickySidebarInit';
-  const LAYOUT_SELECTOR = '[data-sticky-sidebar-layout]';
+  const LAYOUT_SELECTOR = '[data-sticky-layout], [data-sticky-sidebar-layout]';
   const SIDEBAR_SELECTOR = '[data-sticky-sidebar]';
-  const CONTENT_SELECTOR = '[data-sticky-sidebar-content]';
+  const CONTENT_SELECTOR = '[data-sticky-content], [data-sticky-sidebar-content]';
+  const LEGACY_SELECTOR = '[data-sticky-sidebar-layout], [data-sticky-sidebar-content]';
   const PIN_MANAGED_CLASS = 'is-sticky-sidebar-pin-managed';
   const DESKTOP_QUERY = '(min-width: 992px) and (prefers-reduced-motion: no-preference)';
   const SMOOTHER_READY_EVENT = 'contextual:smoother-ready';
@@ -35,9 +39,20 @@
   };
 
   onMotionReady(() => {
+    warnOnLegacyAttributes();
     refreshAll();
     bindGlobalListeners();
   });
+
+  function warnOnLegacyAttributes() {
+    const legacy = document.querySelectorAll(LEGACY_SELECTOR);
+    if (legacy.length === 0) return;
+
+    console.warn(
+      `[sticky-sidebar] ${legacy.length} element(s) still use the legacy data-sticky-sidebar-layout/-content attributes. Rename to data-sticky-layout/data-sticky-content.`,
+      legacy,
+    );
+  }
 
   function onMotionReady(callback) {
     if (window.ContextualHomeMotion?.ready) {
