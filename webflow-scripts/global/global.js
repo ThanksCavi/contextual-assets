@@ -497,7 +497,9 @@
   }
 
   function getToggles(item) {
-    return Array.from(item.querySelectorAll(TOGGLE_SELECTOR));
+    const inner = Array.from(item.querySelectorAll(TOGGLE_SELECTOR));
+    // A card can be its own toggle — querySelectorAll never returns the element itself.
+    return item.matches(TOGGLE_SELECTOR) ? [item, ...inner] : inner;
   }
 
   window.ContextualRevealAccordion = {
@@ -512,4 +514,19 @@
   } else {
     initAll();
   }
+})();
+
+/* Placeholder links — an `href="#"` means "not wired up yet", not "scroll the page
+   back to the top". Cancel just the navigation and leave everything else alone: no
+   stopPropagation, so Webflow's own click handlers and ours still run as before.
+
+   Site-wide on purpose. On /industries the industry cards are Link Card variants
+   whose CMS URL the client has not filled in, and the same placeholder sits in the
+   footer legal links and on the /templates/* pages. */
+(() => {
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!target || typeof target.closest !== 'function') return;
+    if (target.closest('a[href="#"]')) event.preventDefault();
+  });
 })();
