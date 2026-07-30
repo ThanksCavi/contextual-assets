@@ -11,6 +11,9 @@ webflow-scripts/versions/
 .worktrees/
 /output/
 
+# Архив удалённого кода — сюда попадает и README, который иначе съел бы `*.md` выше.
+!/archive/**
+
 # Contextual agent workflow and its reviewed project sources.
 #!AGENTS.md
 #!CLAUDE.md
