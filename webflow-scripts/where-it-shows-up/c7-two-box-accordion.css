@@ -40,7 +40,7 @@
    the read-more strip stays the same size on every card. min-height mirrors the
    Figma 480 head, scaled like the system tokens; it is a MIN, so longer
    titles/subtitles still grow the box (and the measurement follows them). */
-.c7-grid .c7-cardhead{background-color:#fff;border:1px solid #dcd9e5;border-radius:20px;flex:1 1 auto;overflow:hidden;min-height:clamp(340px,100vw * 480 / 1440,480px);transition:padding-top var(--rv-duration) var(--rv-ease),row-gap var(--rv-duration) var(--rv-ease)}
+.c7-grid .c7-cardhead{background-color:#fff;border:1px solid #dcd9e5;border-radius:20px;flex:1 1 auto;overflow:hidden;min-height:clamp(340px,100vw * 480 / 1440,480px);transition:min-height var(--rv-duration) var(--rv-ease),padding-top var(--rv-duration) var(--rv-ease),row-gap var(--rv-duration) var(--rv-ease)}   /* min-height transitions too: dropped in one frame it hands the detail 40px of height before the animation starts */
 .c7-grid .c7-icon,.c7-grid .c7-iconimg{transition:width var(--rv-duration) var(--rv-ease),height var(--rv-duration) var(--rv-ease),margin-bottom var(--rv-duration) var(--rv-ease)}
 .c7-grid .c7-ctitle{transition:font-size var(--rv-duration) var(--rv-ease),max-width var(--rv-duration) var(--rv-ease)}
 .c7-grid .c7-csub{max-height:12em;opacity:1;overflow:hidden;transition:max-height var(--rv-duration) var(--rv-ease),opacity var(--rv-fade) linear,margin-top var(--rv-duration) var(--rv-ease)}
