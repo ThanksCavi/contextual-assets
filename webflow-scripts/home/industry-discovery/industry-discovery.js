@@ -7,7 +7,7 @@
 			panel: '[data-industry-panel]',
 			card: '[data-industry-card]',
 			src: '.industry-card__bg-source',
-			link: '.card-link',
+			link: '.card-link, .industry-card-link',
 		},
 		cls: {
 			bg: 'industry-panel__bg-active',
@@ -35,12 +35,14 @@
 		panels.set(panel, state);
 
 		cards.forEach((card) => {
-			const link = card.querySelector(CFG.sel.link);
-			const href = link?.getAttribute('href');
-			const isExternalLink = href && !['#', ''].includes(href);
+			// The card type is the presence of the link itself, not its href: the
+			// Expandable Card variant hides the <a> by conditional visibility, so it
+			// never reaches the DOM. Placeholder hrefs ("#") stay link cards — swap the
+			// variant in Webflow to bring the accordion back.
+			const isLinkCard = !!card.querySelector(CFG.sel.link);
 
-			card.classList.add(isExternalLink ? 'is-link-card' : 'is-info-card');
-			bindEvents(card, state, cards, isExternalLink);
+			card.classList.add(isLinkCard ? 'is-link-card' : 'is-info-card');
+			bindEvents(card, state, cards, isLinkCard);
 		});
 
 		preload(cards);
@@ -75,7 +77,7 @@
 		requestAnimationFrame(syncHeights);
 	}
 
-	function bindEvents(card, state, allCards, isExternalLink) {
+	function bindEvents(card, state, allCards, isLinkCard) {
 		const handleEntry = () => {
 			if (!isMobile()) updateBg(state, card);
 		};
@@ -84,7 +86,7 @@
 		card.addEventListener('focusin', handleEntry);
 
 		card.addEventListener('click', (e) => {
-			if (!isMobile() || isExternalLink) return;
+			if (!isMobile() || isLinkCard) return;
 
 			e.preventDefault();
 			const wasOpen = card.classList.contains(CFG.cls.open);
