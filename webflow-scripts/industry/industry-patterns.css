@@ -16,6 +16,12 @@
   min-height: 0;
 }
 
+/* Open, it stops absorbing: the blue header keeps the tight Figma inset and the
+   detail below takes whatever height is left. */
+[data-reveal-accordion-item].is-open .industry-pattern-card-summary {
+  flex: 0 1 auto;
+}
+
 /* Figma draws the blue header 200px tall closed and 136px open
    (4132:5555 / 4132:5898); the padding is the whole difference. */
 .industry-pattern-card-header {

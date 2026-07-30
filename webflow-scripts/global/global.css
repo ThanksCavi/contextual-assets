@@ -371,7 +371,12 @@
   pointer-events: none;
 }
 
+/* Open, the detail takes the card's spare height. The locked height is the
+   tallest state across the row, so on wide screens the closed state can be the
+   tall one and the open card has slack to place — it belongs at the bottom of
+   the detail, not as a gap under the card's header. */
 [data-reveal-accordion-item].is-open [data-reveal-accordion-detail] {
+  flex: 1 1 auto;
   grid-template-rows: 1fr;
   opacity: 1;
   pointer-events: auto;

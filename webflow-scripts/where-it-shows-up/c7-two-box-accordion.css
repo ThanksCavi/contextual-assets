@@ -68,15 +68,16 @@
 
 /* ===== OPEN STATE ===== */
 /* Open, the roles swap: BOX 1 drops to its own (smaller) content and BOX 2a
-   takes the card's spare height, so every open card shows the same Figma
-   proportions whether its detail copy is three lines or fifteen. */
+   takes the card's spare height (that half is in global.css), so every open card
+   shows the same Figma proportions whether its detail copy is three lines or
+   fifteen. */
 .c7-grid .c7-card.is-open .c7-cardhead{min-height:0;flex:0 1 auto;padding-top:var(--_sizes---s--40-y);row-gap:20px}
 .c7-grid .c7-card.is-open .c7-icon,.c7-grid .c7-card.is-open .c7-iconimg{width:50px!important;height:50px!important}
 .c7-grid .c7-card.is-open .c7-icon{margin-bottom:0}
 .c7-grid .c7-card.is-open .c7-ctitle{font-size:var(--_fonts---title-size--h4);line-height:1.125}
 @media screen and (min-width:992px){.c7-grid .c7-card.is-open .c7-ctitle{max-width:184px}}   /* Figma title box; off on 1-col where the card is narrow anyway */
 .c7-grid .c7-card.is-open .c7-csub{max-height:0;opacity:0;margin-top:-20px}   /* -20 cancels the open cardhead row-gap */
-.c7-grid .c7-card.is-open .c7-detail{margin-top:2px;border-width:1px;background-color:#fff;flex:1 1 auto}
+.c7-grid .c7-card.is-open .c7-detail{margin-top:2px;border-width:1px;background-color:#fff}
 .c7-grid .c7-card.is-open .c7-dinner{padding-top:40px;padding-bottom:40px}
 .c7-grid .c7-card.is-open .c7-more{margin-top:0}   /* the 2px seam goes with the strip */
 
