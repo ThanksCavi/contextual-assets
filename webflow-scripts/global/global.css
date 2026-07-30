@@ -300,9 +300,16 @@
 [data-drag-lane].is-lane {
   grid-auto-flow: column;
   overflow: auto hidden;
-  scrollbar-width: none;
 }
 
-[data-drag-lane].is-lane::-webkit-scrollbar {
-  display: none;
+/* Desktop drags the lane by the cursor, so the bar is noise there. Below 992 the
+   lane is a touch strip and keeps the site scrollbar — see data-horizontal-scroll. */
+@media screen and (min-width: 992px) {
+  [data-drag-lane].is-lane {
+    scrollbar-width: none;
+  }
+
+  [data-drag-lane].is-lane::-webkit-scrollbar {
+    display: none;
+  }
 }
