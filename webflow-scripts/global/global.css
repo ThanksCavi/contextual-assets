@@ -388,14 +388,19 @@
   transition:
     height var(--rv-duration) var(--rv-ease),
     margin-top var(--rv-duration) var(--rv-ease),
+    padding-top var(--rv-duration) var(--rv-ease),
+    padding-bottom var(--rv-duration) var(--rv-ease),
     border-top-width var(--rv-duration) var(--rv-ease),
     border-bottom-width var(--rv-duration) var(--rv-ease),
     opacity var(--rv-fade) linear;
 }
 
-/* At height 0 a horizontal border would still draw a line, so both go. */
+/* border-box floors the strip at its own padding, so the padding has to go with
+   the height; at height 0 a horizontal border would still draw a line. */
 [data-reveal-accordion-item].is-open [data-reveal-accordion-more] {
   height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   border-top-width: 0;
   border-bottom-width: 0;
   opacity: 0;
