@@ -313,3 +313,121 @@
     display: none;
   }
 }
+
+/* REVEAL ACCORDION
+   Cards that swap their content instead of growing: one card open at a time, and
+   the card's height is the same in both states, so the row — and everything below
+   the section — never moves. The height itself is measured by the module in
+   global.js and arrives as --rv-card-h; nothing here is a hard-coded pixel size.
+
+   Only the mechanism lives here. Colours, padding and the per-section choreography
+   stay in each section's own stylesheet, so two sections can share the behaviour
+   and still look nothing alike.
+
+   Contract: see the doc comment above the module in global.js. */
+[data-reveal-accordion] {
+  --rv-duration: 0.42s;
+  --rv-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --rv-fade: 0.26s;
+}
+
+/* The two collapsing regions are mirror images: the closed copy shrinks away
+   while the detail opens. Both need exactly one child — a grid row only collapses
+   what it explicitly sizes. */
+[data-reveal-accordion-summary],
+[data-reveal-accordion-detail] {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  transition:
+    grid-template-rows var(--rv-duration) var(--rv-ease),
+    margin-top var(--rv-duration) var(--rv-ease),
+    opacity var(--rv-fade) linear;
+}
+
+[data-reveal-accordion-summary] > *,
+[data-reveal-accordion-detail] > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+[data-reveal-accordion-summary] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+/* The detail never gives up height: mid-transition the slack belongs to the
+   card's absorbing box, not to the copy that is currently arriving. */
+[data-reveal-accordion-detail] {
+  flex: 0 0 auto;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-reveal-accordion-item].is-open [data-reveal-accordion-summary] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-reveal-accordion-item].is-open [data-reveal-accordion-detail] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The "read more" strip has two children and its own border, so it collapses by
+   height rather than by a grid row. --rv-more-h is measured alongside the card
+   height; until it arrives the strip is simply auto, which is its closed size. */
+[data-reveal-accordion-more] {
+  flex: 0 0 auto;
+  height: var(--rv-more-h, auto);
+  overflow: hidden;
+  transition:
+    height var(--rv-duration) var(--rv-ease),
+    margin-top var(--rv-duration) var(--rv-ease),
+    border-top-width var(--rv-duration) var(--rv-ease),
+    border-bottom-width var(--rv-duration) var(--rv-ease),
+    opacity var(--rv-fade) linear;
+}
+
+/* At height 0 a horizontal border would still draw a line, so both go. */
+[data-reveal-accordion-item].is-open [data-reveal-accordion-more] {
+  height: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-reveal-accordion-toggle]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+[data-reveal-accordion-lock-height] [data-reveal-accordion-item] {
+  height: var(--rv-card-h, auto);
+}
+
+/* Measuring pass: heights are released and the card is taken out of the row's
+   stretch, so each card reports its own content height in each state. Silencing
+   the transitions keeps the pass invisible. */
+[data-reveal-accordion-measuring] [data-reveal-accordion-item] {
+  align-self: flex-start !important;
+  height: auto !important;
+}
+
+[data-reveal-accordion-measuring],
+[data-reveal-accordion-measuring] * {
+  transition: none !important;
+}
+
+/* The choreography is spread over the section's own rules too (a shrinking icon,
+   a fading subtitle), so reduced motion is answered for the whole component
+   rather than for the three regions this file happens to know about. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal-accordion] * {
+    transition: none !important;
+  }
+}
