@@ -14,9 +14,15 @@
 
 ---
 
-## `webflow-registered/` — регистрации, удалённые из Webflow
+## `webflow-registered/` — регистрации, помеченные к удалению
 
-Скачаны с `cdn.prod.website-files.com` **до** удаления. Site id `69dfe91a819e76a918bef68c`.
+> **Статус на 30.07.2026: НЕ УДАЛЕНЫ.** `data_scripts_tool > delete_registered_script`
+> возвращает `HTTP 400` на всех четырёх id — и в батче, и по одному. Владелец удаление
+> согласовал, но API его не выполняет. Файлы уже здесь, так что снести их можно в любой
+> момент вручную через Webflow UI, ничего не потеряв. `get_registered_scripts` по-прежнему
+> показывает все 15 записей.
+
+Скачаны с `cdn.prod.website-files.com`. Site id `69dfe91a819e76a918bef68c`.
 
 | Файл | script id | Версия | Зарегистрирован |
 |---|---|---|---|
@@ -25,7 +31,7 @@
 | `customerlogosmarqueelimittest-0.0.1.js` | `customerlogosmarqueelimittest` | 0.0.1 | 22.04.2026 |
 | `perevealaccordion-0.0.1.js` | `perevealaccordion` | 0.0.1 | 19.07.2026 |
 
-**Почему удалено:** ни одна из четырёх регистраций не была применена ни к сайту, ни к
+**Почему помечены:** ни одна из четырёх регистраций не была применена ни к сайту, ни к
 какой-либо странице (`get_site_scripts` вернул единственную запись —
 `customer_brands_carousel` 1.0.4 в футере; `get_page_scripts` пусто). В HTML всех 82
 страниц их URL не встречается.
