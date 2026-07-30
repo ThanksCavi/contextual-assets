@@ -28,3 +28,10 @@
   padding-top: clamp(10px, 100vw * 16 / 1440, 16px);
   padding-bottom: clamp(10px, 100vw * 16 / 1440, 16px);
 }
+
+/* Figma leaves 40px between the two copy blocks of the open card and 50 before
+   the button (4132:5898). The shared mb-30 utility plus the detail's own 20px
+   row gap makes the first of those 50 as well. */
+.industry-pattern-details-inner > .description + .badge {
+  margin-top: -10px;
+}
