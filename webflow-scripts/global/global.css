@@ -383,6 +383,7 @@
 [data-reveal-accordion-more] {
   flex: 0 0 auto;
   height: var(--rv-more-h, auto);
+  min-height: 0; /* a column flex item floors at its min-content height otherwise */
   overflow: hidden;
   transition:
     height var(--rv-duration) var(--rv-ease),
