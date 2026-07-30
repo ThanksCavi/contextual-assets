@@ -2,21 +2,21 @@
    The lane works without this file: touch swipe and trackpad scroll are native.
    This adds the desktop affordance the client asks for as "draggable".
 
-   Contract:
-     [data-drag-lane]   the scroll container (overflow-x: auto)
-   State classes (styled in drag-lane.css):
-     is-scrollable      content overflows, so dragging is possible
-     is-dragging        a pointer drag is in progress
+   Contract: [data-drag-lane] on the scroll container. Nothing else — layout,
+   dividers and card widths stay in the Designer, this file only reacts to a
+   pointer and to whether the row currently overflows.
 
-   Applying it to another section — nothing here is section-specific:
+   Applying it to another section:
      1. give the row `overflow: auto hidden` and column tracks with a real
         minimum, e.g. `grid-auto-flow: column`,
         `grid-template-columns: minmax(340px, 1fr) …`,
         `grid-auto-columns: minmax(340px, 1fr)`.
-        Cards then keep their design width while they fit and turn the row into
-        a lane as soon as one more card is added;
+        Cards keep their design width while they fit, and the row becomes a
+        lane by itself as soon as an editor adds one more card;
      2. add `data-drag-lane` on the row;
-     3. add `data-lane-dividers` too when the cards carry a left border. */
+     3. if the cards carry a divider, set it as border-left on the card class
+        and zero it on the `first-child` pseudo state — so the line follows
+        card order instead of a hand-placed class. */
 (function () {
   var ROOT = '[data-drag-lane]';
   var THRESHOLD = 4; // px of travel before a press counts as a drag, not a click
@@ -31,13 +31,16 @@
     var dragging = false;
 
     function paint() {
-      lane.classList.toggle('is-scrollable', lane.scrollWidth - lane.clientWidth > 1);
+      lane.style.cursor = lane.scrollWidth - lane.clientWidth > 1 ? 'grab' : '';
+    }
+
+    function scrollable() {
+      return lane.scrollWidth - lane.clientWidth > 1;
     }
 
     function onPointerDown(e) {
       // Touch already pans the lane natively; hijacking it only breaks momentum.
-      if (e.pointerType === 'touch' || e.button !== 0) return;
-      if (!lane.classList.contains('is-scrollable')) return;
+      if (e.pointerType === 'touch' || e.button !== 0 || !scrollable()) return;
 
       pointerId = e.pointerId;
       startX = e.clientX;
@@ -52,7 +55,8 @@
       if (!dragging) {
         if (Math.abs(travel) < THRESHOLD) return;
         dragging = true;
-        lane.classList.add('is-dragging');
+        lane.style.cursor = 'grabbing';
+        lane.style.userSelect = 'none';
         lane.setPointerCapture(pointerId);
       }
       lane.scrollLeft = startScroll - travel;
@@ -66,7 +70,8 @@
       if (!dragging) return;
 
       dragging = false;
-      lane.classList.remove('is-dragging');
+      lane.style.userSelect = '';
+      paint();
       // Swallow the click that ends the drag so a card link does not fire.
       lane.addEventListener('click', swallow, {capture: true, once: true});
       setTimeout(function () {
