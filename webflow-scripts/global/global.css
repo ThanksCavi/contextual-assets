@@ -290,3 +290,19 @@
   --horizontal-scrollbar-thumb: var(--_system-colors---accent, #ecf071);
   --horizontal-scrollbar-thumb-hover: #f4f78d;
 }
+
+/* DRAG LANE
+   A card row that turns into a horizontal lane. The lane mode lives here and is
+   switched on by drag-lane.js, never by a Webflow class — the Designer canvas
+   runs no custom code, so on the canvas the row stays a plain wrapping grid and
+   every card, including the fourth one, is visible and editable.
+   Without the script the published row also just wraps: readable, not broken. */
+[data-drag-lane].is-lane {
+  grid-auto-flow: column;
+  overflow: auto hidden;
+  scrollbar-width: none;
+}
+
+[data-drag-lane].is-lane::-webkit-scrollbar {
+  display: none;
+}

@@ -2,18 +2,20 @@
    The lane works without this file: touch swipe and trackpad scroll are native.
    This adds the desktop affordance the client asks for as "draggable".
 
-   Contract: [data-drag-lane] on the scroll container. Nothing else — layout,
-   dividers and card widths stay in the Designer, this file only reacts to a
-   pointer and to whether the row currently overflows.
+   Contract: [data-drag-lane] on the row. On init the script adds `is-lane`,
+   and global.css turns the row into a scroll container behind that class.
+   Lane mode is deliberately script-owned: the Designer canvas runs no custom
+   code, so there the row stays a plain wrapping grid and every card — including
+   the fourth one — is visible and editable. Card widths, dividers and the grid
+   itself stay in the Designer.
 
    Applying it to another section:
-     1. give the row `overflow: auto hidden` and column tracks with a real
-        minimum, e.g. `grid-auto-flow: column`,
-        `grid-template-columns: minmax(340px, 1fr) …`,
-        `grid-auto-columns: minmax(340px, 1fr)`.
-        Cards keep their design width while they fit, and the row becomes a
-        lane by itself as soon as an editor adds one more card;
-     2. add `data-drag-lane` on the row;
+     1. build the row as a grid whose column tracks are percentages of the
+        container, e.g. `grid-template-columns: 32.35% 35.3% 32.35%` with
+        `grid-auto-columns` set to the width an extra card should take. Cards
+        then keep their design width no matter how many are added: the ones
+        beyond the container simply sit outside it;
+     2. add `data-drag-lane` on the row — do NOT set overflow in the Designer;
      3. if the cards carry a divider, set it as border-left on the card class
         and zero it on the `first-child` pseudo state — so the line follows
         card order instead of a hand-placed class. */
@@ -24,6 +26,7 @@
   function init(lane) {
     if (lane.hasAttribute('data-drag-lane-initialized')) return;
     lane.setAttribute('data-drag-lane-initialized', '');
+    lane.classList.add('is-lane');
 
     var startX = 0;
     var startScroll = 0;
