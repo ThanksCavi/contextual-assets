@@ -1,0 +1,88 @@
+/* =====================================================================
+   §7 "shows-up" bottleneck accordion — two-box cards (Figma 4344:7266)
+   Live on /private-equity. Injected as a scoped <style> in the page HEAD
+   freeform code (id="c7-two-box-accordion").
+     NB: set_page_freeform_code 406s when a block mixes <script>+<style>
+     (WAF). The accordion JS stays in the FOOTER block; this CSS lives in
+     the (otherwise empty) HEAD block on its own.
+
+   NO DOM change, NO JS change. Existing structure:
+     .c7-card[is-open]                (footer JS toggles is-open + animates .c7-detail)
+       > .c7-cardhead   BOX 1  (icon + title + subtitle)   [toggle]
+       > .c7-detail     BOX 2a (collapsible grid 0fr<->1fr) -> .c7-dinner
+       > .c7-more       BOX 2b (read-more)                  [toggle]
+
+   Collapsed: BOX1 = icon(100)+title+subtitle, BOX2 = "Read more +".
+   Open:      BOX1 = icon(50)+title (subtitle gone), BOX2 = detail; no read-more.
+
+   Equal card heights: .c7-grid already sets align-items:stretch, so every
+   card matches the tallest (the open one). The open card's height is driven
+   by the .c7-detail grid-rows transition, so stretched siblings follow in
+   sync — smooth, and with NO fixed pixel height (safe for variable text).
+
+   GOTCHA (fixed): padding on the collapsing grid child (.c7-dinner) can't
+   shrink to 0, so vertical padding must live in the OPEN state only —
+   otherwise a closed card leaks ~80px of detail.
+   ===================================================================== */
+
+/* card = transparent shell, 2px seam between the two boxes */
+.c7-grid .c7-card{background-color:transparent!important;border:0!important;border-radius:0!important;row-gap:0}
+
+/* section-scoped 16px type token — the design system has no Text Size/16;
+   mirrors the shape of --_fonts---text-size--18 (incl. its 1920 step 18->22) */
+.c7-sec{--c7-text-16:clamp(14px,100vw * 16 / 1440,16px)}
+@media screen and (min-width:1920px){.c7-sec{--c7-text-16:20px}}
+
+/* BOX 1 — icon + title + subtitle.
+   flex:1 1 auto (was 0 0 auto) — BOX 1 absorbs the card's spare height so
+   BOX 2 stays a constant-height button on every card. min-height mirrors the
+   Figma 480 head, scaled like the system tokens; it is a MIN, so longer
+   titles/subtitles still grow the box. */
+.c7-grid .c7-cardhead{background-color:#fff;border:1px solid #dcd9e5;border-radius:20px;flex:1 1 auto;min-height:clamp(340px,100vw * 480 / 1440,480px);transition:padding-top .45s cubic-bezier(.4,0,.2,1),row-gap .45s cubic-bezier(.4,0,.2,1)}
+.c7-grid .c7-icon,.c7-grid .c7-iconimg{transition:width .45s cubic-bezier(.4,0,.2,1),height .45s cubic-bezier(.4,0,.2,1),margin-bottom .45s cubic-bezier(.4,0,.2,1)}
+.c7-grid .c7-ctitle{transition:font-size .45s cubic-bezier(.4,0,.2,1),max-width .45s cubic-bezier(.4,0,.2,1)}
+.c7-grid .c7-csub{max-height:12em;opacity:1;overflow:hidden;transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease,margin-top .45s cubic-bezier(.4,0,.2,1)}
+
+/* BOX 2b — read-more. Never absorbs slack; height comes from its own
+   (responsive) padding, not a fixed px — s--40-y gives 40+14+40 ≈ Figma 100
+   and scales down to 32 on small screens. NB: r--100 is NOT usable here, it
+   jumps to 140px at 1920. */
+.c7-grid .c7-more{background-color:#fff;border:1px solid #dcd9e5;border-radius:20px;margin-top:2px;flex:0 0 auto;padding-top:var(--_sizes---s--40-y);padding-bottom:var(--_sizes---s--40-y);column-gap:10px;transition:opacity .3s ease}
+.c7-grid .c7-morelabel{line-height:1}
+.c7-grid .c7-moreicon{display:grid;place-items:center;width:15px;height:15px;font-size:15px;line-height:1}
+
+/* BOX 2a — detail (invisible closed, becomes the box when open) */
+.c7-grid .c7-detail{padding-left:0;padding-right:0;border:0 solid #dcd9e5;border-radius:20px;background-color:transparent;margin-top:0;flex:0 0 auto;transition:grid-template-rows .45s cubic-bezier(.4,0,.2,1),margin-top .45s ease}
+.c7-grid .c7-dinner{padding:0 40px;row-gap:0;transition:padding .45s cubic-bezier(.4,0,.2,1)}   /* vertical padding only when open */
+
+/* detail typography + rhythm (Figma: body 16/24, pill->list 10, list->pill 30, pill->body 10) */
+.c7-grid .c7-dtext,.c7-grid .c7-li{font-size:var(--c7-text-16);line-height:1.5}
+.c7-grid .c7-list{margin:10px 0 30px;padding-left:0;row-gap:0;list-style:none}
+.c7-grid .c7-dtext{margin-top:10px}
+.c7-grid .c7-li{position:relative;padding-left:25px}
+.c7-grid .c7-li::before{content:"";position:absolute;left:0;top:calc(.75em - 4px);width:8px;height:8px;border-radius:50%;background-color:var(--_system-colors---primary)}
+
+/* ===== OPEN STATE ===== */
+.c7-grid .c7-card.is-open .c7-cardhead{min-height:0;flex:0 0 auto;padding-top:var(--_sizes---s--40-y);row-gap:20px}
+.c7-grid .c7-card.is-open .c7-icon,.c7-grid .c7-card.is-open .c7-iconimg{width:50px!important;height:50px!important}
+.c7-grid .c7-card.is-open .c7-icon{margin-bottom:0}
+.c7-grid .c7-card.is-open .c7-ctitle{font-size:var(--_fonts---title-size--h4);line-height:1.125}
+@media screen and (min-width:992px){.c7-grid .c7-card.is-open .c7-ctitle{max-width:184px}}   /* Figma title box; off on 1-col where the card is narrow anyway */
+.c7-grid .c7-card.is-open .c7-csub{max-height:0;opacity:0;margin-top:-20px}   /* -20 cancels the open cardhead row-gap */
+.c7-grid .c7-card.is-open .c7-detail{margin-top:2px;border-width:1px;background-color:#fff;flex:1 1 auto}
+.c7-grid .c7-card.is-open .c7-dinner{padding-top:40px;padding-bottom:40px}
+.c7-grid .c7-card.is-open .c7-more{display:none}
+
+/* head block (Figma: H2 -> intro gap 40, live 30) */
+.c7-sec .c7-intro{margin-top:var(--_sizes---s--40-y)}
+
+/* section frame — Figma insets 106 top / 40 bottom (live was 80/80).
+   r--108 is the nearest token (+2px); the 160px gaps to the neighbouring
+   sections come from those sections, not from here. */
+.c7-sec .c7-panel{padding-top:var(--_sizes---r--108);padding-bottom:var(--_sizes---s--40-y)}
+
+/* mobile: .c7-grid already stacks to 1 col at <=991 */
+@media screen and (max-width:767px){
+  .c7-grid .c7-dinner{padding-left:28px;padding-right:28px}
+  .c7-grid .c7-card.is-open .c7-dinner{padding-top:28px;padding-bottom:28px}
+}
