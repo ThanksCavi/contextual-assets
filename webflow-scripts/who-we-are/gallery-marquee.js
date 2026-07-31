@@ -4,8 +4,9 @@
 
    The row is not a scroll container, so the shared drag-lane.js — which drags
    scrollLeft — does not apply here: the loop lives in a transform, and the drag
-   moves that same offset. Both write through render(), and the auto-scroll simply
-   waits while the lane is held. Reduced motion keeps the drag and drops only the
+   moves that same offset. One frame loop owns the offset in every state — drifting,
+   held, dragged, gliding — so nothing else ever writes the transform and the drag
+   cannot outrun the display. Reduced motion keeps the drag and drops only the
    automatic movement.
 
    A throw does not get its own animation either: the release speed is added to the
@@ -15,12 +16,12 @@
    carry the cursor and touch-action in who-we-are.css. */
 (function () {
   var ROOT = '[data-gallery-marquee]';
-  var SPEED = 24; // px per second
+  var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var SPEED = RM ? 0 : 24; // px per second the lane drifts on its own
   var THRESHOLD = 4; // px of travel before a press counts as a drag
   var GLIDE = 0.42; // seconds for a throw to shed ~63% of its speed
   var MAX_THROW = 2400; // px per second: a flick coasts, it does not launch
   var STALE_RELEASE = 0.09; // s — a hand that paused before letting go throws nothing
-  var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function init(row) {
     if (row.hasAttribute('data-gallery-marquee-initialized')) return;
@@ -30,15 +31,27 @@
     if (!originals.length) return;
 
     originals.forEach(function (node) {
-      var clone = node.cloneNode(true);
-      clone.setAttribute('aria-hidden', 'true');
-      if (clone.tagName === 'IMG') {
-        clone.loading = 'eager';
-        clone.alt = '';
-      }
-      row.appendChild(clone);
+      if (node.tagName !== 'IMG') return;
+      // A lane carries images in from the side, and lazy loading only watches the
+      // page scroll — a lazy photo reaches the edge still empty. The copies load
+      // eagerly regardless, so the original may as well fetch the same bytes.
+      node.loading = 'eager';
+      node.addEventListener('load', measure); // its width decides the loop length
     });
 
+    function appendSet() {
+      originals.forEach(function (node) {
+        var clone = node.cloneNode(true);
+        clone.setAttribute('aria-hidden', 'true');
+        if (clone.tagName === 'IMG') {
+          clone.loading = 'eager';
+          clone.alt = '';
+        }
+        row.appendChild(clone);
+      });
+    }
+
+    appendSet();
     var firstClone = row.children[originals.length];
     var distance = 0;
     var offset = 0;
@@ -49,6 +62,7 @@
     var dragging = false;
     var startX = 0;
     var startOffset = 0;
+    var travel = 0; // px the hand has moved since it took hold
     var throwSpeed = 0; // px per second still owed to the release, on top of SPEED
     var handSpeed = 0; // px per second the hand is moving the lane right now
     var moveX = 0;
@@ -56,6 +70,10 @@
 
     function measure() {
       distance = firstClone.offsetLeft - originals[0].offsetLeft;
+      // The wrap jumps the lane back by one loop, so the lane has to be one loop
+      // longer than the row — otherwise the far end runs out and bare background
+      // shows at the right edge for part of every cycle.
+      while (distance > 0 && row.scrollWidth < row.clientWidth + distance) appendSet();
       offset = wrap(offset); // a resize can leave the offset past the new loop
       render();
     }
@@ -74,19 +92,29 @@
       var delta = (now - last) / 1000;
       last = now;
 
-      if (distance > 0) {
+      var next = offset;
+      if (pointerId !== null) {
+        // Under the hand the lane follows travel and nothing else: held without
+        // moving, it stands still; dragged, it lands once per frame rather than
+        // once per pointer event, which is what made the drag feel choppy.
+        if (dragging) next = wrap(startOffset - travel);
+      } else if (distance > 0) {
         if (throwSpeed) {
           throwSpeed *= Math.exp(-delta / GLIDE);
           if (Math.abs(throwSpeed) < 12) throwSpeed = 0; // what is left is lost inside SPEED
         }
-        offset = wrap(offset + delta * (SPEED + throwSpeed));
+        next = wrap(offset + delta * (SPEED + throwSpeed));
+      }
+
+      if (next !== offset) {
+        offset = next;
         render();
       }
       frame = requestAnimationFrame(tick);
     }
 
     function start() {
-      if (frame || dragging || RM) return;
+      if (frame) return;
       last = 0;
       frame = requestAnimationFrame(tick);
     }
@@ -103,6 +131,7 @@
       pointerId = e.pointerId;
       startX = e.clientX;
       startOffset = offset;
+      travel = 0; // a lane taken hold of stands still until the hand moves
       dragging = false;
       throwSpeed = 0; // touching a gliding lane cancels the throw it was coasting on
       handSpeed = 0;
@@ -113,13 +142,12 @@
     function onPointerMove(e) {
       if (e.pointerId !== pointerId) return;
 
-      var travel = e.clientX - startX;
+      travel = e.clientX - startX;
       if (!dragging) {
         if (Math.abs(travel) < THRESHOLD) return;
         dragging = true;
         row.classList.add('is-dragging');
         row.setPointerCapture(pointerId);
-        stop(); // the lane is in hand; the loop waits
       }
 
       var elapsed = (e.timeStamp - moveTime) / 1000;
@@ -129,9 +157,6 @@
         moveX = e.clientX;
         moveTime = e.timeStamp;
       }
-
-      offset = wrap(startOffset - travel);
-      render();
     }
 
     function onPointerUp(e) {
@@ -144,7 +169,7 @@
       row.classList.remove('is-dragging');
 
       var idle = (e.timeStamp - moveTime) / 1000;
-      throwSpeed = idle > STALE_RELEASE ? 0 :
+      throwSpeed = (RM || idle > STALE_RELEASE) ? 0 :
         Math.max(-MAX_THROW, Math.min(MAX_THROW, handSpeed - SPEED));
       // minus SPEED: the tick adds the marquee speed back, so a lane released at
       // walking pace keeps exactly that pace instead of a step up.
