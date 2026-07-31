@@ -39,6 +39,12 @@
       node.addEventListener('load', measure); // its width decides the loop length
     });
 
+    function loaded() {
+      return originals.every(function (node) {
+        return node.tagName !== 'IMG' || node.complete;
+      });
+    }
+
     function appendSet() {
       originals.forEach(function (node) {
         var clone = node.cloneNode(true);
@@ -72,8 +78,12 @@
       distance = firstClone.offsetLeft - originals[0].offsetLeft;
       // The wrap jumps the lane back by one loop, so the lane has to be one loop
       // longer than the row — otherwise the far end runs out and bare background
-      // shows at the right edge for part of every cycle.
-      while (distance > 0 && row.scrollWidth < row.clientWidth + distance) appendSet();
+      // shows at the right edge for part of every cycle. Half-loaded photos are
+      // narrower than they will be, so wait for their real widths or the lane
+      // ends up with copies it does not need.
+      if (loaded()) {
+        while (distance > 0 && row.scrollWidth < row.clientWidth + distance) appendSet();
+      }
       offset = wrap(offset); // a resize can leave the offset past the new loop
       render();
     }
