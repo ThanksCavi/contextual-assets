@@ -8,7 +8,9 @@
 			card: '[data-industry-card]',
 			src: '.industry-card__bg-source',
 			link: '.card-link, .industry-card-link',
+			toggle: '.ip-button',
 		},
+		variant: 'data-wf--industry-card--variant',
 		cls: {
 			bg: 'industry-panel__bg-active',
 			act: 'is-industry-bg-active',
@@ -40,9 +42,14 @@
 			// never reaches the DOM. Placeholder hrefs ("#") stay link cards — swap the
 			// variant in Webflow to bring the accordion back.
 			const isLinkCard = !!card.querySelector(CFG.sel.link);
+			// The Expandable Link Card carries both jobs. Desktop needs nothing extra —
+			// hover reveals the description, a click follows the link — but without hover
+			// mobile has to split them: the "+" opens the description, the rest of the
+			// card stays the link.
+			const isHybrid = isLinkCard && card.getAttribute(CFG.variant) === 'expandable-link-card';
 
-			card.classList.add(isLinkCard ? 'is-link-card' : 'is-info-card');
-			bindEvents(card, state, cards, isLinkCard);
+			card.classList.add(isHybrid ? 'is-expandable-link-card' : isLinkCard ? 'is-link-card' : 'is-info-card');
+			bindEvents(card, state, cards, isLinkCard, isHybrid);
 		});
 
 		preload(cards);
@@ -77,7 +84,7 @@
 		requestAnimationFrame(syncHeights);
 	}
 
-	function bindEvents(card, state, allCards, isLinkCard) {
+	function bindEvents(card, state, allCards, isLinkCard, isHybrid) {
 		const handleEntry = () => {
 			if (!isMobile()) updateBg(state, card);
 		};
@@ -85,16 +92,57 @@
 		card.addEventListener('pointerenter', handleEntry, { passive: true });
 		card.addEventListener('focusin', handleEntry);
 
+		if (isHybrid) {
+			bindToggle(card, state, allCards);
+			return;
+		}
+
 		card.addEventListener('click', (e) => {
 			if (!isMobile() || isLinkCard) return;
 
 			e.preventDefault();
-			const wasOpen = card.classList.contains(CFG.cls.open);
+			toggleCard(card, state, allCards);
+		});
+	}
 
-			allCards.forEach((c) => c.classList.remove(CFG.cls.open));
-			if (!wasOpen) {
-				card.classList.add(CFG.cls.open);
-				updateBg(state, card);
+	function bindToggle(card, state, allCards) {
+		const toggle = card.querySelector(CFG.sel.toggle);
+		if (!toggle) return;
+
+		// Webflow ships the "+" as decoration. Here it is the only way to reach the
+		// description, so it has to be an actual control.
+		toggle.removeAttribute('aria-hidden');
+		toggle.setAttribute('role', 'button');
+		toggle.setAttribute('tabindex', '0');
+		toggle.setAttribute('aria-label', 'Show description');
+		toggle.setAttribute('aria-expanded', 'false');
+
+		const handleToggle = (e) => {
+			if (!isMobile()) return;
+
+			e.preventDefault();
+			toggleCard(card, state, allCards);
+		};
+
+		toggle.addEventListener('click', handleToggle);
+		toggle.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' || e.key === ' ') handleToggle(e);
+		});
+	}
+
+	function toggleCard(card, state, allCards) {
+		const wasOpen = card.classList.contains(CFG.cls.open);
+
+		allCards.forEach((c) => c.classList.remove(CFG.cls.open));
+		if (!wasOpen) {
+			card.classList.add(CFG.cls.open);
+			updateBg(state, card);
+		}
+
+		allCards.forEach((c) => {
+			const toggle = c.querySelector(CFG.sel.toggle);
+			if (toggle?.hasAttribute('aria-expanded')) {
+				toggle.setAttribute('aria-expanded', String(c.classList.contains(CFG.cls.open)));
 			}
 		});
 	}

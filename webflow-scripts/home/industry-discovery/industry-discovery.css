@@ -7,6 +7,7 @@
 	--ip-ease: cubic-bezier(0.16, 1, 0.3, 1);
 	--ip-bg-ease: cubic-bezier(0.65, 0, 0.35, 1);
 	--ip-transition: 700ms var(--ip-ease);
+	--ip-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 11'%3E%3Cpath d='M0 6.21875L9.52734 6.21875L6.65137 9L8.04199 10.4375L13.4385 5.21875L8.04199 0L6.65137 1.4375L9.52734 4.21875L0 4.21875L0 6.21875Z'/%3E%3C/svg%3E");
 	position: relative;
 	overflow: hidden;
 	isolation: isolate;
@@ -169,7 +170,8 @@
 		--ip-bg-opacity: 0.75;
 	}
 
-	.industry-card.is-info-card .ip-card-description-reveal {
+	.industry-card.is-info-card .ip-card-description-reveal,
+	.industry-card.is-expandable-link-card .ip-card-description-reveal {
 		display: grid !important;
 		grid-template-rows: 0fr;
 		opacity: 0;
@@ -180,7 +182,8 @@
 		overflow: hidden;
 	}
 
-	.industry-card.is-info-card.is-mobile-open .ip-card-description-reveal {
+	.industry-card.is-info-card.is-mobile-open .ip-card-description-reveal,
+	.industry-card.is-expandable-link-card.is-mobile-open .ip-card-description-reveal {
 		grid-template-rows: 1fr;
 		opacity: 1;
 		margin-top: 24px;
@@ -188,6 +191,32 @@
 
 	.industry-card.is-link-card .ip-card-description-reveal {
 		display: none !important;
+	}
+
+	/* Hybrid card: lift the "+" out from under the full-card link (z-index 4) so it
+	   can take the tap that opens the description. !important because Webflow's own
+	   .button.button-square.button-plus.ip-button outweighs this selector. */
+	.industry-card.is-expandable-link-card .ip-button {
+		z-index: 5 !important;
+		pointer-events: auto !important;
+	}
+
+	/* ...and mark the rest of the card as a link, so the split of roles is visible. */
+	.industry-card.is-expandable-link-card .ip-card-content::after {
+		content: '';
+		position: absolute; /* against .ip-card-grid — stays on the title's line as the card opens */
+		top: 30px;
+		right: 20px; /* matches the grid's own padding */
+		width: 14px;
+		height: 11px;
+		background-color: currentColor;
+		-webkit-mask: var(--ip-arrow) center / contain no-repeat;
+		mask: var(--ip-arrow) center / contain no-repeat;
+		pointer-events: none;
+	}
+
+	.industry-card.is-expandable-link-card .ip-card-title {
+		padding-right: 34px;
 	}
 	.industry-card .ip-card-content {
 		transform: none !important;
