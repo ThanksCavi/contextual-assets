@@ -401,9 +401,13 @@
 }
 
 /* border-box floors the strip at its own padding, so the padding has to go with
-   the height; at height 0 a horizontal border would still draw a line. */
+   the height; at height 0 a horizontal border would still draw a line. The seam
+   margin goes too: sections overlap the strip onto the box above it by -1px so
+   their borders merge, and a collapsed strip that keeps pulling up hides the
+   last pixel of the block it now sits under — its bottom border. */
 [data-reveal-accordion-item].is-open [data-reveal-accordion-more] {
   height: 0;
+  margin-top: 0;
   padding-top: 0;
   padding-bottom: 0;
   border-top-width: 0;
