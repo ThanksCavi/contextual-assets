@@ -215,6 +215,21 @@
 	will-change: transform;
 }
 
+/* The grab affordance is script-owned: gallery-marquee.js adds `is-draggable`
+   once the loop is running, so the row never advertises a drag it cannot do.
+   `pan-y` hands the horizontal gesture to the script and leaves the vertical
+   one to the page. */
+.wwa-gallery-row.is-draggable {
+	cursor: grab;
+	touch-action: pan-y;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.wwa-gallery-row.is-dragging {
+	cursor: grabbing;
+}
+
 /* --------------------------------------------------------- Focus visibility
    Brief §4.13: every interactive element needs a visible keyboard focus state. */
 .wwa-playbook-card:focus-visible,
