@@ -150,7 +150,7 @@
 
   [data-steps-slider].is-steps-ready [data-steps-pin] {
     padding-top: 0 !important;
-    padding-bottom: 0 !important;
+    padding-bottom: 24px !important;
   }
 
   [data-steps-slider].is-steps-ready [data-steps-track] {
