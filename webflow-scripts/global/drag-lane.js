@@ -224,7 +224,11 @@
     bindControl(next, 1);
 
     if (window.ResizeObserver) new ResizeObserver(paint).observe(lane);
-    else window.addEventListener('resize', paint);
+    // The breakpoint class change can settle a frame after matchMedia fires,
+    // so paint again on the viewport's next frame as well.
+    window.addEventListener('resize', function () {
+      window.requestAnimationFrame(paint);
+    });
 
     if (desktop) {
       if (typeof desktop.addEventListener === 'function') desktop.addEventListener('change', paint);
