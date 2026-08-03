@@ -199,11 +199,12 @@
 	}
 }
 
-/*@media (max-width: 991px) {*/
-/*  [data-steps-slider][data-steps-mode="static"] [data-steps-item] {*/
-/*    flex-basis: 100%;*/
-/*  }*/
-/*}*/
+@media (max-width: 991px) {
+	[data-steps-slider][data-steps-mode="static"] [data-steps-item] {
+		flex-basis: 330px;
+		max-width: 100%;
+	}
+}
 
 [data-steps-slider].is-steps-native-scroll [data-steps-pin] {
 	min-height: 0;
