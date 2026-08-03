@@ -15,6 +15,10 @@
  *                         transition once more so four images appear in sequence.
  *                         3-image instances are unaffected. Empty/whitespace is
  *                         treated as absent (safe with Webflow CMS empty fields).
+ *   data-lottie-preset  – named animation preset ("single"). Selects a different
+ *                         Lottie asset and its own fade timing; only
+ *                         data-lottie-img-1 is used. Absent or unknown value
+ *                         falls back to the default 3/4-image behaviour.
  *
  * Dependencies: lottie-web (bodymovin) must be loaded before this script.
  *
@@ -57,6 +61,19 @@
     { idx: 2, inStart: 234, inEnd: 256, outStart: 286, outEnd: 306 },
     { idx: 3, inStart: 306, inEnd: 331, outStart: Infinity, outEnd: Infinity }
   ];
+
+  // Named presets. A different Lottie asset needs its own fade timing, so the
+  // asset URL and its rules live together.
+  // "single" = careers-morph.json — frames 120..180 of the default asset re-timed
+  // to 24 fps (60 frames, 2.5s). One image, revealed through the morphing mask.
+  var PRESETS = {
+    single: {
+      jsonUrl: 'https://cdn.prod.website-files.com/69dfe91a819e76a918bef68c/6a70e9fa5931481ce9a7e9cb_careers-morph.json',
+      rules: [
+        { idx: 0, inStart: 0, inEnd: 10, outStart: Infinity, outEnd: Infinity }
+      ]
+    }
+  };
 
   var IO_THRESHOLD = 0.15;
 
@@ -173,6 +190,24 @@
   }
 
   function readConfig(container, index) {
+    var preset = PRESETS[(container.getAttribute('data-lottie-preset') || '').trim()];
+
+    if (preset) {
+      var img1 = container.getAttribute('data-lottie-img-1');
+
+      if (!img1) {
+        console.warn('[lottie-mask] Missing data-lottie-img-1 on preset instance', index);
+      }
+
+      return {
+        jsonUrl: preset.jsonUrl,
+        imgUrls: [img1],
+        fallbackUrl: img1,
+        repeatMode: false,
+        rules: preset.rules
+      };
+    }
+
     var img4 = (container.getAttribute('data-lottie-img-4') || '').trim();
     var imgUrls = [
       container.getAttribute('data-lottie-img-1'),
@@ -190,7 +225,8 @@
       jsonUrl: DEFAULT_JSON_URL,
       imgUrls: imgUrls,
       fallbackUrl: img4 || imgUrls[2],
-      repeatMode: !!img4
+      repeatMode: !!img4,
+      rules: img4 ? FADE_RULES_4 : FADE_RULES
     };
   }
 
@@ -346,8 +382,8 @@
 
           maskAnim.goToAndStop(actual, true);
 
-          for (var i = 0; i < FADE_RULES_4.length; i++) {
-            var rule = FADE_RULES_4[i];
+          for (var i = 0; i < config.rules.length; i++) {
+            var rule = config.rules[i];
             if (parts.imageEls[i]) {
               parts.imageEls[i].setAttribute('opacity', getOpacity(virtual, rule).toFixed(3));
             }
@@ -358,8 +394,8 @@
           var f = e.currentTime;
           maskAnim.goToAndStop(f, true);
 
-          for (var i = 0; i < FADE_RULES.length; i++) {
-            var rule = FADE_RULES[i];
+          for (var i = 0; i < config.rules.length; i++) {
+            var rule = config.rules[i];
             if (parts.imageEls[i]) {
               parts.imageEls[i].setAttribute('opacity', getOpacity(f, rule).toFixed(3));
             }
