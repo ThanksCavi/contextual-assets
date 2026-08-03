@@ -52,6 +52,14 @@
   will-change: transform;
 }
 
+[data-steps-slider][data-steps-mode="static"] [data-steps-track] {
+  display: flex;
+}
+
+[data-steps-slider][data-steps-mode="static"] [data-steps-item] {
+  flex: 0 0 auto;
+}
+
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card],
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-toggle] {
   width: 100%;
