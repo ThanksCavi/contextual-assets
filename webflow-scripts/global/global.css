@@ -302,6 +302,28 @@
   overflow: auto hidden;
 }
 
+/* Optional pager state for a drag lane. The controls themselves stay visible
+   in Designer (where scripts do not run) and are hidden only by the runtime
+   `hidden` attribute when the published lane has three or fewer cards. */
+[data-drag-lane-controls][hidden] {
+  display: none !important;
+}
+
+[data-drag-lane].has-controls {
+  margin-top: 0;
+}
+
+/* A fourth card can begin exactly at the visible right edge. Its separator is
+   still between cards, but should not look like an extra rule after card three. */
+[data-drag-lane] > .is-lane-edge {
+  border-left-color: transparent;
+}
+
+[data-drag-lane-prev].is-disabled img,
+[data-drag-lane-next].is-disabled img {
+  opacity: 0.35;
+}
+
 /* Desktop drags the lane by the cursor, so the bar is noise there. Below 992 the
    lane is a touch strip and keeps the site scrollbar — see data-horizontal-scroll. */
 @media screen and (min-width: 992px) {
