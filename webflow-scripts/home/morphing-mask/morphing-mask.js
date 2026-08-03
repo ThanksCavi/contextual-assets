@@ -67,17 +67,18 @@
   // "single" = careers-morph.json — frames 120..180 of the default asset re-timed
   // to 24 fps (60 frames, 2.5s). One image, revealed through the morphing mask.
   //
-  // The image stays fully opaque: underneath it the asset paints a blue ring and
-  // a black disc on every frame, which the default 3/4-image sequence never shows
-  // because an opaque image always covers them. Fading the image up would lay
-  // them bare, so the entrance is a containerFade — the whole block fades in,
-  // artwork included, and only the finished composite is ever visible.
+  // Underneath the image the asset paints a blue ring on every frame. Letting it
+  // show through a half-opaque image is the look of the 3/4-image sequences, so
+  // the image fades up slowly (0→24) and the ring dissolves as it goes; by the
+  // last third the image is opaque and the ring is fully covered.
+  // containerFade only covers frames 0→6, where the image is still too faint to
+  // hide the artwork's black disc — the block itself fades in over that stretch.
   var PRESETS = {
     single: {
       jsonUrl: 'https://cdn.prod.website-files.com/69dfe91a819e76a918bef68c/6a70e9fa5931481ce9a7e9cb_careers-morph.json',
-      containerFade: { inStart: 0, inEnd: 12, outStart: Infinity, outEnd: Infinity },
+      containerFade: { inStart: 0, inEnd: 6, outStart: Infinity, outEnd: Infinity },
       rules: [
-        { idx: 0, inStart: -1, inEnd: 0, outStart: Infinity, outEnd: Infinity }
+        { idx: 0, inStart: 0, inEnd: 24, outStart: Infinity, outEnd: Infinity }
       ]
     }
   };
