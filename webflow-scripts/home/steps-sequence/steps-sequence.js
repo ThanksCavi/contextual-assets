@@ -13,6 +13,7 @@
   const REVEAL_SELECTOR = '[data-steps-reveal]';
   const TITLE_SELECTOR = '.steps-card-title';
   const NUMBER_SELECTOR = '.steps-number';
+  const STATIC_MODE = 'static';
   const INTERACTIVE_SELECTOR = 'a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
   const READY_CLASS = 'is-steps-ready';
@@ -52,10 +53,10 @@
   let resizeTimer = null;
   let fontsReadyRefreshQueued = false;
   let warnedMissingStructure = false;
-  let state = null;
+  const states = [];
 
   window.ProcessSlider = {
-    refresh: refreshProcessSlider,
+    refresh: refreshProcessSliders,
   };
 
   onMotionReady(initProcessSlider);
@@ -84,30 +85,46 @@
   }
 
   function initProcessSlider() {
-    if (state) return;
+    const knownRoots = new Set(states.map(currentState => currentState.root));
+    const roots = Array.from(document.querySelectorAll(ROOT_SELECTOR));
 
-    const root = document.querySelector(ROOT_SELECTOR);
-    if (!root) return;
+    roots.forEach(root => {
+      if (knownRoots.has(root)) return;
 
-    const nextState = collectState(root);
-    if (!nextState) return;
+      const nextState = collectState(root);
+      if (!nextState) return;
 
-    state = nextState;
-    prepareAccordion(state);
+      states.push(nextState);
+
+      if (!nextState.isStatic) {
+        prepareAccordion(nextState);
+      }
+
+      setupResponsiveAnimation(nextState);
+    });
+
+    if (states.length === 0) return;
+
     queueFontsReadyRefresh();
-    setupResponsiveAnimation(state);
   }
 
   function collectState(root) {
     const intro = root.querySelector(INTRO_SELECTOR);
     const stage = root.querySelector(STAGE_SELECTOR);
-    const pin = stage ? stage.querySelector(PIN_SELECTOR) : null;
-    const viewport = pin ? pin.querySelector(VIEWPORT_SELECTOR) : null;
-    const track = viewport ? viewport.querySelector(TRACK_SELECTOR) : null;
+    const pin = stage
+      ? (stage.matches(PIN_SELECTOR) ? stage : stage.querySelector(PIN_SELECTOR))
+      : null;
+    const viewport = pin
+      ? (pin.querySelector(VIEWPORT_SELECTOR) || pin)
+      : null;
+    const track = viewport
+      ? (viewport.matches(TRACK_SELECTOR) ? viewport : viewport.querySelector(TRACK_SELECTOR))
+      : null;
     const items = track ? Array.from(track.children).filter(item => item.matches(ITEM_SELECTOR)) : [];
-    const steps = collectSteps(items);
+    const isStatic = root.dataset.stepsMode === STATIC_MODE;
+    const steps = isStatic ? [] : collectSteps(items);
 
-    if (!intro || !stage || !pin || !viewport || !track || items.length === 0 || steps.length === 0) {
+    if (!stage || !pin || !viewport || !track || items.length === 0 || (!isStatic && (!intro || steps.length === 0))) {
       warnMissingStructure();
       return null;
     }
@@ -121,6 +138,7 @@
       track,
       items,
       steps,
+      isStatic,
       matchMedia: null,
       timeline: null,
       scrollTrigger: null,
@@ -149,7 +167,7 @@
     if (warnedMissingStructure) return;
 
     warnedMissingStructure = true;
-    console.warn('[process-slider] Missing required data-steps structure. Expected data-steps-intro, data-steps-stage, data-steps-pin, data-steps-viewport, data-steps-track, data-steps-item, data-steps-card, data-steps-summary, data-steps-reveal, and data-steps-toggle.');
+    console.warn('[process-slider] Missing required data-steps structure. Static sliders need data-steps-slider, data-steps-mode="static", data-steps-stage, data-steps-pin, data-steps-track, and data-steps-item. Interactive sliders additionally need data-steps-intro, data-steps-viewport, data-steps-card, data-steps-summary, data-steps-reveal, and data-steps-toggle.');
   }
 
   function prepareAccordion(state) {
@@ -336,7 +354,10 @@
 
   function createDesktopAnimation(state, gsap) {
     setDesktopState(state);
-    syncLayoutMetrics(state);
+
+    if (!state.isStatic) {
+      syncLayoutMetrics(state);
+    }
 
     const horizontalDistance = getHorizontalDistance(state);
     if (horizontalDistance <= 0) {
@@ -607,7 +628,7 @@
 
     fontsReadyRefreshQueued = true;
     document.fonts.ready.then(() => {
-      refreshProcessSlider();
+      refreshProcessSliders();
     });
   }
 
@@ -636,7 +657,9 @@
   function getPinnedVisualHeight(state) {
     const pinHeight = state.pin.getBoundingClientRect().height;
     const viewportHeight = state.viewport.getBoundingClientRect().height;
-    const firstCardHeight = state.steps[0]?.card.getBoundingClientRect().height || 0;
+    const firstCardHeight = state.steps[0]?.card.getBoundingClientRect().height
+      || state.items[0]?.getBoundingClientRect().height
+      || 0;
 
     return Math.max(1, pinHeight || viewportHeight || firstCardHeight || window.innerHeight);
   }
@@ -675,12 +698,10 @@
     return Math.max(min, Math.min(max, value));
   }
 
-  function refreshProcessSlider(options = {}) {
+  function refreshProcessSliders(options = {}) {
     initProcessSlider();
 
-    if (state) {
-      setupResponsiveAnimation(state);
-    }
+    states.forEach(setupResponsiveAnimation);
 
     if (!options.skipGlobalRefresh) {
       requestGlobalRefresh();
@@ -689,7 +710,7 @@
 
   function queueRefresh() {
     clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(refreshProcessSlider, RESIZE_REFRESH_DELAY_MS);
+    resizeTimer = window.setTimeout(refreshProcessSliders, RESIZE_REFRESH_DELAY_MS);
   }
 
   function requestGlobalRefresh() {
