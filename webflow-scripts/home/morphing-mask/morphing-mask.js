@@ -63,18 +63,21 @@
   ];
 
   // Named presets. A different Lottie asset needs its own fade timing, so the
-  // asset URL, start frame and rules live together.
+  // asset URL and its rules live together.
   // "single" = careers-morph.json — frames 120..180 of the default asset re-timed
   // to 24 fps (60 frames, 2.5s). One image, revealed through the morphing mask.
-  // startFrame 9: frames 0-8 still carry the asset's blue ring and black disc,
-  // which the default asset hides behind an already-opaque image. Starting at 9
-  // keeps them off screen so the image can fade up from nothing.
+  //
+  // The image stays fully opaque: underneath it the asset paints a blue ring and
+  // a black disc on every frame, which the default 3/4-image sequence never shows
+  // because an opaque image always covers them. Fading the image up would lay
+  // them bare, so the entrance is a containerFade — the whole block fades in,
+  // artwork included, and only the finished composite is ever visible.
   var PRESETS = {
     single: {
       jsonUrl: 'https://cdn.prod.website-files.com/69dfe91a819e76a918bef68c/6a70e9fa5931481ce9a7e9cb_careers-morph.json',
-      startFrame: 9,
+      containerFade: { inStart: 0, inEnd: 12, outStart: Infinity, outEnd: Infinity },
       rules: [
-        { idx: 0, inStart: 9, inEnd: 21, outStart: Infinity, outEnd: Infinity }
+        { idx: 0, inStart: -1, inEnd: 0, outStart: Infinity, outEnd: Infinity }
       ]
     }
   };
@@ -208,7 +211,7 @@
         imgUrls: [img1],
         fallbackUrl: img1,
         repeatMode: false,
-        startFrame: preset.startFrame || 0,
+        containerFade: preset.containerFade || null,
         rules: preset.rules
       };
     }
@@ -231,7 +234,7 @@
       imgUrls: imgUrls,
       fallbackUrl: img4 || imgUrls[2],
       repeatMode: !!img4,
-      startFrame: 0,
+      containerFade: null,
       rules: img4 ? FADE_RULES_4 : FADE_RULES
     };
   }
@@ -352,15 +355,15 @@
       function startPlaybackWhenReady() {
         if (!visibleReady || !maskReady) return;
 
+        if (config.containerFade) container.style.opacity = '0';
+
         hideStaticFallback(container);
         container.setAttribute('data-lottie-mask-ready', 'playing');
-        visibleAnim.goToAndStop(config.startFrame, true);
-        maskAnim.goToAndStop(config.startFrame, true);
+        visibleAnim.goToAndStop(0, true);
+        maskAnim.goToAndStop(0, true);
 
         if (config.repeatMode) {
           visibleAnim.playSegments([[0, SEG_B], [SEG_A, SEG_TAIL]], true);
-        } else if (config.startFrame) {
-          visibleAnim.playSegments([[config.startFrame, visibleAnim.totalFrames]], true);
         } else {
           visibleAnim.play();
         }
@@ -399,9 +402,12 @@
         });
       } else {
         visibleAnim.addEventListener('enterFrame', function(e) {
-          // firstFrame is 0 for a plain play(), or startFrame when a segment is used.
-          var f = visibleAnim.firstFrame + e.currentTime;
+          var f = e.currentTime;
           maskAnim.goToAndStop(f, true);
+
+          if (config.containerFade) {
+            container.style.opacity = getOpacity(f, config.containerFade).toFixed(3);
+          }
 
           for (var i = 0; i < config.rules.length; i++) {
             var rule = config.rules[i];
