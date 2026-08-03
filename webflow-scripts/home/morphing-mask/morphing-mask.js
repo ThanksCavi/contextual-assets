@@ -67,18 +67,20 @@
   // "single" = careers-morph.json — frames 120..180 of the default asset re-timed
   // to 24 fps (60 frames, 2.5s). One image, revealed through the morphing mask.
   //
-  // Underneath the image the asset paints a blue ring on every frame. Letting it
-  // show through a half-opaque image is the look of the 3/4-image sequences, so
-  // the image fades up slowly (0→24) and the ring dissolves as it goes; by the
-  // last third the image is opaque and the ring is fully covered.
-  // containerFade only covers frames 0→6, where the image is still too faint to
-  // hide the artwork's black disc — the block itself fades in over that stretch.
+  // A preset renders data-lottie-img-1 once per rule, so the same photo can play
+  // both halves of a crossfade. That is what "single" does: the asset is the
+  // default one's frames 120..180, where FADE_RULES has image 1 leaving over
+  // 120→140 and image 2 arriving over 140→165 — minus 120, the windows below.
+  // Coverage therefore dips to nothing around frame 20, which is what exposes
+  // the blue ring underneath, and is back to fully opaque by frame 45.
+  // containerFade softens the first few frames so the block does not pop in.
   var PRESETS = {
     single: {
       jsonUrl: 'https://cdn.prod.website-files.com/69dfe91a819e76a918bef68c/6a70e9fa5931481ce9a7e9cb_careers-morph.json',
       containerFade: { inStart: 0, inEnd: 6, outStart: Infinity, outEnd: Infinity },
       rules: [
-        { idx: 0, inStart: 0, inEnd: 24, outStart: Infinity, outEnd: Infinity }
+        { idx: 0, inStart: -1, inEnd:  0, outStart: 0, outEnd: 20 },
+        { idx: 1, inStart: 20, inEnd: 45, outStart: Infinity, outEnd: Infinity }
       ]
     }
   };
@@ -209,7 +211,7 @@
 
       return {
         jsonUrl: preset.jsonUrl,
-        imgUrls: [img1],
+        imgUrls: preset.rules.map(function() { return img1; }),
         fallbackUrl: img1,
         repeatMode: false,
         containerFade: preset.containerFade || null,
