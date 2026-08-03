@@ -77,6 +77,12 @@
       var isDesktop = !desktop || desktop.matches;
       var active = lane.children.length > 3 && isDesktop;
 
+      // A focused control can disappear on a responsive resize. Move focus out
+      // before hiding its parent so assistive technology never retains a hidden
+      // focus target.
+      if (!active && controls.contains(document.activeElement)) {
+        document.activeElement.blur();
+      }
       controls.hidden = !active;
       controls.setAttribute('aria-hidden', active ? 'false' : 'true');
       lane.classList.toggle('has-controls', active);
