@@ -24,10 +24,7 @@
 
    Deliberate boundary: none of the three rows currently holds a link or button,
    so there is no code here to hand the native cursor back over an interactive
-   child. Add a CTA inside a lane card and this is the one place to revisit.
-
-   Review switch — TEMPORARY: `?drag-cursor=1|2|3` picks between the three looks
-   under review. It goes away with the two losing variants once one is chosen. */
+   child. Add a CTA inside a lane card and this is the one place to revisit. */
 (function () {
   var ZONES = '[data-drag-lane], [data-gallery-marquee]';
   var FINE = '(hover: hover) and (pointer: fine)';
@@ -40,7 +37,6 @@
   if (!window.matchMedia || !matchMedia(FINE).matches) return;
 
   var reduced = matchMedia(REDUCED).matches;
-  var variant = (/[?&]drag-cursor=([123])/.exec(location.search) || [])[1] || '1';
 
   var badge;
   var zone = null; // the drag contract element the pointer is over
@@ -54,7 +50,7 @@
 
   function build() {
     badge = document.createElement('div');
-    badge.className = 'ctx-drag-cursor is-v' + variant;
+    badge.className = 'ctx-drag-cursor';
     badge.setAttribute('aria-hidden', 'true');
 
     var face = document.createElement('span');
@@ -97,9 +93,6 @@
 
     zone = row;
     host = clip;
-    // The badge belongs to the page it hovers, and only variant 3 reads the tone —
-    // but the class costs nothing to keep accurate for all of them.
-    badge.classList.toggle('is-on-dark', !!row.closest('[data-circle-zone="dark"]'));
     // Both, so the rule wins over the row's own grab cursor as well as the host's.
     row.classList.add('is-drag-cursor-host');
     clip.classList.add('is-drag-cursor-host');

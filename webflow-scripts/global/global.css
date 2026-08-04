@@ -343,22 +343,24 @@
    contract rather than on a page class: both galleries run gallery-marquee.js,
    but only one of the two pages loads who-we-are.css, where these rules used to
    live — so Careers had neither the grab affordance nor `pan-y`, and its
-   horizontal gesture competed with the page scroll on touch.
-   The affordance is script-owned: `is-draggable` arrives once the loop runs, so
-   the row never advertises a drag it cannot do. `pan-y` hands the horizontal
-   gesture to the script and leaves the vertical one to the page. */
+   horizontal gesture competed with the page scroll on touch. */
 [data-gallery-marquee] {
 	will-change: transform;
 }
 
-[data-gallery-marquee].is-draggable {
+/* The strip, not the row: gallery-marquee.js adds `is-marquee-strip` to the
+   element that clips the row, because the row rides a transform and slides out
+   from under what the hand is actually over. The class is script-owned, so a row
+   never advertises a drag before the loop is running. `pan-y` hands the
+   horizontal gesture to the script and leaves the vertical one to the page. */
+.is-marquee-strip {
 	cursor: grab;
 	touch-action: pan-y;
 	-webkit-user-select: none;
 	user-select: none;
 }
 
-[data-gallery-marquee].is-dragging {
+.is-marquee-strip.is-dragging {
 	cursor: grabbing;
 }
 
@@ -367,12 +369,13 @@
    It is fixed to the viewport and lives on <body>, so it is positioned by the
    module in viewport coordinates and never inherits a page transform.
    `cursor: none` is applied through a class the module adds — the native cursor
-   is never taken away without a badge to replace it. The two contract selectors
-   are spelled out so the rule outweighs the grab cursors above on the row
-   itself; the bare class covers the element that clips the row. */
+   is never taken away without a badge to replace it. The compound selectors are
+   spelled out so the rule outweighs each grab cursor above at equal specificity
+   and wins on source order. */
 .is-drag-cursor-host,
 [data-drag-lane].is-drag-cursor-host,
-[data-gallery-marquee].is-drag-cursor-host {
+[data-gallery-marquee].is-drag-cursor-host,
+.is-marquee-strip.is-drag-cursor-host {
 	cursor: none;
 }
 
@@ -385,6 +388,10 @@
 	will-change: transform;
 }
 
+/* One filled look everywhere. The accent is the only tone that holds its contrast
+   on all three backgrounds the badge appears over — the dark Careers section, the
+   cream Who We Are one, the white Private Equity lane — and over photographs of
+   any brightness, which an outline or a dark disc does not. */
 .ctx-drag-cursor-face {
 	display: flex;
 	align-items: center;
@@ -394,6 +401,8 @@
 	height: 76px;
 	margin: -38px 0 0 -38px; /* the module positions the pointer tip, not the corner */
 	border-radius: 50%;
+	background-color: var(--_system-colors---accent, #ecf071);
+	color: var(--_system-colors---dark, #1b1923);
 	opacity: 0;
 	transform: scale(0.62);
 	transition: opacity 0.18s ease, transform 0.26s cubic-bezier(0.2, 0.8, 0.3, 1);
@@ -432,29 +441,6 @@
 
 .ctx-drag-cursor-face:after {
 	transform: rotate(-90deg);
-}
-
-/* Three looks under review; `?drag-cursor=1|2|3` picks one. Two of them and the
-   switch itself come out once the client has chosen. */
-.ctx-drag-cursor.is-v1 .ctx-drag-cursor-face {
-	background-color: var(--_system-colors---accent, #ecf071);
-	color: var(--_system-colors---dark, #1b1923);
-}
-
-.ctx-drag-cursor.is-v2 .ctx-drag-cursor-face {
-	background-color: var(--_system-colors---dark, #1b1923);
-	color: var(--_system-colors---accent, #ecf071);
-}
-
-/* Variant 3 carries no fill, so it is the only one that has to answer to the
-   section behind it. `is-on-dark` mirrors the existing data-circle-zone tone. */
-.ctx-drag-cursor.is-v3 .ctx-drag-cursor-face {
-	box-shadow: inset 0 0 0 1.5px currentColor;
-	color: var(--_system-colors---dark, #1b1923);
-}
-
-.ctx-drag-cursor.is-v3.is-on-dark .ctx-drag-cursor-face {
-	color: var(--_system-colors---light, #faf9f5);
 }
 
 @media (prefers-reduced-motion: reduce) {

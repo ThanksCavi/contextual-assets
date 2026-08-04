@@ -12,8 +12,16 @@
    A throw does not get its own animation either: the release speed is added to the
    marquee speed and decays away, so the lane glides down into its own slow drift
    with nothing to see at the hand-off.
-   Contract: [data-gallery-marquee] on the row; `is-draggable` / `is-dragging`
-   carry the cursor and touch-action in who-we-are.css. */
+   The hand grabs the strip, not the row. The row rides the transform, so its own
+   box slides out from under the visible strip: the images past its edge are only
+   children of it, and the 20px gaps between them belong to nothing — a press
+   landing in one of those did nothing at all. Pointer events and the pointer
+   capture therefore live on the element that clips the row, which is exactly the
+   strip. The transform stays on the row.
+
+   Contract: [data-gallery-marquee] on the row; the script adds `is-marquee-strip`
+   / `is-dragging` to the clipping element, and global.css hangs the cursor,
+   touch-action and user-select off them. */
 (function () {
   var ROOT = '[data-gallery-marquee]';
   var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -23,10 +31,22 @@
   var MAX_THROW = 2400; // px per second: a flick coasts, it does not launch
   var STALE_RELEASE = 0.09; // s — a hand that paused before letting go throws nothing
 
+  // The nearest ancestor-or-self that clips overflow: the strip the row shows through.
+  function clipHost(row) {
+    var node = row;
+    while (node && node !== document.body) {
+      var style = getComputedStyle(node);
+      if (style.overflowX !== 'visible' || style.overflowY !== 'visible') return node;
+      node = node.parentElement;
+    }
+    return row;
+  }
+
   function init(row) {
     if (row.hasAttribute('data-gallery-marquee-initialized')) return;
     row.setAttribute('data-gallery-marquee-initialized', '');
 
+    var strip = clipHost(row);
     var originals = [].slice.call(row.children);
     if (!originals.length) return;
 
@@ -156,8 +176,8 @@
       if (!dragging) {
         if (Math.abs(travel) < THRESHOLD) return;
         dragging = true;
-        row.classList.add('is-dragging');
-        row.setPointerCapture(pointerId);
+        strip.classList.add('is-dragging');
+        strip.setPointerCapture(pointerId);
       }
 
       var elapsed = (e.timeStamp - moveTime) / 1000;
@@ -171,12 +191,12 @@
 
     function onPointerUp(e) {
       if (e.pointerId !== pointerId) return;
-      if (row.hasPointerCapture(pointerId)) row.releasePointerCapture(pointerId);
+      if (strip.hasPointerCapture(pointerId)) strip.releasePointerCapture(pointerId);
       pointerId = null;
       if (!dragging) return;
 
       dragging = false;
-      row.classList.remove('is-dragging');
+      strip.classList.remove('is-dragging');
 
       var idle = (e.timeStamp - moveTime) / 1000;
       throwSpeed = (RM || idle > STALE_RELEASE) ? 0 :
@@ -187,13 +207,13 @@
       if (visible) start();
     }
 
-    row.classList.add('is-draggable');
-    row.addEventListener('pointerdown', onPointerDown);
-    row.addEventListener('pointermove', onPointerMove);
-    row.addEventListener('pointerup', onPointerUp);
-    row.addEventListener('pointercancel', onPointerUp);
+    strip.classList.add('is-marquee-strip');
+    strip.addEventListener('pointerdown', onPointerDown);
+    strip.addEventListener('pointermove', onPointerMove);
+    strip.addEventListener('pointerup', onPointerUp);
+    strip.addEventListener('pointercancel', onPointerUp);
     // Images drag as images unless the browser is told otherwise.
-    row.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    strip.addEventListener('dragstart', function (e) { e.preventDefault(); });
 
     measure();
     window.addEventListener('resize', measure);
