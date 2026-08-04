@@ -297,6 +297,17 @@
 	overflow: auto hidden;
 }
 
+/* The grab affordance is script-owned like lane mode itself: drag-lane.js adds
+   `is-grabbable` only while the lane has somewhere to scroll. It is a class and
+   not an inline style so that a cursor layer above it can still take over. */
+[data-drag-lane].is-grabbable {
+	cursor: grab;
+}
+
+[data-drag-lane].is-dragging {
+	cursor: grabbing;
+}
+
 /* Optional pager state for a drag lane. The controls themselves stay visible
    in Designer (where scripts do not run) and are hidden only by the runtime
    `hidden` attribute when the published lane has three or fewer cards. */
@@ -324,6 +335,131 @@
 
 	[data-drag-lane].is-lane::-webkit-scrollbar {
 		display: none;
+	}
+}
+
+/* GALLERY MARQUEE
+   The looping image row of the Who We Are and Careers galleries. Keyed on the
+   contract rather than on a page class: both galleries run gallery-marquee.js,
+   but only one of the two pages loads who-we-are.css, where these rules used to
+   live — so Careers had neither the grab affordance nor `pan-y`, and its
+   horizontal gesture competed with the page scroll on touch.
+   The affordance is script-owned: `is-draggable` arrives once the loop runs, so
+   the row never advertises a drag it cannot do. `pan-y` hands the horizontal
+   gesture to the script and leaves the vertical one to the page. */
+[data-gallery-marquee] {
+	will-change: transform;
+}
+
+[data-gallery-marquee].is-draggable {
+	cursor: grab;
+	touch-action: pan-y;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+[data-gallery-marquee].is-dragging {
+	cursor: grabbing;
+}
+
+/* DRAG CURSOR
+   The badge drag-cursor.js puts in place of the pointer over a draggable row.
+   It is fixed to the viewport and lives on <body>, so it is positioned by the
+   module in viewport coordinates and never inherits a page transform.
+   `cursor: none` is applied through a class the module adds — the native cursor
+   is never taken away without a badge to replace it. The two contract selectors
+   are spelled out so the rule outweighs the grab cursors above on the row
+   itself; the bare class covers the element that clips the row. */
+.is-drag-cursor-host,
+[data-drag-lane].is-drag-cursor-host,
+[data-gallery-marquee].is-drag-cursor-host {
+	cursor: none;
+}
+
+.ctx-drag-cursor {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 1001; /* one above the navbar: a cursor is never behind the page */
+	pointer-events: none;
+	will-change: transform;
+}
+
+.ctx-drag-cursor-face {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	width: 76px;
+	height: 76px;
+	margin: -38px 0 0 -38px; /* the module positions the pointer tip, not the corner */
+	border-radius: 50%;
+	opacity: 0;
+	transform: scale(0.62);
+	transition: opacity 0.18s ease, transform 0.26s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.ctx-drag-cursor.is-visible .ctx-drag-cursor-face {
+	opacity: 1;
+	transform: scale(1);
+}
+
+.ctx-drag-cursor.is-pressed .ctx-drag-cursor-face {
+	transform: scale(0.88);
+}
+
+/* Both arrows are the pager glyph of the Private Equity lane, turned a quarter
+   turn each way — the same shape the site already uses to mean "step sideways". */
+.ctx-drag-cursor-face:before,
+.ctx-drag-cursor-face:after {
+	content: "";
+	width: 20px;
+	height: 20px;
+	background-color: currentColor;
+	-webkit-mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2015.3464%2020.377'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0.78892%2011.5831L1.79672%2012.6523C3.34236%2014.0642%205.74438%2015.5%207.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L1.79672%2012.6523C1.39551%2012.2857%201.052%2011.9209%200.78892%2011.5831Z'%20fill='%23000'/%3E%3Cpath%20d='M7.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L0.78892%2011.5831C2.06553%2013.2221%205.23576%2015.5%207.70383%2015.5ZM7.70383%2018.919V15.5M7.70383%200V15.5'%20stroke='%23000'%20stroke-width='2'/%3E%3C/svg%3E");
+	mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2015.3464%2020.377'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0.78892%2011.5831L1.79672%2012.6523C3.34236%2014.0642%205.74438%2015.5%207.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L1.79672%2012.6523C1.39551%2012.2857%201.052%2011.9209%200.78892%2011.5831Z'%20fill='%23000'/%3E%3Cpath%20d='M7.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L0.78892%2011.5831C2.06553%2013.2221%205.23576%2015.5%207.70383%2015.5ZM7.70383%2018.919V15.5M7.70383%200V15.5'%20stroke='%23000'%20stroke-width='2'/%3E%3C/svg%3E");
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	-webkit-mask-position: center;
+	mask-position: center;
+}
+
+.ctx-drag-cursor-face:before {
+	transform: rotate(90deg);
+}
+
+.ctx-drag-cursor-face:after {
+	transform: rotate(-90deg);
+}
+
+/* Three looks under review; `?drag-cursor=1|2|3` picks one. Two of them and the
+   switch itself come out once the client has chosen. */
+.ctx-drag-cursor.is-v1 .ctx-drag-cursor-face {
+	background-color: var(--_system-colors---accent, #ecf071);
+	color: var(--_system-colors---dark, #1b1923);
+}
+
+.ctx-drag-cursor.is-v2 .ctx-drag-cursor-face {
+	background-color: var(--_system-colors---dark, #1b1923);
+	color: var(--_system-colors---accent, #ecf071);
+}
+
+/* Variant 3 carries no fill, so it is the only one that has to answer to the
+   section behind it. `is-on-dark` mirrors the existing data-circle-zone tone. */
+.ctx-drag-cursor.is-v3 .ctx-drag-cursor-face {
+	box-shadow: inset 0 0 0 1.5px currentColor;
+	color: var(--_system-colors---dark, #1b1923);
+}
+
+.ctx-drag-cursor.is-v3.is-on-dark .ctx-drag-cursor-face {
+	color: var(--_system-colors---light, #faf9f5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ctx-drag-cursor-face {
+		transition: none;
 	}
 }
 

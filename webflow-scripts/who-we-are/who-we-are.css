@@ -210,25 +210,10 @@
 	mask-position: center;
 }
 
-/* -------------------------------------------------------------- Gallery (2.8) */
-.wwa-gallery-row {
-	will-change: transform;
-}
-
-/* The grab affordance is script-owned: gallery-marquee.js adds `is-draggable`
-   once the loop is running, so the row never advertises a drag it cannot do.
-   `pan-y` hands the horizontal gesture to the script and leaves the vertical
-   one to the page. */
-.wwa-gallery-row.is-draggable {
-	cursor: grab;
-	touch-action: pan-y;
-	-webkit-user-select: none;
-	user-select: none;
-}
-
-.wwa-gallery-row.is-dragging {
-	cursor: grabbing;
-}
+/* Gallery (2.8) — the row's own rules live in global.css under the
+   `[data-gallery-marquee]` contract: the Careers page runs the same marquee and
+   does not load this stylesheet, so a class-keyed rule here reached only one of
+   the two galleries. */
 
 /* --------------------------------------------------------- Focus visibility
    Brief §4.13: every interactive element needs a visible keyboard focus state. */

@@ -53,7 +53,7 @@
       var canScroll = scrollable();
       var controlsActive = updateControlsVisibility();
 
-      lane.style.cursor = canScroll ? 'grab' : '';
+      lane.classList.toggle('is-grabbable', canScroll);
       paintViewportEdgeDivider(canScroll);
 
       if (!controlsActive) return;
@@ -167,7 +167,7 @@
       if (!dragging) {
         if (Math.abs(travel) < THRESHOLD) return;
         dragging = true;
-        lane.style.cursor = 'grabbing';
+        lane.classList.add('is-dragging');
         lane.style.userSelect = 'none';
         lane.setPointerCapture(pointerId);
       }
@@ -182,6 +182,7 @@
       if (!dragging) return;
 
       dragging = false;
+      lane.classList.remove('is-dragging');
       lane.style.userSelect = '';
       paint();
       // Swallow the click that ends the drag so a card link does not fire.
