@@ -56,9 +56,12 @@
 	display: flex;
 }
 
+/* Three across, but min-width is deliberately left alone: it is the knob for the
+   card's minimum width and belongs to the Designer. Setting it here would win on
+   specificity and silently strike out whatever is set on the class. The track
+   scrolls horizontally, so a larger min-width just shows fewer, wider cards. */
 [data-steps-slider][data-steps-mode="static"] [data-steps-item] {
 	flex: 0 0 calc((100% - 40px) / 3);
-	min-width: 0;
 }
 
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card],
