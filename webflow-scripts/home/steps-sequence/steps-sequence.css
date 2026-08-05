@@ -84,6 +84,7 @@
 	height: var(--steps-summary-open-height);
 }
 
+
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-toggle] {
 	appearance: none;
 	border: 0;
