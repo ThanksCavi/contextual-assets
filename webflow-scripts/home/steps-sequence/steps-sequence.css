@@ -1,22 +1,8 @@
 /* Process Slider */
-
-/* Registered so the clamp() below resolves to a real px length: process-slider.js
-   reads this floor through getComputedStyle().getPropertyValue() and parseFloat().
-   Without registration it would read back the literal "clamp(...)" string. */
-@property --steps-card-min-height {
-	syntax: '<length>';
-	inherits: true;
-	initial-value: 569px;
-}
-
 [data-steps-slider] {
 	--steps-pin-safe-top: 96px;
 	--steps-pin-safe-bottom: 32px;
-	/* Floor only: the real height is measured from the content in process-slider.js
-	   and every card in the row gets the tallest result. The floor tracks the card
-	   width (569px at 1440px, the Figma reference) so narrow viewports stop
-	   inheriting a desktop-sized empty box. */
-	--steps-card-min-height: clamp(400px, 39.5vw, 569px);
+	--steps-card-min-height: 569px;
 	--steps-toggle-min-height: 101px;
 	--steps-reveal-min-height: 254px;
 	--steps-card-height: var(--steps-card-dynamic-height, var(--steps-card-min-height));
@@ -73,22 +59,6 @@
 [data-steps-slider][data-steps-mode="static"] [data-steps-item] {
 	flex: 0 0 calc((100% - 40px) / 3);
 	min-width: 0;
-}
-
-/* Every card in the row is stretched to the tallest one, so a card with less
-   text has spare vertical space. Webflow puts height:100% on the card's blocks;
-   inside a column flex box that resolves flex-basis to the full card height, so
-   all of that spare space collapses into one block (the title) and shows up as a
-   hole in the middle of the card. Size the blocks from their own content instead
-   and centre the stack, so the leftover space splits evenly above and below
-   rather than opening a gap between the title and the copy. */
-[data-steps-slider][data-steps-mode="static"] [data-steps-item] > * {
-	justify-content: center;
-}
-
-[data-steps-slider][data-steps-mode="static"] [data-steps-item] > * > * {
-	flex-grow: 0;
-	height: auto;
 }
 
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card],
@@ -176,9 +146,8 @@
 
 @media (min-width: 992px) and (max-height: 820px) and (prefers-reduced-motion: no-preference) {
 	[data-steps-slider]:not([data-steps-mode="static"]) {
-		/* Short viewports keep the 580px ceiling so the pinned card still fits on
-		   screen, but the card is free to be shorter when the content is shorter. */
-		--steps-card-height: min(var(--steps-card-dynamic-height, var(--steps-card-min-height)), 580px);
+		--steps-card-min-height: 580px;
+		--steps-card-height: min(var(--steps-card-dynamic-height, 580px), 580px);
 		--steps-intro-stage-gap: 48px;
 	}
 
