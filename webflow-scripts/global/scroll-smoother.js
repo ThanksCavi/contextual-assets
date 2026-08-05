@@ -19,6 +19,9 @@
 	const ANY_COARSE_POINTER_QUERY = '(any-pointer: coarse)';
 	const ANY_HOVER_QUERY = '(any-hover: hover)';
 	const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+	// One pass once layout has settled, one more after window 'load'.
+	const INITIAL_HASH_ATTEMPTS = 2;
+	const NAVBAR_SELECTOR = '.w-nav';
 
 	if (window[INIT_FLAG]) return;
 	window[INIT_FLAG] = true;
@@ -33,6 +36,8 @@
 	let lastPolicySignature = '';
 	let lastViewportWidth = window.innerWidth;
 	let lastViewportHeight = window.innerHeight;
+	let initialHashAttemptsLeft = INITIAL_HASH_ATTEMPTS;
+	let userTookOverScroll = false;
 	const ready = new Promise((resolve) => {
 		resolveReady = resolve;
 	});
@@ -49,6 +54,11 @@
 		scrollBy,
 		scrollTo,
 		getScrollTop,
+	});
+
+	window.addEventListener('hashchange', handleHashChange);
+	['wheel', 'touchstart', 'keydown'].forEach(type => {
+		window.addEventListener(type, markUserScroll, {passive: true, once: true});
 	});
 
 	if (document.readyState === 'loading') {
@@ -390,10 +400,109 @@
 				requestAnimationFrame(() => {
 					if (token === refreshToken) {
 						refreshAll();
+						applyInitialHash();
 					}
 				});
 			});
 		});
+	}
+
+	// --- Anchor links -------------------------------------------------------
+	// With the smoother active the page lives inside a fixed, overflow:hidden
+	// #smooth-wrapper, so the browser has nothing left to scroll for a URL
+	// fragment: `/page#id` lands at the very top, and a later hash change drags
+	// the wrapper's hidden overflow instead, leaving the smoother desynced.
+	// Clicks on same-page links are not our business -- Webflow's own anchor
+	// handler scrolls the window properly and stays in sync; only arriving with a
+	// hash already in the URL is broken, so that is all we take over.
+
+	function markUserScroll() {
+		userTookOverScroll = true;
+	}
+
+	// Runs after each settled refresh: the first one lands the target once layout
+	// has settled, the second one corrects it after window 'load'.
+	function applyInitialHash() {
+		if (initialHashAttemptsLeft <= 0) return;
+
+		const target = getAnchorTarget(getHashId());
+		if (!target) {
+			initialHashAttemptsLeft = 0;
+			return;
+		}
+
+		initialHashAttemptsLeft -= 1;
+		if (userTookOverScroll) return;
+
+		scrollToAnchor(target, {behavior: 'auto'});
+	}
+
+	function handleHashChange() {
+		const target = getAnchorTarget(getHashId());
+		if (!target) return;
+
+		initialHashAttemptsLeft = 0;
+		resetWrapperOverflowScroll();
+
+		// Webflow's anchor handler updates the hash after scrolling there itself.
+		if (isAnchorSettled(target)) return;
+
+		scrollToAnchor(target);
+	}
+
+	function isAnchorSettled(target) {
+		return Math.abs(target.getBoundingClientRect().top - getAnchorOffset()) <= 2;
+	}
+
+	function scrollToAnchor(target, options = {}) {
+		const behavior = options.behavior || (getMotionPolicy().prefersReducedMotion ? 'auto' : 'smooth');
+		const offset = getAnchorOffset();
+		const smoother = getSmoother();
+
+		if (smoother) {
+			scrollTo(target, {behavior, position: `top ${offset}px`});
+			return;
+		}
+
+		scrollTo(getScrollTop() + target.getBoundingClientRect().top - offset, {behavior});
+	}
+
+	// Webflow offsets its own anchor scrolling by the height of the fixed navbar;
+	// match it so arriving by URL lands where clicking an in-page link lands.
+	function getAnchorOffset() {
+		const navbar = document.querySelector(NAVBAR_SELECTOR);
+		if (!navbar || window.getComputedStyle(navbar).position !== 'fixed') return 0;
+
+		return Math.round(navbar.getBoundingClientRect().height);
+	}
+
+	function getAnchorTarget(id) {
+		if (!id) return null;
+
+		return document.getElementById(id) || document.getElementsByName(id)[0] || null;
+	}
+
+	function getHashId() {
+		const hash = window.location.hash || '';
+		return hash.length > 1 ? decodeHash(hash.slice(1)) : '';
+	}
+
+	function decodeHash(value) {
+		try {
+			return decodeURIComponent(value);
+		} catch (error) {
+			return value;
+		}
+	}
+
+	// A native fragment jump can scroll the fixed wrapper's hidden overflow, which
+	// moves the page visually while the smoother still reports scrollTop 0.
+	function resetWrapperOverflowScroll() {
+		const wrapper = smootherState && smootherState.wrapper;
+		if (!wrapper) return;
+
+		if (wrapper.scrollTop) wrapper.scrollTop = 0;
+		if (wrapper.scrollLeft) wrapper.scrollLeft = 0;
 	}
 
 	function refreshAll() {

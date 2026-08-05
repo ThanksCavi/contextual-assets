@@ -41,7 +41,6 @@
 
   onMotionReady(initPage);
   window.addEventListener('scroll', queueActiveNavUpdate, { passive: true });
-  window.addEventListener('hashchange', handleHashChange);
   window.addEventListener('resize', queueRefresh);
   window.addEventListener(MOTION_POLICY_CHANGE_EVENT, queueRefresh);
   window.addEventListener(STICKY_REFRESH_EVENT, handleStickySidebarRefresh);
@@ -81,7 +80,6 @@
     setupAnchorScroll();
     refreshStickySidebar();
     updateActiveNavFromScroll();
-    scrollToInitialHash();
     requestGlobalRefresh();
   }
 
@@ -154,21 +152,9 @@
     requestGlobalRefresh();
   }
 
-  function scrollToInitialHash() {
-    const targetId = getHashTargetId();
-    const target = getSectionById(targetId);
-    if (!target) return;
-
-    lockActiveNavUntilSettled(targetId, target);
-
-    requestAnimationFrame(() => {
-      scrollToSection(target, { forceAuto: true });
-    });
-  }
-
-  function scrollToSection(target, options = {}) {
+  function scrollToSection(target) {
     const offset = getTopOffset();
-    const shouldSmooth = !options.forceAuto && !window.matchMedia(REDUCED_MOTION_QUERY).matches;
+    const shouldSmooth = !window.matchMedia(REDUCED_MOTION_QUERY).matches;
     const behavior = shouldSmooth ? 'smooth' : 'auto';
     const position = `top ${offset}px`;
 
@@ -205,15 +191,6 @@
       state.scrollRaf = null;
       updateActiveNavFromScroll();
     });
-  }
-
-  function handleHashChange() {
-    const targetId = getHashTargetId();
-    const target = getSectionById(targetId);
-    if (!target) return;
-
-    lockActiveNavUntilSettled(targetId, target);
-    scrollToSection(target, { forceAuto: true });
   }
 
   function lockActiveNavUntilSettled(activeId, target) {
@@ -317,11 +294,6 @@
     if (!href.startsWith('#') || href === '#') return '';
 
     return decodeHash(href.slice(1));
-  }
-
-  function getHashTargetId() {
-    const hash = window.location.hash || '';
-    return hash.length > 1 ? decodeHash(hash.slice(1)) : '';
   }
 
   function getSectionById(id) {
