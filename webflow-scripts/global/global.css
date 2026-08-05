@@ -298,8 +298,8 @@
 }
 
 /* The grab affordance is script-owned like lane mode itself: drag-lane.js adds
-   `is-grabbable` only while the lane has somewhere to scroll. It is a class and
-   not an inline style so that a cursor layer above it can still take over. */
+   `is-grabbable` only while the lane has somewhere to scroll. A class and not an
+   inline style, so the look stays here with the rest of the cursor rules. */
 [data-drag-lane].is-grabbable {
 	cursor: grab;
 }
@@ -362,91 +362,6 @@
 
 .is-marquee-strip.is-dragging {
 	cursor: grabbing;
-}
-
-/* DRAG CURSOR
-   The badge drag-cursor.js puts in place of the pointer over a draggable row.
-   It is fixed to the viewport and lives on <body>, so it is positioned by the
-   module in viewport coordinates and never inherits a page transform.
-   `cursor: none` is applied through a class the module adds — the native cursor
-   is never taken away without a badge to replace it. The compound selectors are
-   spelled out so the rule outweighs each grab cursor above at equal specificity
-   and wins on source order. */
-.is-drag-cursor-host,
-[data-drag-lane].is-drag-cursor-host,
-[data-gallery-marquee].is-drag-cursor-host,
-.is-marquee-strip.is-drag-cursor-host {
-	cursor: none;
-}
-
-.ctx-drag-cursor {
-	position: fixed;
-	top: 0;
-	left: 0;
-	z-index: 1001; /* one above the navbar: a cursor is never behind the page */
-	pointer-events: none;
-	will-change: transform;
-}
-
-/* One filled look everywhere. The accent is the only tone that holds its contrast
-   on all three backgrounds the badge appears over — the dark Careers section, the
-   cream Who We Are one, the white Private Equity lane — and over photographs of
-   any brightness, which an outline or a dark disc does not. */
-.ctx-drag-cursor-face {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 6px;
-	width: 76px;
-	height: 76px;
-	margin: -38px 0 0 -38px; /* the module positions the pointer tip, not the corner */
-	border-radius: 50%;
-	background-color: var(--_system-colors---accent, #ecf071);
-	color: var(--_system-colors---dark, #1b1923);
-	opacity: 0;
-	transform: scale(0.62);
-	transition: opacity 0.18s ease, transform 0.26s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.ctx-drag-cursor.is-visible .ctx-drag-cursor-face {
-	opacity: 1;
-	transform: scale(1);
-}
-
-.ctx-drag-cursor.is-pressed .ctx-drag-cursor-face {
-	transform: scale(0.88);
-}
-
-/* Both arrows are the pager glyph of the Private Equity lane, turned a quarter
-   turn each way — the same shape the site already uses to mean "step sideways". */
-.ctx-drag-cursor-face:before,
-.ctx-drag-cursor-face:after {
-	content: "";
-	width: 20px;
-	height: 20px;
-	background-color: currentColor;
-	-webkit-mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2015.3464%2020.377'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0.78892%2011.5831L1.79672%2012.6523C3.34236%2014.0642%205.74438%2015.5%207.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L1.79672%2012.6523C1.39551%2012.2857%201.052%2011.9209%200.78892%2011.5831Z'%20fill='%23000'/%3E%3Cpath%20d='M7.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L0.78892%2011.5831C2.06553%2013.2221%205.23576%2015.5%207.70383%2015.5ZM7.70383%2018.919V15.5M7.70383%200V15.5'%20stroke='%23000'%20stroke-width='2'/%3E%3C/svg%3E");
-	mask-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2015.3464%2020.377'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20d='M0.78892%2011.5831L1.79672%2012.6523C3.34236%2014.0642%205.74438%2015.5%207.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L1.79672%2012.6523C1.39551%2012.2857%201.052%2011.9209%200.78892%2011.5831Z'%20fill='%23000'/%3E%3Cpath%20d='M7.70383%2015.5C10.1719%2015.5%2013.0738%2013.2221%2014.6187%2011.5831L7.70383%2018.919L0.78892%2011.5831C2.06553%2013.2221%205.23576%2015.5%207.70383%2015.5ZM7.70383%2018.919V15.5M7.70383%200V15.5'%20stroke='%23000'%20stroke-width='2'/%3E%3C/svg%3E");
-	-webkit-mask-repeat: no-repeat;
-	mask-repeat: no-repeat;
-	-webkit-mask-size: contain;
-	mask-size: contain;
-	-webkit-mask-position: center;
-	mask-position: center;
-}
-
-.ctx-drag-cursor-face:before {
-	transform: rotate(90deg);
-}
-
-.ctx-drag-cursor-face:after {
-	transform: rotate(-90deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.ctx-drag-cursor-face {
-		transition: none;
-	}
 }
 
 /* REVEAL ACCORDION
