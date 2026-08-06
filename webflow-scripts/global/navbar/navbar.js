@@ -21,7 +21,7 @@
 	const POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
 	const STICKY_ON_Y = 8;
 	const STICKY_OFF_Y = 1;
-	const MONITOR_MAX_MS = 1800;
+	const MONITOR_MAX_MS = 4000;
 	const MONITOR_STABLE_FRAME_COUNT = 4;
 	const MONITOR_SETTLED_DELTA = 0.5;
 
@@ -150,7 +150,14 @@
 
 		lastMonitorScrollTop = currentScrollTop;
 
-		return stableMonitorFrames < MONITOR_STABLE_FRAME_COUNT;
+		if (stableMonitorFrames < MONITOR_STABLE_FRAME_COUNT) return true;
+
+		// У смузера экспоненциальный хвост: кадровая дельта падает ниже порога,
+		// когда визуальная прокрутка ещё не догнала нативную. Заснуть в этот момент —
+		// значит заклинить .is-sticky в промежуточном состоянии (белая полоса на самом
+		// верху после прыжка к якорю или fling'а). Пока значения расходятся — следим.
+		// Обратный случай (iOS: нативная стоит, визуальная уехала) ограничен MONITOR_MAX_MS.
+		return Math.abs(currentScrollTop - getNativeScrollTop()) > MONITOR_SETTLED_DELTA;
 	}
 
 	function getSmootherScrollTop() {
