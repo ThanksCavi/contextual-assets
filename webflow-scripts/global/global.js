@@ -530,3 +530,186 @@
     if (target.closest('a[href="#"]')) event.preventDefault();
   });
 })();
+
+/* Scroll indicator — a scrollbar for the horizontal rows that stays visible on
+   touch. Below 992px the native bar is a transient overlay that only appears
+   under a moving finger, and on iOS our styling of it is ignored entirely, so a
+   row of cards reads as a row that simply ends at the screen edge. The client
+   asked for the bar to always show; the only way to hold one open is to draw it.
+
+   Contract: none to author. The module reuses the existing [data-horizontal-scroll]
+   and [data-horizontal-scroll-dark] attributes — every row that already asked for
+   a styled scrollbar gets the indicator, and a row that stops overflowing loses it.
+
+   The attribute sits on the scroll container itself on most pages, but on a few
+   it sits on the section around it (careers `.section-delivary`, the industry
+   `.process-slider`) — hence the descendant sweep. The bar is only built once a
+   candidate actually overflows, so a section that never scrolls is left untouched,
+   its parent included.
+
+   Geometry: the bar is absolutely positioned in the container's parent, which
+   keeps it out of that parent's grid or flex flow, and is laid over the bottom
+   edge of the container the way a native overlay bar is. Nothing reserves space
+   for it, so no layout shifts when it appears. */
+(() => {
+  const ROOT_SELECTOR = '[data-horizontal-scroll], [data-horizontal-scroll-dark]';
+  const DARK_SELECTOR = '[data-horizontal-scroll-dark]';
+  const INIT_FLAG = 'scrollIndicatorReady';
+  const EDGE = 2; // px tolerance for fractional scroll widths
+  const MIN_THUMB = 24; // px — a thumb thinner than this stops reading as a thumb
+
+  const entries = [];
+  let resizeTimer = null;
+  let globalBound = false;
+
+  function initAll(scope = document) {
+    scope.querySelectorAll(ROOT_SELECTOR).forEach(initRoot);
+    bindGlobal();
+  }
+
+  function initRoot(root) {
+    candidates(root).forEach(track);
+  }
+
+  // The row itself first, then anything inside it that scrolls on its own. Read
+  // once at init: overflow is set in the Designer or by a stylesheet, so it does
+  // not change under us the way the overflow *amount* does.
+  function candidates(root) {
+    const inner = Array.from(root.querySelectorAll('*')).filter(scrollsHorizontally);
+    return [root, ...inner];
+  }
+
+  function scrollsHorizontally(el) {
+    // Cheap test first — getComputedStyle on every descendant of a section is not.
+    if (el.scrollWidth - el.clientWidth <= EDGE) return false;
+    return isScrollable(el);
+  }
+
+  function isScrollable(el) {
+    const overflowX = window.getComputedStyle(el).overflowX;
+    return overflowX === 'auto' || overflowX === 'scroll';
+  }
+
+  function track(el) {
+    if (!el || el.dataset[INIT_FLAG] === 'true') return;
+    el.dataset[INIT_FLAG] = 'true';
+
+    const entry = {el, indicator: null, thumb: null};
+    entries.push(entry);
+
+    el.addEventListener('scroll', () => paint(entry), {passive: true});
+    if (window.ResizeObserver) new ResizeObserver(() => refresh(entry)).observe(el);
+
+    refresh(entry);
+  }
+
+  function refresh(entry) {
+    const el = entry.el;
+    const canScroll = el.scrollWidth - el.clientWidth > EDGE && isScrollable(el);
+
+    // Build on first use only: an element that never scrolls should not have its
+    // parent turned into a positioning context for a bar nobody will see.
+    if (canScroll && !entry.indicator) build(entry);
+    if (!entry.indicator) return;
+
+    entry.indicator.hidden = !canScroll;
+    if (!canScroll) return;
+
+    place(entry);
+    paint(entry);
+  }
+
+  function build(entry) {
+    const el = entry.el;
+    const parent = el.parentElement;
+    if (!parent) return;
+
+    if (window.getComputedStyle(parent).position === 'static') {
+      parent.style.position = 'relative';
+    }
+
+    const indicator = document.createElement('div');
+    indicator.setAttribute('data-scroll-indicator', el.closest(DARK_SELECTOR) ? 'dark' : '');
+    indicator.setAttribute('aria-hidden', 'true');
+
+    const thumb = document.createElement('div');
+    thumb.setAttribute('data-scroll-indicator-thumb', '');
+    indicator.appendChild(thumb);
+    parent.appendChild(indicator);
+
+    el.classList.add('is-scroll-indicated');
+    entry.indicator = indicator;
+    entry.thumb = thumb;
+  }
+
+  // Offsets are measured rather than read off offsetLeft/offsetTop: the parent we
+  // insert into is not always the offsetParent, and absolute positioning is
+  // relative to the parent's padding box, not its border box.
+  function place(entry) {
+    const el = entry.el;
+    const indicator = entry.indicator;
+    const parent = indicator.parentElement;
+    const elRect = el.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const parentStyle = window.getComputedStyle(parent);
+    const elStyle = window.getComputedStyle(el);
+
+    const left = elRect.left - parentRect.left
+      - parseFloat(parentStyle.borderLeftWidth)
+      + parseFloat(elStyle.borderLeftWidth);
+    const top = elRect.top - parentRect.top
+      - parseFloat(parentStyle.borderTopWidth)
+      + parseFloat(elStyle.borderTopWidth)
+      + el.clientHeight - indicator.offsetHeight;
+
+    indicator.style.left = `${left}px`;
+    indicator.style.top = `${top}px`;
+    indicator.style.width = `${el.clientWidth}px`;
+  }
+
+  function paint(entry) {
+    const el = entry.el;
+    if (!entry.indicator || entry.indicator.hidden) return;
+
+    const max = el.scrollWidth - el.clientWidth;
+    const trackWidth = entry.indicator.clientWidth;
+    const width = Math.max(MIN_THUMB, Math.round(trackWidth * (el.clientWidth / el.scrollWidth)));
+    const progress = max > 0 ? Math.min(1, Math.max(0, el.scrollLeft / max)) : 0;
+
+    entry.thumb.style.width = `${width}px`;
+    entry.thumb.style.transform = `translateX(${(trackWidth - width) * progress}px)`;
+  }
+
+  function refreshAll() {
+    entries.forEach(refresh);
+  }
+
+  function bindGlobal() {
+    if (globalBound) return;
+    globalBound = true;
+
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(refreshAll, 150);
+    });
+
+    // A late web font can be the difference between a row that fits and one that
+    // does not, and images settle after load — both change the overflow amount.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(refreshAll).catch(() => {});
+    }
+    window.addEventListener('load', refreshAll);
+  }
+
+  window.ContextualScrollIndicator = {
+    init: initAll,
+    initRoot,
+    refresh: refreshAll,
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initAll(), {once: true});
+  } else {
+    initAll();
+  }
+})();

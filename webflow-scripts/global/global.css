@@ -286,6 +286,67 @@
 	--horizontal-scrollbar-thumb-hover: #f4f78d;
 }
 
+/* SCROLL INDICATOR
+   Touch browsers draw the scrollbar as a transient overlay: it fades in while a
+   finger is moving and is gone the rest of the time — and on iOS the rules above
+   are ignored outright, so nothing up there can hold it open. A row of cards then
+   reads as a row that ends at the screen edge. This is the same bar drawn by us,
+   below 992px only, so it can simply stay visible.
+
+   The element is script-owned (scroll-indicator in global.js) and positioned
+   absolutely over the bottom edge of its scroll container, so it overlays the row
+   the way a native overlay bar does and no layout moves to make room for it.
+   Above 992px nothing changes: desktop keeps the classic native bar, which is
+   permanent already, and a drag lane keeps hiding it on purpose. */
+:root {
+	--scroll-indicator-size: 6px;
+	--scroll-indicator-track: rgba(27, 25, 35, 0.12);
+	--scroll-indicator-thumb: var(--_system-colors---dark, #1b1923);
+}
+
+[data-scroll-indicator] {
+	position: absolute;
+	z-index: 2;
+	display: none;
+	height: var(--scroll-indicator-size);
+	border-radius: var(--horizontal-scrollbar-radius);
+	background: var(--scroll-indicator-track);
+	pointer-events: none;
+}
+
+[data-scroll-indicator="dark"] {
+	--scroll-indicator-track: rgba(255, 255, 255, 0.16);
+	--scroll-indicator-thumb: var(--_system-colors---accent, #ecf071);
+}
+
+[data-scroll-indicator-thumb] {
+	height: 100%;
+	border-radius: inherit;
+	background: var(--scroll-indicator-thumb);
+}
+
+@media screen and (max-width: 991px) {
+	[data-scroll-indicator] {
+		display: block;
+	}
+
+	/* The indicator replaces the native bar, it does not join it: Android Chrome
+	   turns the rules above into a classic bar that would sit right underneath. */
+	.is-scroll-indicated {
+		scrollbar-width: none;
+	}
+
+	.is-scroll-indicated::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+/* Set by the script while the row has nowhere to scroll — a three-card row that
+   fits the tablet width should show no bar at all. */
+[data-scroll-indicator][hidden] {
+	display: none !important;
+}
+
 /* DRAG LANE
    A card row that turns into a horizontal lane. The lane mode lives here and is
    switched on by drag-lane.js, never by a Webflow class — the Designer canvas
