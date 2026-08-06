@@ -293,22 +293,28 @@
    reads as a row that ends at the screen edge. This is the same bar drawn by us,
    below 992px only, so it can simply stay visible.
 
-   The element is script-owned (scroll-indicator in global.js) and positioned
-   absolutely over the bottom edge of its scroll container, so it overlays the row
-   the way a native overlay bar does and no layout moves to make room for it.
+   The element is script-owned (scroll-indicator in global.js), which pins it to
+   the bottom edge of its scroll container; the gap below that edge is the offset
+   below. Absolute positioning keeps it out of the parent's flow, so it costs the
+   layout nothing and no section had to make room for it.
    Above 992px nothing changes: desktop keeps the classic native bar, which is
    permanent already, and a drag lane keeps hiding it on purpose. */
 :root {
 	--scroll-indicator-size: 6px;
+	--scroll-indicator-offset: 10px;
 	--scroll-indicator-track: rgba(27, 25, 35, 0.12);
 	--scroll-indicator-thumb: var(--_system-colors---dark, #1b1923);
 }
 
+/* The offset rides on margin-top rather than the script's `top`, so a single
+   section can breathe differently by overriding the variable and nothing has to
+   be recomputed in JS. */
 [data-scroll-indicator] {
 	position: absolute;
 	z-index: 2;
 	display: none;
 	height: var(--scroll-indicator-size);
+	margin-top: var(--scroll-indicator-offset);
 	border-radius: var(--horizontal-scrollbar-radius);
 	background: var(--scroll-indicator-track);
 	pointer-events: none;

@@ -654,13 +654,15 @@
     const parentStyle = window.getComputedStyle(parent);
     const elStyle = window.getComputedStyle(el);
 
+    // Pinned to the row's bottom edge; the gap below it is the CSS offset, which
+    // rides on the bar's own margin-top and so needs no arithmetic here.
     const left = elRect.left - parentRect.left
       - parseFloat(parentStyle.borderLeftWidth)
       + parseFloat(elStyle.borderLeftWidth);
     const top = elRect.top - parentRect.top
       - parseFloat(parentStyle.borderTopWidth)
       + parseFloat(elStyle.borderTopWidth)
-      + el.clientHeight - indicator.offsetHeight;
+      + el.clientHeight;
 
     indicator.style.left = `${left}px`;
     indicator.style.top = `${top}px`;
