@@ -640,32 +640,49 @@
     el.classList.add('is-scroll-indicated');
     entry.indicator = indicator;
     entry.thumb = thumb;
+    reveal(entry);
   }
 
-  // Offsets are measured rather than read off offsetLeft/offsetTop: the parent we
-  // insert into is not always the offsetParent, and absolute positioning is
-  // relative to the parent's padding box, not its border box.
+  // Every card on these pages arrives on a fade, so a bar that is already solid
+  // while the cards around it are still transparent reads as a leftover. It fades
+  // in with its row instead — on the row entering the viewport, not on load, so a
+  // section further down the page still gets the entrance.
+  // An observer rather than a ScrollTrigger: GSAP is on these pages, but this
+  // needs one boolean per row, not a timeline, and IntersectionObserver costs no
+  // scroll handler and no dependency on load order.
+  function reveal(entry) {
+    const show = () => entry.indicator.classList.add('is-revealed');
+    if (!window.IntersectionObserver) {
+      show();
+      return;
+    }
+
+    const observer = new IntersectionObserver((records) => {
+      if (!records.some((record) => record.isIntersecting)) return;
+      show();
+      observer.disconnect();
+    }, {threshold: 0.15});
+
+    observer.observe(entry.el);
+  }
+
+  // Offsets, not rects. A row can carry its own reveal transform — /private-equity
+  // puts `fade-up` on the row itself rather than on the panel around it — and a
+  // rect read mid-flight is the shifted one. The bar would then be placed against
+  // a position the row is about to leave, and sit that far too low once the
+  // transform settled. offsetLeft/offsetTop ignore transforms and are already
+  // measured against the positioned parent we insert into, which is the box
+  // absolute positioning resolves against; clientLeft/clientTop are that parent's
+  // border, so the bar lines up with the row's padding box either way.
+  //
+  // Pinned to the row's bottom edge; the gap below it is the CSS offset, which
+  // rides on the bar's own margin-top and so needs no arithmetic here.
   function place(entry) {
     const el = entry.el;
     const indicator = entry.indicator;
-    const parent = indicator.parentElement;
-    const elRect = el.getBoundingClientRect();
-    const parentRect = parent.getBoundingClientRect();
-    const parentStyle = window.getComputedStyle(parent);
-    const elStyle = window.getComputedStyle(el);
 
-    // Pinned to the row's bottom edge; the gap below it is the CSS offset, which
-    // rides on the bar's own margin-top and so needs no arithmetic here.
-    const left = elRect.left - parentRect.left
-      - parseFloat(parentStyle.borderLeftWidth)
-      + parseFloat(elStyle.borderLeftWidth);
-    const top = elRect.top - parentRect.top
-      - parseFloat(parentStyle.borderTopWidth)
-      + parseFloat(elStyle.borderTopWidth)
-      + el.clientHeight;
-
-    indicator.style.left = `${left}px`;
-    indicator.style.top = `${top}px`;
+    indicator.style.left = `${el.offsetLeft + el.clientLeft}px`;
+    indicator.style.top = `${el.offsetTop + el.clientTop + el.clientHeight}px`;
     indicator.style.width = `${el.clientWidth}px`;
   }
 

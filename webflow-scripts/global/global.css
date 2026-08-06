@@ -317,7 +317,31 @@
 	margin-top: var(--scroll-indicator-offset);
 	border-radius: var(--horizontal-scrollbar-radius);
 	background: var(--scroll-indicator-track);
+	opacity: 0;
+	transform: translateY(6px);
+	transition: opacity 0.45s ease 0.7s, transform 0.45s ease 0.7s;
 	pointer-events: none;
+}
+
+/* Set by the script when the row reaches the viewport, so the bar arrives with
+   its section instead of being the one solid thing on an otherwise fading page.
+
+   The delay is measured, not decorative: on /own-your-ai and /private-equity the
+   reveal sits on the row itself and slides it ~20px over about a second. The bar
+   is placed where the row lands, not where it currently is (see place() in
+   global.js), so it waits out that slide instead of hanging above a row still on
+   its way up. Elsewhere the row never moves and the delay just lets the cards
+   lead. */
+[data-scroll-indicator].is-revealed {
+	opacity: 1;
+	transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-scroll-indicator] {
+		transform: none;
+		transition: none;
+	}
 }
 
 [data-scroll-indicator="dark"] {
