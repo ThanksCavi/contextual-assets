@@ -79,25 +79,30 @@
 		const stackEnd = () =>
 			'bottom ' + (stackTop() + STACK_STEP_PX * lastIndex + lastCard.offsetHeight);
 
-		// На тач-устройствах пин через `position: fixed` перерисовывается не в такт
-		// с инерционным скроллом; transform едет вместе со страницей. Только там
-		// мы pinType и задаём.
+		// pinType не задаём НИГДЕ — ScrollTrigger определяет его сам, и оба
+		// значения, выставленные руками, делают хуже:
 		//
-		// Везде остальном его нельзя задавать вообще: под ScrollSmoother
-		// `#smooth-content` трансформирован, а трансформированный предок
-		// становится containing block'ом для `position: fixed` — запиненная
-		// карточка прибивается не к экрану, а к уезжающему контенту и улетает
-		// за его пределы. ScrollTrigger сам определяет этот случай и берёт
-		// `transform`; явное значение ломает автоопределение.
-		const pinTypeOverride = ScrollTrigger.isTouch === 1 ? {pinType: 'transform'} : null;
+		//   'fixed'     под ScrollSmoother прибивает карточку к
+		//               трансформированному `#smooth-content`, а не к экрану:
+		//               она улетает вместе с контентом (06.08.2026, десктоп);
+		//   'transform' на iOS двигает пин из JS на каждое событие скролла, а
+		//               iOS откладывает JS во время инерции — стопка отстаёт от
+		//               пальца (06.08.2026, отчёт с устройства).
 
 		gsap.matchMedia().add(MIN_VIEWPORT_QUERY, () => {
 			wrappers.forEach((wrapper, i) => {
 				const isLast = i === lastIndex;
 
+				// Здесь был ещё rotationX: -10. Perspective не задан ни на карточке,
+				// ни на родителе, поэтому поворот проецировался ортографически — весь
+				// его вклад сводился к вертикальному сжатию на ~1% (замер 06.08.2026:
+				// 0.9129 против 0.9215 у первой карточки, ~5px на 545px). За эту
+				// невидимую разницу каждая карточка получала matrix3d и отдельный
+				// 3D-слой, который iOS растрирует заново на каждом шаге scale.
+				// Если наклон всё-таки нужен — возвращать вместе с
+				// transformPerspective, иначе он ничего не рисует.
 				gsap.to(cards[i], {
 					scale: isLast ? 1 : 0.9 + 0.025 * i,
-					rotationX: isLast ? 0 : -10,
 					transformOrigin: 'top center',
 					ease: 'none',
 					scrollTrigger: {
@@ -108,7 +113,6 @@
 						scrub: true,
 						pin: wrapper,
 						pinSpacing: false,
-						...pinTypeOverride,
 						invalidateOnRefresh: true,
 					},
 				});
