@@ -9,8 +9,12 @@ html:not(.wf-design-mode) .navbar.w-nav {
 	--navbar-sticky-button-padding-y: 13.2px;
 	--navbar-sticky-menu-padding-y: 11px;
 	position: fixed;
-	top: 10px;
-	left: 10px;
+	/*top: 10px;*/
+	/*left: 10px;*/
+	top: 0;
+	left: 0;
+	margin: 10px;
+
 	right: auto;
 	width: calc(100% - 20px);
 	max-width: calc(100% - 20px);
@@ -23,15 +27,15 @@ html:not(.wf-design-mode) .navbar.w-nav {
 	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-html:not(.wf-design-mode) .navbar.w-nav.is-sticky {
-	position: fixed;
-	top: 10px;
-	left: 10px;
-	right: auto;
-	width: calc(100% - 20px);
-	max-width: calc(100% - 20px);
-	background-color: transparent;
-}
+/*html:not(.wf-design-mode) .navbar.w-nav.is-sticky {*/
+/*	position: fixed;*/
+/*	top: 10px;*/
+/*	left: 10px;*/
+/*	right: auto;*/
+/*	width: calc(100% - 20px);*/
+/*	max-width: calc(100% - 20px);*/
+/*	background-color: transparent;*/
+/*}*/
 
 html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky {
 	display: flex;
@@ -100,7 +104,7 @@ html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 
 @media screen and (min-width: 1920px) {
 	html:not(.wf-design-mode) .navbar.w-nav {
-		--navbar-sticky-button-padding-y: 18.2px;
+		--navbar-sticky-button-padding-y: 18px;
 	}
 }
 
@@ -111,10 +115,6 @@ html:not(.wf-design-mode) #smooth-content {
 html:not(.wf-design-mode) body.has-navbar-overlay #smooth-content {
 	padding-top: 0;
 }
-
-/*html:not(.wf-design-mode) .navbar-spacer {*/
-/*	display: none;*/
-/*}*/
 
 .navbar::before,
 .navbar::after {
