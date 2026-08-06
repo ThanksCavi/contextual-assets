@@ -143,34 +143,23 @@ html:not(.wf-design-mode) .navbar.w-nav .navigation-trigger > .menu {
 }
 
 /* Раскрытие подменю — и на десктопе, и в мобильном меню — делает нативный дропдаун
-   Webflow: он же ставит .w--open. Здесь только оформление состояния.
+   Webflow. Здесь только оформление состояния: плюс превращается в крестик.
 
-   Мобильный пункт схлопнут до высоты своей строки и разворачивается по контенту.
-   Верхняя граница нужна только затем, чтобы max-height было что анимировать;
-   реальная высота списка её не достигает, а панель меню при нехватке места
-   прокручивается сама. */
+   Важно: класс .w--open Webflow вешает на ТОГЛ и на СПИСОК, а не на обёртку
+   .w-dropdown. Селектор от обёртки молча не сработает.
+
+   Показ и скрытие списка тоже отдано Webflow (.w-dropdown-list.w--open). Прежде
+   у .mob-menu-dropdown стоял display: block, который держал список раскрытым
+   всегда, — из-за этого и появился самописный аккордеон на max-height, воевавший
+   с собственным стилем проекта. */
 html:not(.wf-design-mode) .navbar.w-nav .contextual-icon,
 html:not(.wf-design-mode) .mob-menu-toggle-icon {
 	transition: transform 200ms var(--navbar-ease);
 }
 
-html:not(.wf-design-mode) .navbar.w-nav .navigation-dropdown.w--open .contextual-icon,
-html:not(.wf-design-mode) .mob-menu-item.w--open .mob-menu-toggle-icon {
+html:not(.wf-design-mode) .navbar.w-nav .navigation-trigger.w--open .contextual-icon,
+html:not(.wf-design-mode) .mob-menu-toggle.w--open .mob-menu-toggle-icon {
 	transform: rotate(45deg);
-}
-
-@media screen and (max-width: 991px) {
-	html:not(.wf-design-mode) .mob-menu-item {
-		overflow: hidden;
-		max-height: 50px;
-		transition:
-			max-height 350ms var(--navbar-ease),
-			background-color 500ms ease;
-	}
-
-	html:not(.wf-design-mode) .mob-menu-item.w--open {
-		max-height: 60vh;
-	}
 }
 
 /* Цвет содержимого шапки.
