@@ -5,7 +5,7 @@
    Контракт разметки (Designer — менять осторожно):
      #wrapper        `.wraper-anim-tab`, секция-триггер и endTrigger
      .card-wrapper   пиновый бокс каждой карточки
-     .card-tab       сама карточка, на неё вешается scale / rotationX
+     .card-tab       сама карточка, на неё вешается scale
 
    Политика движения. Остальные эффекты сайта спрашивают
    ContextualHomeMotion.shouldUseHeavyScrollEffects(), который выключает всё
