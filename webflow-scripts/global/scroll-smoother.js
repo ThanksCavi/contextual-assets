@@ -471,7 +471,20 @@
 	// match it so arriving by URL lands where clicking an in-page link lands.
 	function getAnchorOffset() {
 		const navbar = document.querySelector(NAVBAR_SELECTOR);
-		if (!navbar || window.getComputedStyle(navbar).position !== 'fixed') return 0;
+		if (!navbar) return 0;
+
+		const style = window.getComputedStyle(navbar);
+		if (style.position !== 'fixed') return 0;
+
+		// Приезжаем всегда в залипшем состоянии, поэтому считаем по сжатой полосе:
+		// инсет сверху + её высота (контракт navbar.css). Замер по боксу дал бы
+		// высоту в покое и промах на разницу состояний.
+		const inset = parseFloat(style.getPropertyValue('--navbar-inset'));
+		const barHeight = parseFloat(style.getPropertyValue('--navbar-bar-height-sticky'));
+
+		if (Number.isFinite(inset) && Number.isFinite(barHeight)) {
+			return Math.round(inset * 2 + barHeight);
+		}
 
 		return Math.round(navbar.getBoundingClientRect().height);
 	}

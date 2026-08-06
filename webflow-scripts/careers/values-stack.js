@@ -131,13 +131,13 @@
 	}
 
 	// Стопка не должна уезжать под фиксированный navbar: его нижний край =
-	// top + --navbar-sticky-min-height (контракт navbar.css).
+	// --navbar-inset + --navbar-bar-height-sticky (контракт navbar.css).
 	function stackTop() {
 		const navbar = document.querySelector(NAVBAR_SELECTOR);
 		const style = navbar && getComputedStyle(navbar);
 		const navbarBottom = style
-			? (parseFloat(style.top) || 0) +
-				(parseFloat(style.getPropertyValue('--navbar-sticky-min-height')) || 0)
+			? (parseFloat(style.getPropertyValue('--navbar-inset')) || 0) +
+				(parseFloat(style.getPropertyValue('--navbar-bar-height-sticky')) || 0)
 			: 0;
 
 		return (navbarBottom || NAVBAR_FALLBACK_PX) + STACK_MARGIN_PX;

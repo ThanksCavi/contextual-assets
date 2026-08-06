@@ -1,61 +1,83 @@
 /*
- * Navbar runtime styles
- * Keeps the Webflow header outside ScrollSmoother's transformed content.
+ * Navbar runtime styles.
+ *
+ * Что здесь и почему именно здесь:
+ * — геометрия шапки (позиция, инсеты, высоты полосы и её содержимого) — только тут.
+ *   В Webflow остаётся визуал: цвета, радиус, типографика, тёмный/светлый вариант.
+ * — цифры взяты из макетов: обычная шапка 70px и кнопка 50px (Figma 1974-4106),
+ *   фиксированная 60px и кнопка 40px (1700-2138), мобильная 48px (1263-886),
+ *   инсет от краёв вьюпорта — 10px во всех трёх.
+ *
+ * Два контракта, которые нельзя нарушать:
+ *
+ * 1. Переменные объявлены на <html>, а не на .navbar. #smooth-content шапке СОСЕД,
+ *    а не потомок — объявление на .navbar до него не доходит, и отступ молча падает
+ *    на фолбэк. Именно так появлялись «плавающие px» на разных страницах: на десктопе
+ *    ошибка была ~10px, на мобиле ~29px.
+ *
+ * 2. .navbar не должен получать transform / filter / will-change. Внутри него лежит
+ *    .offcanvas-menu с position: fixed, и любое из этих свойств делает .navbar
+ *    containing block'ом — всё мобильное меню уезжает ровно на (инсет, инсет).
+ *    Так выглядел баг «диагональ ~10px при первом открытии»: hero-launch анимировал
+ *    сам .navbar. Анимировать можно .navbar-sticky — он внутри и на fixed-потомка
+ *    не влияет.
  */
-html:not(.wf-design-mode) .navbar.w-nav {
-	--navbar-offset: 92px;
-	--navbar-top-min-height: 70px;
-	--navbar-sticky-min-height: 60px;
-	--navbar-sticky-button-padding-y: 13.2px;
-	--navbar-sticky-menu-padding-y: 11px;
-	position: fixed;
-	/*top: 10px;*/
-	/*left: 10px;*/
-	top: 0;
-	left: 0;
-	margin: 10px;
 
-	right: auto;
-	width: calc(100% - 20px);
-	max-width: calc(100% - 20px);
+html:not(.wf-design-mode) {
+	--navbar-inset: 10px;
+	--navbar-bar-height: 48px;
+	--navbar-bar-height-sticky: 48px;
+	--navbar-radius: 10px;
+	--navbar-duration: 260ms;
+	--navbar-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+	/* Сколько места шапка занимает сверху: инсет + полоса + такой же зазор снизу.
+	   Считается от НЕсжатой высоты — иначе контент дёргался бы в момент залипания. */
+	--navbar-offset: calc(var(--navbar-inset) * 2 + var(--navbar-bar-height));
+}
+
+@media screen and (min-width: 992px) {
+	html:not(.wf-design-mode) {
+		--navbar-bar-height: 70px;
+		--navbar-bar-height-sticky: 60px;
+	}
+}
+
+/* Шапка. Высоту не задаём: бокс должен совпадать с видимой полосой, иначе под ней
+   остаётся невидимая лента, перехватывающая клики по контенту. */
+html:not(.wf-design-mode) .navbar.w-nav {
+	position: fixed;
+	inset: var(--navbar-inset) var(--navbar-inset) auto;
 	z-index: 1000;
 	box-sizing: border-box;
 	background-color: transparent;
 	border: 0;
-	transition-property: color;
-	transition-duration: 260ms;
-	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	transition: color var(--navbar-duration) var(--navbar-ease);
 }
 
-/*html:not(.wf-design-mode) .navbar.w-nav.is-sticky {*/
-/*	position: fixed;*/
-/*	top: 10px;*/
-/*	left: 10px;*/
-/*	right: auto;*/
-/*	width: calc(100% - 20px);*/
-/*	max-width: calc(100% - 20px);*/
-/*	background-color: transparent;*/
-/*}*/
-
+/* Сама полоса: в покое прозрачная, в залипшем состоянии — светлая карточка.
+   Тёмная страница влияет только на цвет текста (вариант компонента), фиксированная
+   версия всегда светлая — это и есть .is-sticky ниже. */
 html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky {
 	display: flex;
 	align-items: center;
 	box-sizing: border-box;
 	width: 100%;
-	height: auto;
-	background-color: transparent;
-	border: 1px solid transparent;
-	border-radius: 10px;
+	height: var(--navbar-bar-height);
+	min-height: 0;
 	padding-top: 0;
 	padding-bottom: 0;
-	transition-property: min-height, background-color, border-color, box-shadow;
-	transition-duration: 260ms;
-	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	background-color: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--navbar-radius);
+	transition:
+		height var(--navbar-duration) var(--navbar-ease),
+		background-color var(--navbar-duration) var(--navbar-ease),
+		border-color var(--navbar-duration) var(--navbar-ease);
 }
 
-html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky {
-	height: auto;
-	min-height: var(--navbar-sticky-min-height);
+html:not(.wf-design-mode) .navbar.w-nav.is-sticky .navbar-sticky {
+	height: var(--navbar-bar-height-sticky);
 	background-color: var(--_system-colors---white);
 	border-color: var(--_system-colors---muted);
 }
@@ -65,57 +87,121 @@ html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
 	z-index: 1;
 	height: auto;
 	min-height: 0;
-	transition-property: color;
-	transition-duration: 260ms;
-	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Содержимое полосы. Высота полосы задана жёстко, поэтому дети не должны её распирать:
+   кнопка получает высоту напрямую, а не через подбор вертикальных паддингов. */
+html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon {
+	box-sizing: border-box;
+	padding-top: 0;
+	padding-bottom: 0;
+	transition:
+		height var(--navbar-duration) var(--navbar-ease),
+		background-color var(--navbar-duration) var(--navbar-ease),
+		border-color var(--navbar-duration) var(--navbar-ease),
+		color var(--navbar-duration) var(--navbar-ease);
 }
 
 @media screen and (min-width: 992px) {
-	html:not(.wf-design-mode) .navbar.w-nav {
-		height: var(--navbar-offset);
-		min-height: var(--navbar-offset);
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon {
+		height: 50px;
 	}
 
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky {
-		min-height: var(--navbar-top-min-height);
-	}
-
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky {
-		min-height: var(--navbar-sticky-min-height);
-	}
-
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon,
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .menu {
-		transition-property: padding-top, padding-bottom, background-color, border-color, color;
-		transition-duration: 260ms;
-		transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky .button.button-icon {
-		padding-top: var(--navbar-sticky-button-padding-y);
-		padding-bottom: var(--navbar-sticky-button-padding-y);
-	}
-
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky.is-sticky .menu {
-		padding-top: var(--navbar-sticky-menu-padding-y);
-		padding-bottom: var(--navbar-sticky-menu-padding-y);
+	html:not(.wf-design-mode) .navbar.w-nav.is-sticky .navbar-sticky .button.button-icon {
+		height: 40px;
 	}
 }
 
-@media screen and (min-width: 1920px) {
-	html:not(.wf-design-mode) .navbar.w-nav {
-		--navbar-sticky-button-padding-y: 18px;
+/* Мобильная раскладка: полоса 48px, кнопка и гамбургер тоже 48px — обёртке кнопок
+   нечего добавлять сверху и снизу. */
+@media screen and (max-width: 991px) {
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .navigation-buttons {
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon {
+		height: 48px;
 	}
 }
 
+/* Пункт с подменю. Плюсик лежит рядом со ссылкой, а не внутри неё: пока он был
+   внутри <a>, клик по нему одновременно раскрывал подменю и уводил на страницу
+   раздела — до подменю было не дотянуться. Теперь отступы держит сам триггер,
+   ссылка внутри голая: клик по тексту — переход, клик по иконке и по полю
+   вокруг — раскрытие. Пункт без ссылки раскрывается кликом в любое место. */
+html:not(.wf-design-mode) .navbar.w-nav .navigation-trigger {
+	display: flex;
+	align-items: center;
+	gap: 0.45em;
+	padding: 1em;
+	cursor: pointer;
+}
+
+html:not(.wf-design-mode) .navbar.w-nav .navigation-trigger > .menu {
+	padding: 0;
+}
+
+/* Раскрытие подменю — и на десктопе, и в мобильном меню — делает нативный дропдаун
+   Webflow: он же ставит .w--open. Здесь только оформление состояния.
+
+   Мобильный пункт схлопнут до высоты своей строки и разворачивается по контенту.
+   Верхняя граница нужна только затем, чтобы max-height было что анимировать;
+   реальная высота списка её не достигает, а панель меню при нехватке места
+   прокручивается сама. */
+html:not(.wf-design-mode) .navbar.w-nav .contextual-icon,
+html:not(.wf-design-mode) .mob-menu-toggle-icon {
+	transition: transform 200ms var(--navbar-ease);
+}
+
+html:not(.wf-design-mode) .navbar.w-nav .navigation-dropdown.w--open .contextual-icon,
+html:not(.wf-design-mode) .mob-menu-item.w--open .mob-menu-toggle-icon {
+	transform: rotate(45deg);
+}
+
+@media screen and (max-width: 991px) {
+	html:not(.wf-design-mode) .mob-menu-item {
+		overflow: hidden;
+		max-height: 50px;
+		transition:
+			max-height 350ms var(--navbar-ease),
+			background-color 500ms ease;
+	}
+
+	html:not(.wf-design-mode) .mob-menu-item.w--open {
+		max-height: 60vh;
+	}
+}
+
+/* Цвет содержимого шапки.
+   Тёмная страница красит его через вариант компонента: .navbar получает color:
+   light, а .navigation / .menu / .navigation-link объявлены как color: inherit.
+   Залипшая шапка всегда светлая, значит её содержимое всегда тёмное — независимо
+   от варианта страницы. Это состояние Webflow выразить не может: .is-sticky
+   ставится в рантайме, а правила ниже — потомковые. Раньше они жили embed-блоком
+   внутри компонента; половина того блока была мертва (селектор ссылался на
+   несуществующий атрибут data-wf--site-navbar--variant вместо site-header). */
+html:not(.wf-design-mode) .navbar.w-nav.is-sticky .menu,
+html:not(.wf-design-mode) .navbar.w-nav.is-sticky .contextual-icon,
+html:not(.wf-design-mode) .navbar.w-nav.is-sticky .brand-svg,
+html:not(.wf-design-mode) .navbar.w-nav.is-sticky svg {
+	color: var(--_system-colors---dark);
+}
+
+html:not(.wf-design-mode) .navbar.w-nav .menu:hover,
+html:not(.wf-design-mode) .navbar.w-nav .menu:hover .contextual-icon,
+html:not(.wf-design-mode) .navbar.w-nav .navigation-trigger:hover,
+html:not(.wf-design-mode) .navbar.w-nav .navigation-trigger:hover .contextual-icon {
+	color: var(--_system-colors---primary);
+}
+
+/* Шапка вынута из потока, место под неё резервирует контент. */
 html:not(.wf-design-mode) #smooth-content {
-	padding-top: var(--navbar-offset, 92px);
+	padding-top: var(--navbar-offset);
 }
 
-html:not(.wf-design-mode) body.has-navbar-overlay #smooth-content {
-	padding-top: 0;
-}
-
+/* Webflow рисует у .w-nav клиринговые псевдоэлементы под float-раскладку —
+   у нас flex, и они только ломают расчёт высоты полосы. */
 .navbar::before,
 .navbar::after {
 	display: none;
@@ -124,9 +210,7 @@ html:not(.wf-design-mode) body.has-navbar-overlay #smooth-content {
 @media (prefers-reduced-motion: reduce) {
 	html:not(.wf-design-mode) .navbar.w-nav,
 	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky,
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon,
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .menu,
-	html:not(.wf-design-mode) .navbar.w-nav .navbar-container {
+	html:not(.wf-design-mode) .navbar.w-nav .navbar-sticky .button.button-icon {
 		transition-duration: 0ms;
 	}
 }

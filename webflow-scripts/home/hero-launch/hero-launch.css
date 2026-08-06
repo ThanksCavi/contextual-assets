@@ -12,7 +12,7 @@
 		opacity: 1;
 	}
 
-	html.w-mod-js:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar,
+	html.w-mod-js:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar .navbar-sticky,
 	html.w-mod-js:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete) [data-hero-intro-reveal],
 	html.w-mod-js:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete)) [data-hero-intro-after] {
 		opacity: 0;
@@ -20,11 +20,11 @@
 		will-change: opacity, transform;
 	}
 
-	html.w-mod-js:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar {
+	html.w-mod-js:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]:is(:not([data-hero-intro-ready]), [data-hero-intro-ready="pending"]):not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar .navbar-sticky {
 		--hero-intro-from-y: -22px;
 	}
 
-	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"].is-hero-intro-reveal-active:not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar,
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"].is-hero-intro-reveal-active:not(.is-hero-intro-static):not(.is-hero-intro-complete)) .navbar .navbar-sticky,
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"].is-hero-intro-reveal-active:not(.is-hero-intro-static):not(.is-hero-intro-complete) [data-hero-intro-reveal],
 	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"][data-hero-intro-ready="pending"].is-hero-intro-reveal-active:not(.is-hero-intro-static):not(.is-hero-intro-complete)) [data-hero-intro-after] {
 		opacity: 1;
@@ -51,8 +51,8 @@
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"].is-hero-intro-complete .hsp-column-media,
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"].is-hero-intro-complete .circle-field-canvas,
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"].is-hero-intro-complete [data-hero-intro-reveal],
-	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"].is-hero-intro-static) .navbar,
-	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"].is-hero-intro-complete) .navbar,
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"].is-hero-intro-static) .navbar .navbar-sticky,
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"].is-hero-intro-complete) .navbar .navbar-sticky,
 	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"].is-hero-intro-static) [data-hero-intro-after],
 	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"].is-hero-intro-complete) [data-hero-intro-after] {
 		opacity: 1;
@@ -64,7 +64,7 @@
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"] .hsp-column-media,
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"] .circle-field-canvas,
 	html:not(.wf-design-mode) .hero-spotlight[data-hero-intro="home"] [data-hero-intro-reveal],
-	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]) .navbar,
+	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]) .navbar .navbar-sticky,
 	html:not(.wf-design-mode) body:has(.hero-spotlight[data-hero-intro="home"]) [data-hero-intro-after] {
 		opacity: 1;
 		transform: none;

@@ -1,18 +1,22 @@
 /**
- * Navbar runtime
- * Syncs the header compact state with ScrollSmoother and manages mobile menu dropdowns.
+ * Navbar runtime.
+ *
+ * Одна задача: держать класс .is-sticky в согласии с реальной прокруткой, в том
+ * числе когда страницу листает ScrollSmoother — нативный window.scrollY при этом
+ * не двигается.
+ *
+ * Мобильное подменю здесь НЕ обслуживается, и это осознанно. Раньше тут висел
+ * обработчик, который добавлял .is-open на .mob-menu-item, — при том что сам пункт
+ * является нативным Webflow Dropdown со своим открытием, а комбо-класса .is-open
+ * в проекте не существовало вовсе. Два механизма на одном элементе, и работающий
+ * из них — ни один. Оставлен нативный дропдаун Webflow: раскрытие, закрытие по
+ * клику вне и класс .w--open он делает сам, оформление состояния — в navbar.css.
  */
 (() => {
 	const INIT_FLAG = '__contextualNavbarInit';
 	const NAVBAR_SELECTOR = '.navbar.w-nav';
-	const NAVBAR_STICKY_SELECTOR = '.navbar-sticky';
-	const NAVBAR_CONTAINER_SELECTOR = '.navbar-container';
-	const MOBILE_TOGGLE_SELECTOR = '.mob-menu-toggle';
-	const MOBILE_ITEM_SELECTOR = '.mob-menu-item';
-	const MOBILE_ICON_SELECTOR = '.mob-menu-toggle-icon';
 	const SMOOTH_CONTENT_SELECTOR = '#smooth-content';
 	const STICKY_CLASS = 'is-sticky';
-	const OPEN_CLASS = 'is-open';
 	const READY_EVENT = 'contextual:smoother-ready';
 	const POLICY_CHANGE_EVENT = 'contextual:motion-policy-change';
 	const STICKY_ON_Y = 8;
@@ -25,8 +29,6 @@
 	window[INIT_FLAG] = true;
 
 	let navbar = null;
-	let navbarSticky = null;
-	let navbarContainer = null;
 	let isSticky = false;
 	let ticking = false;
 	let monitorFrame = null;
@@ -42,13 +44,10 @@
 
 	function initNavbar() {
 		initStickyNavbar();
-		initMobileMenuDropdowns();
 	}
 
 	function initStickyNavbar() {
 		navbar = document.querySelector(NAVBAR_SELECTOR);
-		navbarSticky = navbar ? navbar.querySelector(NAVBAR_STICKY_SELECTOR) : null;
-		navbarContainer = document.querySelector(NAVBAR_CONTAINER_SELECTOR);
 
 		if (!navbar) return;
 
@@ -62,42 +61,7 @@
 		window.addEventListener(POLICY_CHANGE_EVENT, startStickyMonitor);
 	}
 
-	function initMobileMenuDropdowns() {
-		document.querySelectorAll(MOBILE_TOGGLE_SELECTOR).forEach((toggle) => {
-			if (toggle.dataset.contextualNavbarDropdownReady === 'true') return;
-
-			toggle.dataset.contextualNavbarDropdownReady = 'true';
-			toggle.addEventListener('click', handleMobileMenuToggleClick);
-		});
-	}
-
-	function handleMobileMenuToggleClick(event) {
-		event.preventDefault();
-		event.stopPropagation();
-
-		const currentItem = event.currentTarget.closest(MOBILE_ITEM_SELECTOR);
-		if (!currentItem) return;
-
-		const currentIcon = currentItem.querySelector(MOBILE_ICON_SELECTOR);
-		const isAlreadyOpen = currentItem.classList.contains(OPEN_CLASS);
-
-		document.querySelectorAll(`${MOBILE_ITEM_SELECTOR}.${OPEN_CLASS}`).forEach((item) => {
-			item.classList.remove(OPEN_CLASS);
-
-			const itemIcon = item.querySelector(MOBILE_ICON_SELECTOR);
-			if (itemIcon) {
-				itemIcon.classList.remove(OPEN_CLASS);
-			}
-		});
-
-		if (!isAlreadyOpen) {
-			currentItem.classList.add(OPEN_CLASS);
-
-			if (currentIcon) {
-				currentIcon.classList.add(OPEN_CLASS);
-			}
-		}
-	}
+	/* ---------- залипание ---------- */
 
 	function requestStickyUpdate() {
 		if (ticking) return;
@@ -133,27 +97,29 @@
 	function updateStickyState() {
 		if (!navbar) return;
 
-		if (!isSticky && getStickyActivationScrollTop() > STICKY_ON_Y) {
+		if (!isSticky && getScrollTop() > STICKY_ON_Y) {
 			setStickyState(true);
 			return;
 		}
 
-		if (isSticky && getStickyReleaseScrollTop() <= STICKY_OFF_Y) {
+		if (isSticky && getScrollTop() <= STICKY_OFF_Y) {
 			setStickyState(false);
 		}
 	}
 
+	// Класс живёт в одном месте — на .navbar. Раньше он дублировался ещё на двух
+	// элементах, причём один из селекторов (.navbar-container) не совпадал ни с чем
+	// на странице. Всё внутреннее оформление вешается селекторами от .navbar.
 	function setStickyState(nextSticky) {
 		isSticky = nextSticky;
 		navbar.classList.toggle(STICKY_CLASS, nextSticky);
+	}
 
-		if (navbarSticky) {
-			navbarSticky.classList.toggle(STICKY_CLASS, nextSticky);
-		}
-
-		if (navbarContainer) {
-			navbarContainer.classList.toggle(STICKY_CLASS, nextSticky);
-		}
+	// Под ScrollSmoother нативная прокрутка и визуальная расходятся: на iOS нативная
+	// может стоять на нуле, пока контент уже уехал, а во время инерции — наоборот.
+	// Берём максимум, чтобы шапка залипала по любому из двух признаков.
+	function getScrollTop() {
+		return Math.max(getNativeScrollTop(), getVisualScrollTop());
 	}
 
 	function getVisualScrollTop() {
@@ -163,19 +129,11 @@
 			return Math.max(0, smootherScrollTop);
 		}
 
-		return Math.max(0, window.scrollY || window.pageYOffset || 0);
+		return getNativeScrollTop();
 	}
 
 	function getNativeScrollTop() {
 		return Math.max(0, window.scrollY || window.pageYOffset || 0);
-	}
-
-	function getStickyActivationScrollTop() {
-		return Math.max(getNativeScrollTop(), getVisualScrollTop());
-	}
-
-	function getStickyReleaseScrollTop() {
-		return Math.max(getNativeScrollTop(), getVisualScrollTop());
 	}
 
 	function shouldContinueStickyMonitor() {
@@ -220,6 +178,8 @@
 		} catch (error) {
 			return null;
 		}
+
+		return null;
 	}
 
 	function getSmoother() {

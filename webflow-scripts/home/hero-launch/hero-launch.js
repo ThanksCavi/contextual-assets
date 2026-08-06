@@ -197,7 +197,10 @@
 	}
 
 	function getRevealGroups(hero) {
-		var nav = document.querySelector('.navbar.w-nav');
+		// Анимируем полосу внутри шапки, а не саму .navbar: у .navbar есть fixed-потомок
+		// (.offcanvas-menu), и transform/will-change на ней делает её containing block'ом —
+		// мобильное меню уезжает на инсет шапки. Контракт описан в navbar.css.
+		var nav = document.querySelector('.navbar.w-nav .navbar-sticky');
 		var markedItems = Array.prototype.slice.call(hero.querySelectorAll('[data-hero-intro-reveal]'));
 		var after = Array.prototype.slice.call(document.querySelectorAll('[data-hero-intro-after]'));
 		var primary = [];
