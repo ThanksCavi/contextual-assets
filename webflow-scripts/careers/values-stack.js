@@ -80,8 +80,16 @@
 			'bottom ' + (stackTop() + STACK_STEP_PX * lastIndex + lastCard.offsetHeight);
 
 		// На тач-устройствах пин через `position: fixed` перерисовывается не в такт
-		// с инерционным скроллом; transform едет вместе со страницей.
-		const pinType = ScrollTrigger.isTouch === 1 ? 'transform' : 'fixed';
+		// с инерционным скроллом; transform едет вместе со страницей. Только там
+		// мы pinType и задаём.
+		//
+		// Везде остальном его нельзя задавать вообще: под ScrollSmoother
+		// `#smooth-content` трансформирован, а трансформированный предок
+		// становится containing block'ом для `position: fixed` — запиненная
+		// карточка прибивается не к экрану, а к уезжающему контенту и улетает
+		// за его пределы. ScrollTrigger сам определяет этот случай и берёт
+		// `transform`; явное значение ломает автоопределение.
+		const pinTypeOverride = ScrollTrigger.isTouch === 1 ? {pinType: 'transform'} : null;
 
 		gsap.matchMedia().add(MIN_VIEWPORT_QUERY, () => {
 			wrappers.forEach((wrapper, i) => {
@@ -100,7 +108,7 @@
 						scrub: true,
 						pin: wrapper,
 						pinSpacing: false,
-						pinType,
+						...pinTypeOverride,
 						invalidateOnRefresh: true,
 					},
 				});
