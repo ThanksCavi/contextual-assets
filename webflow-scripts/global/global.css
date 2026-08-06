@@ -213,7 +213,19 @@
 	left: 0;
 }
 
-/* HORIZONTAL SCROLLBAR */
+/* HORIZONTAL SCROLLBAR
+   The rows below 992px are excluded on purpose: there the bar under them is the
+   one we draw (SCROLL INDICATOR below), and styling the native one is not merely
+   redundant — it is what put a second bar on the client's iPad. Touch WebKit
+   leaves the native bar as a transient overlay only while nothing styles it; a
+   single ::-webkit-scrollbar rule makes it swap that overlay for a classic bar it
+   paints permanently, and the iPadOS versions before 17 ignore `display: none` on
+   the very same pseudo-element, so the bar we meant to hide stayed sitting under
+   ours. Newer iPadOS drops these rules on touch altogether — hence the same page
+   reading clean on an 11" Air and doubled on every iPad before it.
+
+   Above 992px nothing changes: the classic bar is permanent there anyway, so it
+   is ours to style. */
 :root {
 	--horizontal-scrollbar-size: 16px;
 	--horizontal-scrollbar-track: #f8f7f3;
@@ -222,61 +234,88 @@
 	--horizontal-scrollbar-radius: 999px;
 }
 
-:where(
-  [data-horizontal-scroll],
-  [data-horizontal-scroll] *,
-  [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *,
-  .article .w-embed:has(> table)
-) {
+@media screen and (min-width: 992px) {
+	:where(
+	  [data-horizontal-scroll],
+	  [data-horizontal-scroll] *,
+	  [data-horizontal-scroll-dark],
+	  [data-horizontal-scroll-dark] *
+	) {
+		scrollbar-color: var(--horizontal-scrollbar-thumb) var(--horizontal-scrollbar-track);
+		scrollbar-width: thin;
+	}
+
+	:where(
+	  [data-horizontal-scroll],
+	  [data-horizontal-scroll] *,
+	  [data-horizontal-scroll-dark],
+	  [data-horizontal-scroll-dark] *
+	)::-webkit-scrollbar:horizontal {
+		height: var(--horizontal-scrollbar-size) !important;
+		background: transparent !important;
+	}
+
+	:where(
+	  [data-horizontal-scroll],
+	  [data-horizontal-scroll] *,
+	  [data-horizontal-scroll-dark],
+	  [data-horizontal-scroll-dark] *
+	)::-webkit-scrollbar-track:horizontal {
+		border: 0 !important;
+		border-radius: var(--horizontal-scrollbar-radius) !important;
+		background: var(--horizontal-scrollbar-track) !important;
+		box-shadow: none !important;
+	}
+
+	:where(
+	  [data-horizontal-scroll],
+	  [data-horizontal-scroll] *,
+	  [data-horizontal-scroll-dark],
+	  [data-horizontal-scroll-dark] *
+	)::-webkit-scrollbar-thumb:horizontal {
+		border: 0 !important;
+		border-radius: var(--horizontal-scrollbar-radius) !important;
+		background: var(--horizontal-scrollbar-thumb) !important;
+		box-shadow: none !important;
+	}
+
+	:where(
+	  [data-horizontal-scroll],
+	  [data-horizontal-scroll] *,
+	  [data-horizontal-scroll-dark],
+	  [data-horizontal-scroll-dark] *
+	)::-webkit-scrollbar-thumb:horizontal:hover {
+		background: var(--horizontal-scrollbar-thumb-hover) !important;
+	}
+}
+
+/* An article table is the one scroller nobody draws a bar for, so the styled
+   native bar is all it has and it keeps it at every width. One bar, never two. */
+:where(.article .w-embed:has(> table)) {
 	scrollbar-color: var(--horizontal-scrollbar-thumb) var(--horizontal-scrollbar-track);
 	scrollbar-width: thin;
 }
 
-:where(
-  [data-horizontal-scroll],
-  [data-horizontal-scroll] *,
-  [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *,
-  .article .w-embed:has(> table)
-)::-webkit-scrollbar:horizontal {
+:where(.article .w-embed:has(> table))::-webkit-scrollbar:horizontal {
 	height: var(--horizontal-scrollbar-size) !important;
 	background: transparent !important;
 }
 
-:where(
-  [data-horizontal-scroll],
-  [data-horizontal-scroll] *,
-  [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *,
-  .article .w-embed:has(> table)
-)::-webkit-scrollbar-track:horizontal {
+:where(.article .w-embed:has(> table))::-webkit-scrollbar-track:horizontal {
 	border: 0 !important;
 	border-radius: var(--horizontal-scrollbar-radius) !important;
 	background: var(--horizontal-scrollbar-track) !important;
 	box-shadow: none !important;
 }
 
-:where(
-  [data-horizontal-scroll],
-  [data-horizontal-scroll] *,
-  [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *,
-  .article .w-embed:has(> table)
-)::-webkit-scrollbar-thumb:horizontal {
+:where(.article .w-embed:has(> table))::-webkit-scrollbar-thumb:horizontal {
 	border: 0 !important;
 	border-radius: var(--horizontal-scrollbar-radius) !important;
 	background: var(--horizontal-scrollbar-thumb) !important;
 	box-shadow: none !important;
 }
 
-:where(
-  [data-horizontal-scroll],
-  [data-horizontal-scroll] *,
-  [data-horizontal-scroll-dark],
-  [data-horizontal-scroll-dark] *,
-  .article .w-embed:has(> table)
-)::-webkit-scrollbar-thumb:horizontal:hover {
+:where(.article .w-embed:has(> table))::-webkit-scrollbar-thumb:horizontal:hover {
 	background: var(--horizontal-scrollbar-thumb-hover) !important;
 }
 
@@ -360,14 +399,24 @@
 		display: block;
 	}
 
-	/* The indicator replaces the native bar, it does not join it: Android Chrome
-	   turns the rules above into a classic bar that would sit right underneath. */
+	/* The indicator replaces the native bar, it does not join it. Nothing styles
+	   the native bar down here any more, but a desktop browser at this width
+	   still draws its own classic one, which would sit right underneath ours.
+
+	   Zero size next to `display: none` because the two are not the same claim:
+	   older WebKit ignores display on a scrollbar pseudo-element and lays the bar
+	   out anyway, and then honours the size. Whichever of the two an engine
+	   listens to, the bar has nothing left to occupy. */
 	.is-scroll-indicated {
 		scrollbar-width: none;
 	}
 
-	.is-scroll-indicated::-webkit-scrollbar {
-		display: none;
+	.is-scroll-indicated::-webkit-scrollbar,
+	.is-scroll-indicated::-webkit-scrollbar:horizontal {
+		display: none !important;
+		width: 0 !important;
+		height: 0 !important;
+		background: transparent !important;
 	}
 }
 
