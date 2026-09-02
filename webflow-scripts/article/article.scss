@@ -11,6 +11,16 @@
 		margin-top: 34px;
 		margin-bottom: 40px;
 	}
+
+	// Every video spans the column regardless of the editor's alignment choice. Webflow scales
+	// the inline padding-bottom to its 60% figure width, so the ratio is fixed here instead.
+	figure.w-richtext-figure-type-video {
+		width: 100%;
+		max-width: 100%;
+		height: auto;
+		aspect-ratio: 16 / 9;
+		padding-bottom: 0 !important;
+	}
 	
 	img,
 	.rich-video {
@@ -124,7 +134,16 @@
 	p {
 		strong {
 			font-weight: inherit;
-			color: var(--_system-colors---light);
+			color: var(--_colors---body);
+		}
+	}
+	
+	&.is-dark {
+		li,
+		p {
+			strong {
+				color: var(--_colors---body-light);
+			}
 		}
 	}
 	
@@ -197,6 +216,10 @@
 					-webkit-mask-size: contain;
 					mask-size: contain;
 					box-sizing: border-box;
+				}
+				
+				strong {
+					font-weight: 700;
 				}
 			}
 		}

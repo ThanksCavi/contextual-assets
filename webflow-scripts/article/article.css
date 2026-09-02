@@ -9,6 +9,13 @@
   margin-top: 34px;
   margin-bottom: 40px;
 }
+.article figure.w-richtext-figure-type-video {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 16/9;
+  padding-bottom: 0 !important;
+}
 .article img,
 .article .rich-video {
   border-radius: 20px;
@@ -114,7 +121,11 @@
 .article li strong,
 .article p strong {
   font-weight: inherit;
-  color: var(--_system-colors---light);
+  color: var(--_colors---body);
+}
+.article.is-dark li strong,
+.article.is-dark p strong {
+  color: var(--_colors---body-light);
 }
 .article ol,
 .article ul {
@@ -176,6 +187,9 @@
   -webkit-mask-size: contain;
   mask-size: contain;
   box-sizing: border-box;
+}
+.article.has-checklist-cards ul li strong {
+  font-weight: 700;
 }
 .article.has-checklist-cards.is-dark ul li {
   isolation: isolate;
