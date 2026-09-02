@@ -179,13 +179,53 @@
 }
 
 /* RICH TEXT VIDEO */
+/* Классы создаются только скриптом в Site Footer (обёртка YouTube/Vimeo iframe'ов),
+   на канвасе их нет — поэтому в Designer они считаются «неиспользуемыми» и были
+   удалены при чистке стилей. Раскладка живёт здесь, чтобы это не повторилось. */
+.rich-video {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	cursor: pointer;
+	background-color: #000;
+}
+
+.rich-video-thumb {
+	width: 100%;
+	height: 100%;
+	background-position: 50% 50%;
+	background-size: cover;
+}
+
 .rich-video iframe {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
 	border: none;
 }
 
 .rich-video-play {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 100px;
+	height: 100px;
+	transform: translate(-50%, -50%);
+	pointer-events: none;
+	background-repeat: no-repeat;
 	background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='50' r='50' fill='%236881FF'/%3E%3Cpath d='M44.3999 59.625L44.8282 59.2285C46.7439 57.1228 47.0836 51.9346 47.0836 50.117C47.0836 48.1715 46.6945 42.7332 44.3999 40.609L54.6702 50.117L44.8282 59.2285C44.6934 59.3767 44.5507 59.5096 44.3999 59.625Z' fill='%23FAF9F5'/%3E%3Cpath d='M47.0836 50.117C47.0836 48.1715 46.6945 42.7332 44.3999 40.609L54.6702 50.117L44.3999 59.625C46.6945 57.8697 47.0836 52.0625 47.0836 50.117ZM54.6702 50.117L47.0836 50.117' stroke='%23FAF9F5' stroke-width='2'/%3E%3C/svg%3E");
 	background-size: contain;
+}
+
+@media screen and (max-width: 767px) {
+	.rich-video-play {
+		width: 72px;
+		height: 72px;
+	}
 }
 
 /* TEXT BUTTON BORDER */
