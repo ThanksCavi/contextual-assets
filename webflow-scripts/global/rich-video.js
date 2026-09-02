@@ -1,9 +1,4 @@
-/*
- * Rich-text video: превью + кнопка play вместо YouTube/Vimeo iframe'ов.
- * Раньше жил инлайном в Site Settings → Custom code → Footer; вынесен сюда 02.09.2026.
- * Стили классов .rich-video / .rich-video-thumb / .rich-video-play — в global/global.css
- * (раздел RICH TEXT VIDEO). Подключение: <script src=".../global/rich-video.js?v=1&build=<sha>">.
- */
+/* Rich-text video embeds: YouTube/Vimeo iframe -> thumbnail + play, iframe injected on click. Styles: global.css */
 document.addEventListener('DOMContentLoaded', () => {
   const VIDEO_IFRAME_SELECTOR = [
     'iframe[src*="youtube.com"]',
@@ -137,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         type: 'vimeo',
         videoId: vimeoId,
-        thumbUrl: '', // превью Vimeo приходит из oEmbed ниже; via.placeholder.com мёртв
+        thumbUrl: '', // filled from Vimeo oEmbed below
         fallbackThumbUrl: ''
       };
     }

@@ -178,10 +178,7 @@
 	transition: none;
 }
 
-/* RICH TEXT VIDEO */
-/* Классы создаются только скриптом в Site Footer (обёртка YouTube/Vimeo iframe'ов),
-   на канвасе их нет — поэтому в Designer они считаются «неиспользуемыми» и были
-   удалены при чистке стилей. Раскладка живёт здесь, чтобы это не повторилось. */
+/* RICH TEXT VIDEO — runtime classes created by rich-video.js */
 .rich-video {
 	position: absolute;
 	top: 0;
@@ -672,5 +669,31 @@
 @media (prefers-reduced-motion: reduce) {
 	[data-reveal-accordion] * {
 		transition: none !important;
+	}
+}
+
+/* FOOTER — link groups collapse into accordions below 992px, see global.js */
+.footer-links {
+	overflow: hidden;
+	max-height: 0;
+	transition: max-height 0.35s ease;
+}
+
+.footer-accordion.is-open .footer-links {
+	max-height: 500px;
+}
+
+.footer-toggle {
+	cursor: pointer;
+}
+
+@media screen and (min-width: 991px) {
+	.footer-links {
+		max-height: none;
+		overflow: visible;
+	}
+
+	.footer-toggle {
+		cursor: default;
 	}
 }

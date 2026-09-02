@@ -732,3 +732,74 @@
     initAll();
   }
 })();
+
+/* FOOTER — copyright year and mobile link accordions */
+(() => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const year = document.getElementById('copyright-year');
+    if (year) year.textContent = new Date().getFullYear();
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileBreakpoint = window.matchMedia('(max-width: 991px)');
+    const accordions = document.querySelectorAll('.footer-accordion');
+
+    function initFooterAccordions() {
+      accordions.forEach((accordion) => {
+        const toggle = accordion.querySelector('.footer-toggle');
+        const content = accordion.querySelector('.footer-links');
+
+        if (!toggle || !content) return;
+
+        if (toggle.dataset.footerAccordionInit === 'true') return;
+        toggle.dataset.footerAccordionInit = 'true';
+
+        toggle.setAttribute('aria-expanded', 'false');
+        content.style.maxHeight = '0px';
+
+        toggle.addEventListener('click', (event) => {
+          if (!mobileBreakpoint.matches) return;
+
+          event.preventDefault();
+
+          const isOpen = accordion.classList.contains('is-open');
+
+          accordion.classList.toggle('is-open', !isOpen);
+          toggle.setAttribute('aria-expanded', String(!isOpen));
+
+          content.style.maxHeight = isOpen ? '0px' : `${content.scrollHeight}px`;
+        });
+
+        content.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', (event) => {
+            event.stopPropagation();
+          });
+        });
+      });
+    }
+
+    function resetFooterAccordions() {
+      accordions.forEach((accordion) => {
+        const toggle = accordion.querySelector('.footer-toggle');
+        const content = accordion.querySelector('.footer-links');
+
+        if (!toggle || !content) return;
+
+        accordion.classList.remove('is-open');
+
+        if (mobileBreakpoint.matches) {
+          toggle.setAttribute('aria-expanded', 'false');
+          content.style.maxHeight = '0px';
+        } else {
+          toggle.setAttribute('aria-expanded', 'true');
+          content.style.maxHeight = 'none';
+        }
+      });
+    }
+
+    initFooterAccordions();
+    resetFooterAccordions();
+
+    mobileBreakpoint.addEventListener('change', resetFooterAccordions);
+  });
+})();
