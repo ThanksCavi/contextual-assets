@@ -93,8 +93,10 @@
 	}
 }
 
-/* Abilities (§5a): connector lines drawn by what-we-do.js behind the grid. */
-.wwd-abilities-lines {
+/* Abilities (§5a): connector lines drawn by what-we-do.js behind the grid.
+   Scoped to the wrapper to outrank Webflow's `svg:not(:root) { overflow: hidden }`:
+   the collector and arrows sit below the grid, outside the svg box. */
+[data-wwd-abilities] > .wwd-abilities-lines {
 	position: absolute;
 	inset: 0;
 	z-index: 0;
