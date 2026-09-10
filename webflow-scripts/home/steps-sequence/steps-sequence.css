@@ -146,8 +146,8 @@
 		line-height 360ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	/* Card-level selector so the JS measuring clone gets the same open-state size. */
-	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card].is-open .steps-number {
+	/* No slider ancestor: the JS measuring clone lives in document.body. */
+	[data-steps-card].is-open .steps-number {
 		font-size: var(--_sizes---s--80);
 	}
 }
