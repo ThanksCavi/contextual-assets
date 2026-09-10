@@ -14,9 +14,10 @@
    ScrollSmoother и без normalizeScroll. Ограничение поэтому не по типу ввода,
    а по высоте экрана, см. MIN_VIEWPORT_QUERY. */
 (() => {
-	const SECTION_SELECTOR = '#wrapper';
-	const WRAPPER_SELECTOR = '.card-wrapper';
-	const CARD_SELECTOR = '.card-tab';
+	// Careers markup keeps its classes; other pages opt in with data attributes.
+	const SECTION_SELECTOR = '#wrapper, [data-values-stack]';
+	const WRAPPER_SELECTOR = '.card-wrapper, [data-values-stack-item]';
+	const CARD_SELECTOR = '.card-tab, [data-values-stack-card]';
 	const NAVBAR_SELECTOR = '.navbar.w-nav';
 
 	// Сдвиг каждой следующей карточки в собранной стопке.

@@ -1,0 +1,130 @@
+/* What We Do — page styles. Markup contract: data attributes set in Designer,
+   see what-we-do.js for the behaviour that goes with each block. */
+
+/* Hero anchors: the arrow is an <img>, so the hover state recolours it here. */
+.wwd-hero-anchor-icon {
+	transition: filter 200ms ease;
+}
+
+.wwd-hero-anchor:hover .wwd-hero-anchor-icon {
+	filter: brightness(0);
+}
+
+/* Assemble mark (§4). The slot is sized here so --s scales box and stage together. */
+[data-wwd-assemble] {
+	--s: 1;
+	position: relative;
+	width: calc(330px * var(--s));
+	height: calc(300px * var(--s));
+	flex: none;
+	overflow: hidden;
+}
+
+.wwd-assemble {
+	position: absolute;
+	left: calc(4.44px * var(--s));
+	top: calc(4.5px * var(--s));
+	width: 321.12px;
+	height: 291px;
+	transform: scale(var(--s));
+	transform-origin: top left;
+}
+
+.wwd-assemble-mark {
+	position: absolute;
+	left: 65.56px;
+	top: 49.5px;
+	overflow: visible;
+}
+
+.wwd-assemble-px,
+.wwd-assemble-py {
+	transform-box: fill-box;
+	transform-origin: center;
+	will-change: transform;
+	transition-delay: var(--d);
+}
+
+.wwd-assemble-px {
+	transform: translateX(var(--dx));
+	transition-property: transform;
+	transition-duration: 1.6s;
+	transition-timing-function: cubic-bezier(0.35, 0.05, 0.2, 1);
+}
+
+.wwd-assemble-py {
+	transform: translateY(var(--dy)) rotate(var(--rot)) scale(var(--sc));
+	transition-property: transform;
+	transition-duration: 1.6s;
+	transition-timing-function: cubic-bezier(0.6, 0, 0.15, 1);
+}
+
+.wwd-assemble.is-in .wwd-assemble-px {
+	transform: translateX(0);
+}
+
+.wwd-assemble.is-in .wwd-assemble-py {
+	transform: translateY(0) rotate(0) scale(1);
+}
+
+@media (min-width: 1920px) {
+	[data-wwd-assemble] {
+		--s: 1.2;
+	}
+}
+
+@media (max-width: 991px) {
+	[data-wwd-assemble] {
+		--s: 0.8;
+	}
+}
+
+@media (max-width: 767px) {
+	[data-wwd-assemble] {
+		--s: 0.7;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wwd-assemble-px,
+	.wwd-assemble-py {
+		transition: none;
+		transform: none;
+	}
+}
+
+/* Abilities (§5a): connector lines drawn by what-we-do.js behind the grid. */
+.wwd-abilities-lines {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+}
+
+/* On desktop the families are static columns: the reveal accordion from
+   global.js stays wired for the stacked layout but is neutralised here. */
+@media (min-width: 992px) {
+	.wwd-abilities [data-reveal-accordion-detail] {
+		grid-template-rows: 1fr;
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	.wwd-abilities [data-reveal-accordion-icon] {
+		display: none;
+	}
+
+	.wwd-abilities [data-reveal-accordion-toggle] {
+		pointer-events: none;
+		cursor: default;
+	}
+}
+
+@media (max-width: 991px) {
+	.wwd-abilities-lines {
+		display: none;
+	}
+}
