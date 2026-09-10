@@ -1,0 +1,99 @@
+/* Platform — page styles. Markup contract: data attributes set in Designer,
+   see platform.js for the behaviour that goes with each block. */
+
+/* Stages (§4). Designer holds the closed layout; the open state lives here
+   because platform.js toggles it at runtime. */
+[data-plt-stage] {
+	transition: flex-grow 0.5s ease, background-color 0.3s ease;
+}
+
+[data-plt-stage].is-open {
+	background-color: var(--_system-colors---primary);
+	color: var(--_system-colors---light);
+	cursor: default;
+}
+
+[data-plt-stage].is-open .plt-stage-marker {
+	background-color: var(--_system-colors---dark);
+}
+
+[data-plt-stage].is-open [data-plt-stage-label] {
+	color: var(--_system-colors---light);
+}
+
+[data-plt-stage]:focus-visible {
+	outline: 2px solid var(--_system-colors---dark);
+	outline-offset: 2px;
+}
+
+@keyframes plt-stage-reveal {
+	from {
+		opacity: 0;
+	}
+}
+
+@media (min-width: 992px) {
+	[data-plt-stage].is-open {
+		flex-grow: 1;
+	}
+
+	[data-plt-stage]:not(.is-open) [data-plt-stage-body],
+	[data-plt-stage].is-open [data-plt-stage-label] {
+		display: none;
+	}
+
+	/* The body shows up once the stage has mostly finished widening. */
+	[data-plt-stage].is-open [data-plt-stage-body] {
+		animation: plt-stage-reveal 0.35s ease 0.25s both;
+	}
+}
+
+/* Stacked layout: stages form an accordion, the open one reveals its text. */
+@media (max-width: 991px) {
+	[data-plt-stage-body] {
+		display: grid;
+		grid-template-rows: 0fr;
+		transition: grid-template-rows 0.4s ease;
+	}
+
+	[data-plt-stage].is-open [data-plt-stage-body] {
+		grid-template-rows: 1fr;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-plt-stage],
+	[data-plt-stage-body] {
+		transition: none;
+	}
+
+	[data-plt-stage].is-open [data-plt-stage-body] {
+		animation: none;
+	}
+}
+
+/* Case cards (§10): "Read more" replaces the summary on hover and keyboard
+   focus; touch screens show both. */
+@media (hover: hover) {
+	.plt-case-card:hover .plt-case-body {
+		display: none;
+	}
+
+	.plt-case-card:hover .plt-case-more {
+		display: block;
+	}
+}
+
+.plt-case-card:focus-visible .plt-case-body {
+	display: none;
+}
+
+.plt-case-card:focus-visible .plt-case-more {
+	display: block;
+}
+
+@media (hover: none) {
+	.plt-case-more {
+		display: block;
+	}
+}
