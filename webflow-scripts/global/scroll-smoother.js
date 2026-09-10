@@ -38,6 +38,7 @@
 	let lastViewportHeight = window.innerHeight;
 	let initialHashAttemptsLeft = INITIAL_HASH_ATTEMPTS;
 	let userTookOverScroll = false;
+	let anchorTween = null;
 	const ready = new Promise((resolve) => {
 		resolveReady = resolve;
 	});
@@ -485,16 +486,38 @@
 	}
 
 	function scrollToAnchor(target, options = {}) {
-		const behavior = options.behavior || (getMotionPolicy().prefersReducedMotion ? 'auto' : 'smooth');
 		const offset = getTargetOffset(target);
 		const smoother = getSmoother();
+		const top = clampScrollTop(smoother
+			? smoother.offset(target, `top ${offset}px`)
+			: getScrollTop() + target.getBoundingClientRect().top - offset);
+		const instant = options.behavior === 'auto' || getMotionPolicy().prefersReducedMotion || !window.gsap;
 
-		if (smoother) {
-			scrollTo(target, {behavior, position: `top ${offset}px`});
+		if (anchorTween) anchorTween.kill();
+		anchorTween = null;
+
+		if (instant) {
+			scrollTo(top);
 			return;
 		}
 
-		scrollTo(getScrollTop() + target.getBoundingClientRect().top - offset, {behavior});
+		// Write the position every frame, as Webflow's handler did: a smooth
+		// smoother.scrollTo() gives way to wheel momentum still arriving from the
+		// user's own scroll, and the page rolls back short of the target.
+		const from = getScrollTop();
+		const state = {top: from};
+		anchorTween = window.gsap.to(state, {
+			top,
+			duration: getAnchorScrollDuration(Math.abs(top - from)),
+			ease: 'power3.inOut',
+			onUpdate: () => (smoother ? smoother.scrollTop(state.top) : window.scrollTo(0, state.top)),
+			onComplete: () => { anchorTween = null; },
+		});
+	}
+
+	// Webflow's anchor timing: longer jumps take longer, but not linearly.
+	function getAnchorScrollDuration(distance) {
+		return Math.max(0, 472.143 * Math.log(distance + 125) - 2000) / 1000;
 	}
 
 	// Webflow offsets its own anchor scrolling by the height of the fixed navbar;
