@@ -234,6 +234,11 @@
   top: 0;
   color: var(--_system-colors---primary);
 }
+@media (min-width: 1920px) {
+  .article ol li:before {
+    font-size: 18px;
+  }
+}
 .article section.card {
   width: 100%;
   padding: 38px 40px;

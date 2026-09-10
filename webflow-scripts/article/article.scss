@@ -277,6 +277,10 @@
 				left: 0;
 				top: 0;
 				color: var(--_system-colors---primary);
+				
+				@media (min-width: 1920px) {
+					font-size: 18px;
+				}
 			}
 		}
 	}
