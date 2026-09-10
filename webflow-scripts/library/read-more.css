@@ -1,0 +1,104 @@
+/* Read More on /news and /resources: the featured panel and the list cards.
+   Static by default (touch, narrow windows): the button sits above the meta chips.
+   Hover mode (mouse and 768px+): the button takes the chips' place on hover. */
+
+.card-link {
+  z-index: 10;
+}
+
+.featured-actions,
+.article-link .grid-row {
+  grid-template-rows: auto auto;
+}
+
+.featured-actions > .read-more,
+.featured-actions > .card-blog-description,
+.article-link .grid-row > .read-more,
+.article-link .grid-row > .card-blog-description {
+  grid-column: 1;
+  justify-self: center;
+  transition-duration: 0.5s;
+}
+
+.featured-actions > .read-more,
+.article-link .grid-row > .read-more {
+  grid-row: 1;
+  z-index: 0;
+}
+
+.featured-actions > .card-blog-description,
+.article-link .grid-row > .card-blog-description {
+  grid-row: 2;
+}
+
+.featured-panel .featured-title,
+.article-link .card-blog-title {
+  transition-duration: 0.5s;
+}
+
+@media (hover: hover) and (min-width: 768px) {
+  .featured-actions,
+  .article-link .grid-row {
+    grid-template-rows: auto;
+  }
+
+  .featured-panel .featured-actions {
+    align-items: start;
+  }
+
+  .featured-panel .featured-actions > .read-more,
+  .featured-panel .featured-actions > .card-blog-description {
+    grid-row: 1;
+  }
+
+  .article-link .featured-actions > .read-more,
+  .article-link .featured-actions > .card-blog-description,
+  .article-link .grid-row > .read-more,
+  .article-link .grid-row > .card-blog-description {
+    grid-row: 2;
+  }
+
+  .featured-actions > .read-more,
+  .article-link .grid-row > .read-more {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+
+  .featured-actions > .card-blog-description,
+  .article-link .grid-row > .card-blog-description {
+    will-change: opacity, transform;
+  }
+
+  .featured-panel:hover .read-more,
+  .featured-panel:focus-within .read-more,
+  .article-link:hover .read-more,
+  .article-link:focus-within .read-more,
+  .card-link:hover + .article-link .read-more,
+  .card-link:focus-visible + .article-link .read-more {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0);
+    pointer-events: auto;
+  }
+
+  .featured-panel:hover .card-blog-description,
+  .featured-panel:focus-within .card-blog-description,
+  .article-link:hover .card-blog-description,
+  .article-link:focus-within .card-blog-description,
+  .card-link:hover + .article-link .card-blog-description,
+  .card-link:focus-visible + .article-link .card-blog-description {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+    filter: blur(2px);
+  }
+
+  .featured-panel:hover .featured-title,
+  .featured-panel:focus-within .featured-title,
+  .article-link:hover .card-blog-title,
+  .article-link:focus-within .card-blog-title,
+  .card-link:hover + .article-link .card-blog-title,
+  .card-link:focus-visible + .article-link .card-blog-title {
+    transform: translate3d(0, -10px, 0);
+  }
+}
