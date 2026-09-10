@@ -128,7 +128,26 @@
 					},
 				});
 			});
+
+			// An anchor to a card lands it in its slot of the stack, not flush
+			// under the navbar (scroll-smoother.js honours scroll-margin-top).
+			const alignAnchors = () => wrappers.forEach((wrapper, i) => {
+				const slot = stackTop() + STACK_STEP_PX * i - anchorOffset();
+				wrapper.style.scrollMarginTop = Math.max(0, slot) + 'px';
+			});
+			alignAnchors();
+			ScrollTrigger.addEventListener('refreshInit', alignAnchors);
+
+			return () => {
+				ScrollTrigger.removeEventListener('refreshInit', alignAnchors);
+				wrappers.forEach((wrapper) => { wrapper.style.scrollMarginTop = ''; });
+			};
 		});
+	}
+
+	function anchorOffset() {
+		const motion = window.ContextualHomeMotion;
+		return motion && typeof motion.getAnchorOffset === 'function' ? motion.getAnchorOffset() : 0;
 	}
 
 	// Стопка не должна уезжать под фиксированный navbar: его нижний край =

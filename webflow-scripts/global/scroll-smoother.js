@@ -54,9 +54,11 @@
 		scrollBy,
 		scrollTo,
 		getScrollTop,
+		getAnchorOffset,
 	});
 
 	window.addEventListener('hashchange', handleHashChange);
+	(window.Webflow = window.Webflow || []).push(bindAnchorClicks);
 	['wheel', 'touchstart', 'keydown'].forEach(type => {
 		window.addEventListener(type, markUserScroll, {passive: true, once: true});
 	});
@@ -412,9 +414,37 @@
 	// #smooth-wrapper, so the browser has nothing left to scroll for a URL
 	// fragment: `/page#id` lands at the very top, and a later hash change drags
 	// the wrapper's hidden overflow instead, leaving the smoother desynced.
-	// Clicks on same-page links are not our business -- Webflow's own anchor
-	// handler scrolls the window properly and stays in sync; only arriving with a
-	// hash already in the URL is broken, so that is all we take over.
+	// Same-page link clicks are ours too: Webflow's handler offsets only by a
+	// fixed `header` / `body > .w-nav`, and our navbar lives inside
+	// #smooth-wrapper, so it parked every target under the bar.
+
+	// Runs after Webflow's modules are ready, so its handler is already bound.
+	// If the unbind ever stops matching, Webflow's handler runs first and
+	// prevents default, and handleAnchorClick steps aside.
+	function bindAnchorClicks() {
+		if (window.jQuery) window.jQuery(document).off('click.wf-scroll');
+		document.addEventListener('click', handleAnchorClick);
+	}
+
+	function handleAnchorClick(event) {
+		if (event.defaultPrevented || event.button !== 0) return;
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+		const link = event.target.closest && event.target.closest('a[href*="#"]');
+		if (!link || link.target === '_blank' || link.classList.contains('w-tab-link')) return;
+		if (link.host + link.pathname !== window.location.host + window.location.pathname) return;
+
+		const target = getAnchorTarget(decodeHash(link.hash.slice(1)));
+		if (!target) return;
+
+		event.preventDefault();
+		initialHashAttemptsLeft = 0;
+		resetWrapperOverflowScroll();
+		if (window.location.hash !== link.hash) window.history.pushState(null, '', link.hash);
+		// No focus move to the target: ScrollSmoother answers focusin by jumping
+		// the element to the viewport centre, cutting this scroll short.
+		scrollToAnchor(target);
+	}
 
 	function markUserScroll() {
 		userTookOverScroll = true;
@@ -451,12 +481,12 @@
 	}
 
 	function isAnchorSettled(target) {
-		return Math.abs(target.getBoundingClientRect().top - getAnchorOffset()) <= 2;
+		return Math.abs(target.getBoundingClientRect().top - getTargetOffset(target)) <= 2;
 	}
 
 	function scrollToAnchor(target, options = {}) {
 		const behavior = options.behavior || (getMotionPolicy().prefersReducedMotion ? 'auto' : 'smooth');
-		const offset = getAnchorOffset();
+		const offset = getTargetOffset(target);
 		const smoother = getSmoother();
 
 		if (smoother) {
@@ -487,6 +517,12 @@
 		}
 
 		return Math.round(navbar.getBoundingClientRect().height);
+	}
+
+	// A target that must land lower than the bar says so with scroll-margin-top.
+	function getTargetOffset(target) {
+		const margin = parseFloat(window.getComputedStyle(target).scrollMarginTop) || 0;
+		return getAnchorOffset() + margin;
 	}
 
 	function getAnchorTarget(id) {
