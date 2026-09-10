@@ -145,6 +145,11 @@
 		transition: font-size 360ms cubic-bezier(0.16, 1, 0.3, 1),
 		line-height 360ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
+
+	/* Card-level selector so the JS measuring clone gets the same open-state size. */
+	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card].is-open .steps-number {
+		font-size: var(--_sizes---s--80);
+	}
 }
 
 @media (min-width: 992px) and (max-height: 820px) and (prefers-reduced-motion: no-preference) {
