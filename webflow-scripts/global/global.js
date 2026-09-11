@@ -257,6 +257,8 @@
      [data-reveal-accordion]              root; one open item at a time
      [data-reveal-accordion-lock-height]  on the root: pin the cards to a measured
                                           height so the section can never jump
+     [data-reveal-accordion-open-first]   on the root: open the first item on load
+                                          when none is marked `is-open`
      [data-reveal-accordion-item]         card; carries the `is-open` state class
      [data-reveal-accordion-toggle]       click / keyboard target, one or more per card
      [data-reveal-accordion-summary]      closed copy, collapses on open (one child)
@@ -279,6 +281,7 @@
   const MORE_SELECTOR = '[data-reveal-accordion-more]';
   const ICON_SELECTOR = '[data-reveal-accordion-icon]';
   const LOCK_HEIGHT_ATTR = 'data-reveal-accordion-lock-height';
+  const OPEN_FIRST_ATTR = 'data-reveal-accordion-open-first';
   const MEASURING_ATTR = 'data-reveal-accordion-measuring';
   const CARD_HEIGHT_PROPERTY = '--rv-card-h';
   const MORE_HEIGHT_PROPERTY = '--rv-more-h';
@@ -308,12 +311,23 @@
     root.dataset.revealAccordionInstance = String(++rootCounter);
 
     getItems(root).forEach((item, index) => setupItem(root, item, index));
+    openFirstIfNone(root);
     root.addEventListener('click', handleClick);
     root.addEventListener('keydown', handleKeydown);
 
     observeRoot(root);
     bindGlobals();
     measureRoot(root);
+  }
+
+  // Items built from a Webflow component cannot carry their own `is-open`
+  // class, so the root can ask for the first item to start open instead.
+  function openFirstIfNone(root) {
+    if (!root.hasAttribute(OPEN_FIRST_ATTR)) return;
+
+    const items = getItems(root);
+    if (!items.length || items.some((item) => item.classList.contains(OPEN_CLASS))) return;
+    setItemOpen(items[0], true);
   }
 
   function setupItem(root, item, index) {
