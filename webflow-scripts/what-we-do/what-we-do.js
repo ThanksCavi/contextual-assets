@@ -266,7 +266,8 @@
 	}
 })();
 
-/* The Point (§6): the display word zooms in, then the paragraph fades up. */
+/* The Point (§6): the display word zooms in from above (animate.css zoomInDown,
+   toned down to the site's motion policy), then the paragraph fades up. */
 (() => {
 	const WORD_SELECTOR = '[data-wwd-point-word]';
 	const COPY_SELECTOR = '[data-wwd-point-copy]';
@@ -298,9 +299,9 @@
 			const timeline = gsap.timeline({
 				scrollTrigger: {trigger: word, start: 'top 80%', once: true},
 			});
-			timeline.from(word, {opacity: 0, scale: 1.3, y: -40, duration: 0.8, ease: 'power3.out'}, 0);
+			timeline.from(word, {opacity: 0, scale: 0.6, y: -60, duration: 0.9, ease: 'back.out(1.4)'}, 0);
 			if (copy) {
-				timeline.from(copy, {opacity: 0, y: 24, duration: 0.6, ease: 'power2.out'}, 0.5);
+				timeline.from(copy, {opacity: 0, y: 24, duration: 0.6, ease: 'power2.out'}, 0.6);
 			}
 		});
 	}

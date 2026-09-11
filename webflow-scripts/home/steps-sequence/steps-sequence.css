@@ -29,6 +29,12 @@
 	width: 100%;
 }
 
+/* An empty Description prop still renders the block and its flex gap;
+   drop it so the heading keeps the 60px rhythm to the rail (HWW §3). */
+.process-slider .description:empty {
+	display: none;
+}
+
 [data-steps-pin] {
 	position: relative;
 	width: 100%;
