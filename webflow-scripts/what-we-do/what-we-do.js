@@ -5,6 +5,7 @@
      [data-wwd-anchor-label]    label in the first tile, which is the clone template
      [data-values-stack-item]   §3 card; its id is derived from the card title
      [data-wwd-solution-title]  §3 card title, source of the id and the tile label
+     [data-wwd-rich-list]       §3 rich text prop; each line becomes a list item
      [data-wwd-assemble]        §4 empty slot; the assemble mark is injected into it
      [data-wwd-abilities]       §5a wrapper of the family grid; hosts the connector svg
      [data-wwd-family]          one column; [data-wwd-family-label] is its yellow label
@@ -25,6 +26,28 @@
 	const ROW_SELECTOR = '[data-wwd-anchors]';
 	const LABEL_SELECTOR = '[data-wwd-anchor-label]';
 	const ID_PREFIX = 'wwd-solution-';
+	const RICH_LIST_SELECTOR = '[data-wwd-rich-list]';
+	const BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, blockquote';
+	// The rich text prop editor has no list button, so editors type one item per
+	// line; a leading dash or bullet from pasted text is dropped.
+	const BULLET = /^\s*(?:[-–—•*]|&nbsp;)+\s*/;
+
+	document.querySelectorAll(RICH_LIST_SELECTOR).forEach((box) => {
+		if (box.querySelector('ul, ol')) return;
+		const list = document.createElement('ul');
+		box.querySelectorAll(BLOCK_SELECTOR).forEach((block) => {
+			block.innerHTML.split(/<br\s*\/?>/i).forEach((line) => {
+				const html = line.replace(BULLET, '').trim();
+				const probe = document.createElement('div');
+				probe.innerHTML = html;
+				if (!probe.textContent.trim()) return;
+				const item = document.createElement('li');
+				item.innerHTML = html;
+				list.append(item);
+			});
+		});
+		box.replaceChildren(...(list.children.length ? [list] : []));
+	});
 
 	const solutions = [];
 	const used = new Set();

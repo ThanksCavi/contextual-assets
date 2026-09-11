@@ -10,8 +10,8 @@
 	filter: brightness(0);
 }
 
-/* Solutions (§3): "What we build" and "Proof" are Rich Text props, so the
-   list markup comes from the editor and its look lives here. */
+/* Solutions (§3): "What we build" and "Proof" are Rich Text props; what-we-do.js
+   turns their lines into ul/li, and the look of the items lives here. */
 .wwd-solution-list ul,
 .wwd-solution-tags ul {
 	margin: 0;
