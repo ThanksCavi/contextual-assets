@@ -10,6 +10,70 @@
 	filter: brightness(0);
 }
 
+/* Solutions (§3): "What we build" and "Proof" are Rich Text props, so the
+   list markup comes from the editor and its look lives here. */
+.wwd-solution-list ul,
+.wwd-solution-tags ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* Rich Text adds clearfix pseudo-elements; in a flex column with a gap they
+   count as items and add space. */
+.wwd-solution-list.w-richtext::before,
+.wwd-solution-list.w-richtext::after,
+.wwd-solution-tags.w-richtext::before,
+.wwd-solution-tags.w-richtext::after {
+	content: none;
+}
+
+.wwd-solution-list li {
+	display: flex;
+	align-items: center;
+	column-gap: 17px;
+	margin: 0;
+	font-weight: 300;
+	line-height: 1.4444;
+	letter-spacing: -0.01em;
+}
+
+.wwd-solution-list li::before {
+	content: "";
+	flex: none;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background-color: var(--_system-colors---primary);
+}
+
+.wwd-solution-tags ul {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	row-gap: 10px;
+}
+
+.wwd-solution-tags li {
+	margin: 0;
+	padding: 7px 11px;
+	border-radius: 5px;
+	background-color: var(--_system-colors---dark);
+	color: var(--_system-colors---light);
+	font-family: var(--_fonts---family--label);
+	font-size: var(--_fonts---text-size--14);
+	font-weight: 500;
+	line-height: 1.1429;
+	letter-spacing: 0;
+	text-align: center;
+	text-transform: uppercase;
+}
+
+/* An empty Proof prop hides the whole block, label included. */
+.wwd-solution-proof:not(:has(li)) {
+	display: none;
+}
+
 /* Assemble mark (§4). The slot box is sized by the WWD Promise Media class in
    Webflow; --s only scales the stage inside it and must match those sizes. */
 [data-wwd-assemble] {

@@ -1,6 +1,10 @@
 /* What We Do — page behaviour, one module per block.
 
    Contract (Designer sets only data attributes, classes stay free to change):
+     [data-wwd-anchors]         §1 anchor row, rebuilt from the §3 cards
+     [data-wwd-anchor-label]    label in the first tile, which is the clone template
+     [data-values-stack-item]   §3 card; its id is derived from the card title
+     [data-wwd-solution-title]  §3 card title, source of the id and the tile label
      [data-wwd-assemble]        §4 empty slot; the assemble mark is injected into it
      [data-wwd-abilities]       §5a wrapper of the family grid; hosts the connector svg
      [data-wwd-family]          one column; [data-wwd-family-label] is its yellow label
@@ -10,6 +14,54 @@
 
    Scroll-driven motion follows the site policy (ContextualHomeMotion) and runs
    only at desktop widths without reduced motion; otherwise the end state shows. */
+
+/* Solutions (§3 → §1): each card gets an id from its title and the hero row
+   gets one tile per card, so a duplicated card needs no id or link by hand.
+   Runs as the script executes: before values-stack.js starts on
+   DOMContentLoaded and before scroll-smoother.js resolves an incoming hash. */
+(() => {
+	const ITEM_SELECTOR = '[data-values-stack-item]';
+	const TITLE_SELECTOR = '[data-wwd-solution-title]';
+	const ROW_SELECTOR = '[data-wwd-anchors]';
+	const LABEL_SELECTOR = '[data-wwd-anchor-label]';
+	const ID_PREFIX = 'wwd-solution-';
+
+	const solutions = [];
+	const used = new Set();
+
+	document.querySelectorAll(ITEM_SELECTOR).forEach((item) => {
+		const title = item.querySelector(TITLE_SELECTOR);
+		if (!title) return;
+		const label = title.textContent.trim();
+		const base = slugify(label) || 'card';
+		let slug = base;
+		for (let n = 2; used.has(slug); n += 1) slug = `${base}-${n}`;
+		used.add(slug);
+		item.id = ID_PREFIX + slug;
+		solutions.push({id: item.id, label});
+	});
+
+	const row = document.querySelector(ROW_SELECTOR);
+	const label = row && row.querySelector(LABEL_SELECTOR);
+	const template = label && label.closest('a');
+	if (!solutions.length || !template) return;
+
+	row.replaceChildren(...solutions.map((solution) => {
+		const tile = template.cloneNode(true);
+		tile.setAttribute('href', `#${solution.id}`);
+		tile.querySelector(LABEL_SELECTOR).textContent = solution.label;
+		return tile;
+	}));
+
+	function slugify(text) {
+		return text
+			.normalize('NFKD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '');
+	}
+})();
 
 /* Assemble (§4): pieces fly into the mark once the slot is fully in view. */
 (() => {
