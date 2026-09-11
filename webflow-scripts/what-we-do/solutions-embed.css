@@ -63,6 +63,6 @@
 }
 
 /* An empty Proof prop hides the whole block, label included. */
-.wwd-solution-proof:not(:has(li, p)) {
+.wwd-solution-proof:not(:has(.wwd-solution-tags :is(li, p))) {
 	display: none;
 }
