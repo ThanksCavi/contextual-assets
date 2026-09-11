@@ -224,6 +224,12 @@
 		min-height: 0;
 	}
 
+	/* Native-scroll strip: the open card grows on its own, closed cards keep their
+	   natural height instead of stretching to the tallest one in the row. */
+	[data-steps-track] {
+		align-items: flex-start;
+	}
+
 	[data-steps-viewport] {
 		overflow: visible;
 	}
@@ -265,6 +271,7 @@
 }
 
 [data-steps-slider].is-steps-native-scroll [data-steps-track] {
+	align-items: flex-start;
 	overflow-x: auto;
 	overflow-y: hidden;
 	padding-inline: 0;
