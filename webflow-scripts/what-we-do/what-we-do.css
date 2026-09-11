@@ -10,13 +10,11 @@
 	filter: brightness(0);
 }
 
-/* Assemble mark (§4). The slot is sized here so --s scales box and stage together. */
+/* Assemble mark (§4). The slot box is sized by the WWD Promise Media class in
+   Webflow; --s only scales the stage inside it and must match those sizes. */
 [data-wwd-assemble] {
 	--s: 1;
 	position: relative;
-	width: calc(330px * var(--s));
-	height: calc(300px * var(--s));
-	flex: none;
 	overflow: hidden;
 }
 
