@@ -503,6 +503,26 @@
 	opacity: 0.35;
 }
 
+/* Pager hover (brief 4.8): the arrow nudges in its own direction with a soft
+   overshoot. A disabled end stays still and does not read as clickable. */
+[data-drag-lane-prev] img,
+[data-drag-lane-next] img {
+	transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-drag-lane-prev]:not(.is-disabled):hover img {
+	transform: translateX(-4px);
+}
+
+[data-drag-lane-next]:not(.is-disabled):hover img {
+	transform: translateX(4px);
+}
+
+[data-drag-lane-prev].is-disabled,
+[data-drag-lane-next].is-disabled {
+	cursor: default;
+}
+
 /* Desktop drags the lane by the cursor, so the bar is noise there. Below 992 the
    lane is a touch strip and keeps the site scrollbar — see data-horizontal-scroll. */
 @media screen and (min-width: 992px) {

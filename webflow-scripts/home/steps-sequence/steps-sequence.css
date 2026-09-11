@@ -124,7 +124,12 @@
 	opacity 220ms ease;
 }
 
+/* The reveal height is the tallest panel across all steps, so a step without an
+   outcome block centers its copy instead of leaving a gap at the bottom. */
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-reveal] > * {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
 	min-height: 0;
 	overflow: hidden;
 }
@@ -161,8 +166,38 @@
 @media (min-width: 992px) and (max-height: 820px) and (prefers-reduced-motion: no-preference) {
 	[data-steps-slider]:not([data-steps-mode="static"]) {
 		--steps-card-min-height: 580px;
-		--steps-card-height: min(var(--steps-card-dynamic-height, 580px), 580px);
+		--steps-card-height: min(
+			var(--steps-card-dynamic-height, 580px),
+			calc(100vh - var(--steps-pin-safe-top) - var(--steps-pin-safe-bottom))
+		);
 		--steps-intro-stage-gap: 48px;
+	}
+
+	/* Short viewports: tighten the open card so summary and reveal fit the capped
+	   height. Scoped from the card, not the slider: the JS measures a clone of the
+	   card in document.body, and these rules must apply to that clone too. */
+	[data-steps-card] [data-steps-summary] {
+		padding-top: 24px;
+		padding-bottom: 24px;
+	}
+
+	[data-steps-card] .steps-card-title {
+		margin-bottom: 12px;
+	}
+
+	[data-steps-card].is-open .steps-number {
+		font-size: var(--_sizes---s--60);
+		line-height: 1.15;
+	}
+
+	[data-steps-card] .steps-reveal-description,
+	[data-steps-card] .steps-reveal-note {
+		margin-top: 24px;
+		margin-bottom: 24px;
+	}
+
+	[data-steps-card] .steps-reveal-outcome {
+		margin-bottom: 24px;
 	}
 
 	[data-steps-slider]:not([data-steps-mode="static"]).is-steps-ready [data-steps-stage] {
