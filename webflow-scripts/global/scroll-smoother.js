@@ -192,6 +192,10 @@
 				//effectsPrefix: 'smoother-',
 				smoothTouch: false,
 				normalizeScroll: policy.allowNormalizeScroll,
+				// A fractional translateY lands section edges between device pixels and
+				// their anti-aliased edges let the body background bleed through as a
+				// hairline seam while the content is still easing.
+				wholePixels: true,
 			});
 		}
 
