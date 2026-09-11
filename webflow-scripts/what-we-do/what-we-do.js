@@ -31,6 +31,8 @@
 	// The rich text prop editor has no list button, so editors type one item per
 	// line; a leading dash or bullet from pasted text is dropped.
 	const BULLET = /^\s*(?:[-–—•*]|&nbsp;)+\s*/;
+	// Cleared fields keep a zero-width joiner, which is not whitespace.
+	const INVISIBLE = /[\u200b-\u200d\ufeff]/g;
 
 	document.querySelectorAll(RICH_LIST_SELECTOR).forEach((box) => {
 		if (box.querySelector('ul, ol')) return;
@@ -40,7 +42,7 @@
 				const html = line.replace(BULLET, '').trim();
 				const probe = document.createElement('div');
 				probe.innerHTML = html;
-				if (!probe.textContent.trim()) return;
+				if (!probe.textContent.replace(INVISIBLE, '').trim()) return;
 				const item = document.createElement('li');
 				item.innerHTML = html;
 				list.append(item);
