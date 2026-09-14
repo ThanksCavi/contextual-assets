@@ -707,6 +707,22 @@
 	}
 }
 
+/* FOOTER — ScrollSmoother rounds the body height up to a whole pixel, which can
+   leave a sub-pixel gap under the content; extend the footer colour into it. */
+.site-footer-extended {
+	position: relative;
+}
+
+.site-footer-extended::after {
+	content: "";
+	position: absolute;
+	top: 100%;
+	right: 0;
+	left: 0;
+	height: 1px;
+	background: inherit;
+}
+
 /* FOOTER — link groups collapse into accordions below 992px, see global.js */
 .footer-links {
 	overflow: hidden;
