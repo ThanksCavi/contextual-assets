@@ -709,10 +709,12 @@
 
 /* FOOTER — ScrollSmoother rounds the body height up to a whole pixel, which can
    leave a sub-pixel gap under the content; extend the footer colour into it. */
+.site-footer,
 .site-footer-extended {
 	position: relative;
 }
 
+.site-footer::after,
 .site-footer-extended::after {
 	content: "";
 	position: absolute;
