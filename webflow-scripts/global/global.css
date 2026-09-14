@@ -1,3 +1,17 @@
+/* FOCUS RING
+   Keyboard focus only. Webflow's base CSS zeroes the outline on its own
+   dropdown, nav, tab and slider controls, so those are restored explicitly. */
+:focus-visible,
+.w-dropdown-toggle:focus-visible,
+.w-dropdown-link:focus-visible,
+.w-nav-button:focus-visible,
+.w-tab-link:focus-visible,
+.w-slider-arrow-left:focus-visible,
+.w-slider-arrow-right:focus-visible {
+	outline: 2px solid var(--_system-colors---primary);
+	outline-offset: 4px;
+}
+
 /* BUTTON EXPAND */
 .button.button-expand {
 	--button-expand-gap: 17px;
