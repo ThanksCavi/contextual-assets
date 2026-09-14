@@ -46,6 +46,19 @@
 	box-shadow: 0 1px 0 var(--_system-colors---dark);
 }
 
+/* Light variant sits on an ambient zone: keep the spacer clear so the rings show,
+   and draw the mobile scroll indicator for a light background. The root keeps
+   data-horizontal-scroll-dark because attributes cannot vary per variant. */
+[data-wf--our-process--variant="light"] .pin-spacer:has(> [data-steps-pin]) {
+	background: none;
+	box-shadow: none;
+}
+
+[data-wf--our-process--variant="light"] [data-scroll-indicator="dark"] {
+	--scroll-indicator-track: inherit;
+	--scroll-indicator-thumb: inherit;
+}
+
 [data-steps-viewport] {
 	overflow: visible;
 	width: 100%;
@@ -94,9 +107,10 @@
 }
 
 
+/* No border reset here: Webflow's normalize already zeroes it, and a reset at this
+   specificity would strike out the outline the Light variant sets in the Designer. */
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-toggle] {
 	appearance: none;
-	border: 0;
 	cursor: pointer;
 	flex: 0 0 var(--steps-toggle-height);
 	font: inherit;
