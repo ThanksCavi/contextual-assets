@@ -250,6 +250,46 @@
 		flex-basis: 330px;
 		max-width: 100%;
 	}
+
+	/* The card height comes from content here; the desktop floor would only add
+	   empty space. */
+	[data-steps-slider]:not([data-steps-mode="static"]) {
+		--steps-card-min-height: 0px;
+	}
+
+	/* Same compact card as short desktop viewports. Scoped from the card so the
+	   measuring clone in document.body picks these up. */
+	[data-steps-card] [data-steps-summary] {
+		padding-top: 24px;
+		padding-bottom: 24px;
+	}
+
+	[data-steps-card] .steps-card-title {
+		margin-bottom: 12px;
+	}
+
+	[data-steps-card].is-open .steps-number {
+		font-size: var(--_sizes---s--60);
+		line-height: 1.15;
+		margin-bottom: 12px;
+	}
+
+	[data-steps-card] .steps-reveal-description,
+	[data-steps-card] .steps-reveal-note {
+		margin-top: 24px;
+		margin-bottom: 24px;
+	}
+
+	[data-steps-card] .steps-reveal-outcome {
+		margin-bottom: 24px;
+	}
+
+	/* Transition only inside the slider: on the clone it would freeze the number
+	   at its closed size while it is measured. */
+	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card] .steps-number {
+		transition: font-size 360ms cubic-bezier(0.16, 1, 0.3, 1),
+		margin-bottom 360ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
 }
 
 [data-steps-slider].is-steps-native-scroll [data-steps-pin] {
