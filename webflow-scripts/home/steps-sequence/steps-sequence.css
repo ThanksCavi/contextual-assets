@@ -224,8 +224,8 @@
 		min-height: 0;
 	}
 
-	/* Native-scroll strip: the open card grows on its own, closed cards keep their
-	   natural height instead of stretching to the tallest one in the row. */
+	/* Native-scroll strip: every card gets the measured height from the JS, same
+	   as desktop, so the row stays level while a step opens. */
 	[data-steps-track] {
 		align-items: flex-start;
 	}
@@ -242,16 +242,6 @@
 		width: 100%;
 		will-change: auto;
 		-webkit-overflow-scrolling: touch;
-	}
-
-	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card],
-	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-summary],
-	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card].is-open [data-steps-summary],
-	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-reveal],
-	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card].is-open [data-steps-reveal],
-	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-toggle] {
-		flex-basis: auto;
-		height: auto;
 	}
 }
 
@@ -279,16 +269,6 @@
 	width: 100%;
 	will-change: auto;
 	-webkit-overflow-scrolling: touch;
-}
-
-[data-steps-slider]:not([data-steps-mode="static"]).is-steps-native-scroll [data-steps-card],
-[data-steps-slider]:not([data-steps-mode="static"]).is-steps-native-scroll [data-steps-summary],
-[data-steps-slider]:not([data-steps-mode="static"]).is-steps-native-scroll [data-steps-card].is-open [data-steps-summary],
-[data-steps-slider]:not([data-steps-mode="static"]).is-steps-native-scroll [data-steps-reveal],
-[data-steps-slider]:not([data-steps-mode="static"]).is-steps-native-scroll [data-steps-card].is-open [data-steps-reveal],
-[data-steps-slider]:not([data-steps-mode="static"]).is-steps-native-scroll [data-steps-toggle] {
-	flex-basis: auto;
-	height: auto;
 }
 
 /* End Process Slider */

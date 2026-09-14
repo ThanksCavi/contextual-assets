@@ -317,7 +317,7 @@
     const ScrollTrigger = window.ScrollTrigger;
 
     if (!gsap || !ScrollTrigger || !gsap.matchMedia) {
-      setStaticState(state);
+      setNativeScrollState(state);
       return;
     }
 
@@ -330,13 +330,14 @@
     setStaticState(state);
 
     if (!shouldUseDesktopScrollMotion()) {
+      syncNativeLayout(state);
       return;
     }
 
     state.matchMedia = gsap.matchMedia();
     state.matchMedia.add(DESKTOP_QUERY, () => {
       if (!shouldUseDesktopScrollMotion()) {
-        setStaticState(state);
+        setNativeScrollState(state);
         return undefined;
       }
 
@@ -439,6 +440,19 @@
       state.intro.style.transform = '';
       state.intro.style.opacity = '';
       state.intro.style.visibility = '';
+    }
+  }
+
+  function setNativeScrollState(state) {
+    setStaticState(state);
+    syncNativeLayout(state);
+  }
+
+  // The native-scroll strip keeps a fixed card height too, so opening a step
+  // swaps summary for reveal inside the card instead of growing it.
+  function syncNativeLayout(state) {
+    if (!state.isStatic) {
+      syncLayoutMetrics(state);
     }
   }
 

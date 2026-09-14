@@ -585,9 +585,9 @@
     candidates(root).forEach(track);
   }
 
-  // The row itself first, then anything inside it that scrolls on its own. Read
-  // once at init: overflow is set in the Designer or by a stylesheet, so it does
-  // not change under us the way the overflow *amount* does.
+  // The row itself first, then anything inside it that scrolls on its own. Swept
+  // again on resize and load: a descendant can start scrolling only below a
+  // breakpoint (the process-slider track is pinned, not scrolled, on desktop).
   function candidates(root) {
     const inner = Array.from(root.querySelectorAll('*')).filter(scrollsHorizontally);
     return [root, ...inner];
@@ -714,6 +714,7 @@
   }
 
   function refreshAll() {
+    initAll();
     entries.forEach(refresh);
   }
 
