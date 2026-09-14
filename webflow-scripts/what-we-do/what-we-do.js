@@ -288,7 +288,7 @@
 	}
 
 	// Stacked layout: one static centre arrow across the gap below the accordions.
-	// The svg is pinned to the wrapper's bottom edge (see CSS), so opening a
+	// The svg starts at the wrapper's bottom edge (see CSS), so opening a
 	// family moves the arrow with it; the gap is read from layout offsets, which
 	// ignore the Foundation's fade-up transform.
 	function drawStackedArrow() {

@@ -123,11 +123,13 @@
 	}
 }
 
-/* Stacked layout: the svg collapses onto the wrapper's bottom edge and holds
-   only the centre arrow, so it follows the accordions as they open. */
+/* Stacked layout: the svg sits on the wrapper's bottom edge and holds only the
+   centre arrow, so it follows the accordions as they open. 1px, not 0: a
+   zero-height svg viewport is not rendered at all. */
 @media (max-width: 991px) {
 	[data-wwd-abilities] > .wwd-abilities-lines {
-		top: auto;
-		height: 0;
+		top: 100%;
+		bottom: auto;
+		height: 1px;
 	}
 }
