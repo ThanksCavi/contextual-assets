@@ -197,7 +197,8 @@
 
       applyPinStyles(instance);
       instance.pin = ScrollTrigger.create({
-        trigger: instance.layout,
+        // Start from the sidebar itself so layout padding does not shift the pin.
+        trigger: instance.sidebar,
         endTrigger: instance.layout,
         start: () => `top top+=${getInstanceTopOffset(instance)}px`,
         end: () => `bottom top+=${getInstanceTopOffset(instance) + instance.sidebar.offsetHeight}px`,
