@@ -251,10 +251,10 @@
 		max-width: 100%;
 	}
 
-	/* The card height comes from content here; the desktop floor would only add
-	   empty space. */
+	/* Lower floor than desktop so the compact card is not padded back up. Still
+	   non-zero: it is the pre-measure height and the fallback without the JS. */
 	[data-steps-slider]:not([data-steps-mode="static"]) {
-		--steps-card-min-height: 0px;
+		--steps-card-min-height: 480px;
 	}
 
 	/* Same compact card as short desktop viewports. Scoped from the card so the
