@@ -176,7 +176,10 @@
 	/* Short viewports: tighten the open card so summary and reveal fit the capped
 	   height. Scoped from the card, not the slider: the JS measures a clone of the
 	   card in document.body, and these rules must apply to that clone too. */
-	[data-steps-card] [data-steps-summary] {
+	/* Selectors carry a class so they match the three-class Designer combos
+	   (.card-grid.dark.steps-grid, .label.mw-310.steps-reveal-note) and win on
+	   source order. */
+	[data-steps-card] .steps-grid[data-steps-summary] {
 		padding-top: 24px;
 		padding-bottom: 24px;
 	}
@@ -190,8 +193,11 @@
 		line-height: 1.15;
 	}
 
-	[data-steps-card] .steps-reveal-description,
-	[data-steps-card] .steps-reveal-note {
+	[data-steps-card] [data-steps-reveal] .steps-reveal-description {
+		margin-top: 24px;
+	}
+
+	[data-steps-card] [data-steps-reveal] .steps-reveal-note {
 		margin-top: 24px;
 		margin-bottom: 24px;
 	}
