@@ -123,8 +123,11 @@
 	}
 }
 
+/* Stacked layout: the svg collapses onto the wrapper's bottom edge and holds
+   only the centre arrow, so it follows the accordions as they open. */
 @media (max-width: 991px) {
-	.wwd-abilities-lines {
-		display: none;
+	[data-wwd-abilities] > .wwd-abilities-lines {
+		top: auto;
+		height: 0;
 	}
 }

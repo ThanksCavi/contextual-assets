@@ -201,7 +201,10 @@
 		svg.replaceChildren();
 		syncAccordionSemantics();
 
-		if (!window.matchMedia(LAYOUT_QUERY).matches) return;
+		if (!window.matchMedia(LAYOUT_QUERY).matches) {
+			drawStackedArrow();
+			return;
+		}
 
 		const shapes = drawShapes();
 		if (!shapes) return;
@@ -282,6 +285,33 @@
 		});
 
 		return {lines, arrows};
+	}
+
+	// Stacked layout: one static centre arrow across the gap below the accordions.
+	// The svg is pinned to the wrapper's bottom edge (see CSS), so opening a
+	// family moves the arrow with it; the gap is read from layout offsets, which
+	// ignore the Foundation's fade-up transform.
+	function drawStackedArrow() {
+		const foundation = document.querySelector(FOUNDATION_SELECTOR);
+		const gap = layoutTop(foundation) - (layoutTop(wrap) + wrap.offsetHeight);
+		const endY = gap - END_GAP;
+		if (endY <= ARROW_LONG) return;
+
+		const x = layoutLeft(foundation) + foundation.offsetWidth / 2 - layoutLeft(wrap);
+		addPath(`M${x} 0V${endY}`);
+		addPath(`M${x - ARROW_HALF} ${endY - ARROW_LONG}L${x} ${endY}L${x + ARROW_HALF} ${endY - ARROW_LONG}`);
+	}
+
+	function layoutTop(el) {
+		let top = 0;
+		for (let node = el; node; node = node.offsetParent) top += node.offsetTop;
+		return top;
+	}
+
+	function layoutLeft(el) {
+		let left = 0;
+		for (let node = el; node; node = node.offsetParent) left += node.offsetLeft;
+		return left;
 	}
 
 	function addPath(d) {
