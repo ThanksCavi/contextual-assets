@@ -257,37 +257,12 @@
 		--steps-card-min-height: 480px;
 	}
 
-	/* Same compact card as short desktop viewports. Scoped from the card so the
-	   measuring clone in document.body picks these up. */
-	[data-steps-card] [data-steps-summary] {
-		padding-top: 24px;
-		padding-bottom: 24px;
-	}
-
-	[data-steps-card] .steps-card-title {
-		margin-bottom: 12px;
-	}
-
+	/* Spacing lives in the Designer classes (medium). The open number stays here:
+	   it keys off the card state, which is all the measuring clone carries. */
 	[data-steps-card].is-open .steps-number {
 		font-size: var(--_sizes---s--60);
 		line-height: 1.15;
 		margin-bottom: 12px;
-	}
-
-	/* Through [data-steps-reveal]: the note's Designer class is three classes
-	   deep and outranks a two-part selector. */
-	[data-steps-card] [data-steps-reveal] .steps-reveal-description {
-		margin-top: 24px;
-		margin-bottom: 0;
-	}
-
-	[data-steps-card] [data-steps-reveal] .steps-reveal-note {
-		margin-top: 20px;
-		margin-bottom: 24px;
-	}
-
-	[data-steps-card] .steps-reveal-outcome {
-		margin-bottom: 24px;
 	}
 
 	/* Transition only inside the slider: on the clone it would freeze the number
