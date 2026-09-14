@@ -274,9 +274,15 @@
 		margin-bottom: 12px;
 	}
 
-	[data-steps-card] .steps-reveal-description,
-	[data-steps-card] .steps-reveal-note {
+	/* Through [data-steps-reveal]: the note's Designer class is three classes
+	   deep and outranks a two-part selector. */
+	[data-steps-card] [data-steps-reveal] .steps-reveal-description {
 		margin-top: 24px;
+		margin-bottom: 0;
+	}
+
+	[data-steps-card] [data-steps-reveal] .steps-reveal-note {
+		margin-top: 20px;
 		margin-bottom: 24px;
 	}
 
