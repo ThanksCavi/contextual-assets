@@ -522,15 +522,32 @@
     });
     const revealHeight = Math.ceil(Math.max(fallbackRevealHeight, metrics.revealHeight));
     const toggleHeight = Math.ceil(Math.max(fallbackToggleHeight, metrics.toggleHeight));
+    const { closedGap, openGap } = measureStackGaps(state.steps[0]);
     const cardHeight = Math.ceil(Math.max(
       fallbackCardHeight,
-      metrics.closedSummaryHeight + toggleHeight,
-      metrics.openSummaryHeight + revealHeight
+      metrics.closedSummaryHeight + toggleHeight + closedGap,
+      metrics.openSummaryHeight + revealHeight + openGap
     ));
 
     state.root.style.setProperty('--steps-card-dynamic-height', `${cardHeight}px`);
     state.root.style.setProperty('--steps-toggle-dynamic-height', `${toggleHeight}px`);
     state.root.style.setProperty('--steps-reveal-dynamic-height', `${revealHeight}px`);
+    state.root.style.setProperty('--steps-closed-gap', `${closedGap}px`);
+    state.root.style.setProperty('--steps-open-gap', `${openGap}px`);
+  }
+
+  // The Designer spaces reveal and toggle with margin-top. The card clips its
+  // overflow, so those margins must come out of the summary height or the
+  // toggle's bottom edge is cut off. Closed, the zero-height reveal still keeps
+  // its margin; open, the toggle is hidden and only the reveal margin remains.
+  function measureStackGaps(step) {
+    const marginTop = element => (element ? parseFloat(getComputedStyle(element).marginTop) || 0 : 0);
+    const revealGap = marginTop(step?.reveal);
+
+    return {
+      closedGap: revealGap + marginTop(step?.toggle),
+      openGap: revealGap,
+    };
   }
 
   function measureStepLayout(step) {
@@ -635,6 +652,8 @@
     state.root.style.removeProperty('--steps-card-dynamic-height');
     state.root.style.removeProperty('--steps-toggle-dynamic-height');
     state.root.style.removeProperty('--steps-reveal-dynamic-height');
+    state.root.style.removeProperty('--steps-closed-gap');
+    state.root.style.removeProperty('--steps-open-gap');
   }
 
   function queueFontsReadyRefresh() {

@@ -8,8 +8,8 @@
 	--steps-card-height: var(--steps-card-dynamic-height, var(--steps-card-min-height));
 	--steps-toggle-height: var(--steps-toggle-dynamic-height, var(--steps-toggle-min-height));
 	--steps-reveal-height: var(--steps-reveal-dynamic-height, var(--steps-reveal-min-height));
-	--steps-summary-height: calc(var(--steps-card-height) - var(--steps-toggle-height));
-	--steps-summary-open-height: calc(var(--steps-card-height) - var(--steps-reveal-height));
+	--steps-summary-height: calc(var(--steps-card-height) - var(--steps-toggle-height) - var(--steps-closed-gap, 0px));
+	--steps-summary-open-height: calc(var(--steps-card-height) - var(--steps-reveal-height) - var(--steps-open-gap, 0px));
 	position: relative;
 }
 
