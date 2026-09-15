@@ -157,10 +157,12 @@
 	const POLICY_EVENT = 'contextual:motion-policy-change';
 
 	// Figma 5719:1896: the collector runs 56px above the box, the centre arrow
-	// ends 20px above it, turns have a 20px radius.
+	// ends 20px above it, turns are 60px arcs (tighter when a column reaches
+	// closer to the collector), each chevron starts at the edge of the column
+	// it points into.
 	const COLLECTOR_OFFSET = 56;
 	const END_GAP = 20;
-	const TURN_RADIUS = 20;
+	const TURN_RADIUS = 60;
 	const ARROW_LONG = 10;
 	const ARROW_HALF = 6;
 
@@ -182,14 +184,13 @@
 
 		build();
 
-		window.addEventListener('resize', () => {
+		// The wrapper's size covers viewport changes, font swaps, added cards and
+		// the families' open transition, which is still running on first build.
+		new ResizeObserver(() => {
 			window.clearTimeout(resizeTimer);
 			resizeTimer = window.setTimeout(build, 200);
-		});
+		}).observe(wrap);
 		window.addEventListener(POLICY_EVENT, build);
-		if (document.fonts && document.fonts.ready) {
-			document.fonts.ready.then(build).catch(() => {});
-		}
 	}
 
 	function build() {
@@ -238,24 +239,31 @@
 
 	function drawShapes() {
 		const origin = wrap.getBoundingClientRect();
-		const foundation = document.querySelector(FOUNDATION_SELECTOR).getBoundingClientRect();
+		const foundation = document.querySelector(FOUNDATION_SELECTOR);
 		const stems = Array.from(wrap.querySelectorAll(FAMILY_SELECTOR))
 			.map((family) => {
 				const label = family.querySelector(LABEL_SELECTOR) || family;
 				const labelRect = label.getBoundingClientRect();
+				const familyRect = family.getBoundingClientRect();
 				return {
 					x: labelRect.left + labelRect.width / 2 - origin.left,
-					bottom: family.getBoundingClientRect().bottom - origin.top,
+					left: familyRect.left - origin.left,
+					right: familyRect.right - origin.left,
+					bottom: familyRect.bottom - origin.top,
 				};
 			})
 			.sort((a, b) => a.x - b.x);
 		if (!stems.length) return null;
 
-		const centerX = foundation.left + foundation.width / 2 - origin.left;
-		const foundationTop = foundation.top - origin.top;
-		const lowest = Math.max(...stems.map((stem) => stem.bottom));
-		const collectorY = Math.max(foundationTop - COLLECTOR_OFFSET, lowest + TURN_RADIUS);
+		// Layout offsets, not rects: the Foundation's fade-up transform would
+		// shift every line by its offset until it plays.
+		const centerX = layoutLeft(foundation) + foundation.offsetWidth / 2 - layoutLeft(wrap);
+		const foundationTop = layoutTop(foundation) - layoutTop(wrap);
+		const collectorY = foundationTop - COLLECTOR_OFFSET;
 		const endY = foundationTop - END_GAP;
+		stems.forEach((stem) => {
+			stem.radius = Math.max(0, Math.min(TURN_RADIUS, collectorY - stem.bottom));
+		});
 
 		const center = stems.reduce((best, stem) =>
 			Math.abs(stem.x - centerX) < Math.abs(best.x - centerX) ? stem : best);
@@ -273,12 +281,13 @@
 
 			const dir = stem.x < center.x ? 1 : -1;
 			const next = stems[index + dir];
-			const endX = next === center ? center.x : next.x + dir * TURN_RADIUS;
+			const r = stem.radius;
+			const endX = next === center ? center.x : next.x + dir * next.radius;
 			lines.push(addPath(
-				`M${stem.x} ${stem.bottom}V${collectorY - TURN_RADIUS}` +
-				`Q${stem.x} ${collectorY} ${stem.x + dir * TURN_RADIUS} ${collectorY}H${endX}`));
+				`M${stem.x} ${stem.bottom}V${collectorY - r}` +
+				`A${r} ${r} 0 0 ${dir === 1 ? 0 : 1} ${stem.x + dir * r} ${collectorY}H${endX}`));
 
-			const tipX = (stem.x + next.x) / 2 + dir * (ARROW_LONG / 2);
+			const tipX = (dir === 1 ? next.left : next.right) + dir * ARROW_LONG;
 			arrows.push(addPath(
 				`M${tipX - dir * ARROW_LONG} ${collectorY - ARROW_HALF}L${tipX} ${collectorY}` +
 				`L${tipX - dir * ARROW_LONG} ${collectorY + ARROW_HALF}`));
