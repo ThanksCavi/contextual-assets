@@ -38,11 +38,13 @@
 .wwd-solution-tags ul {
 	display: flex;
 	flex-direction: column;
+	align-self: stretch;
 	align-items: flex-start;
 	row-gap: 10px;
 }
 
 .wwd-solution-tags :is(p, li) {
+	min-width: min(256px, 100%);
 	margin: 0;
 	padding: 7px 11px;
 	border-radius: 5px;
