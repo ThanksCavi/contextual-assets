@@ -708,7 +708,7 @@
 }
 
 /* STICKY SIDEBAR SCROLL
-   Webflow caps the sticky filter card (.sitebar) and the article sidebar
+   Webflow caps the sticky filter card (.sidebar) and the article sidebar
    (.blog-post-sidebar) to the viewport; in the article the authors card is the
    part that grows, so it alone gives up height and scrolls. The thumb is inset
    from the card edge and clear of its 20px corners, tinted from the card text. */
@@ -720,17 +720,20 @@
 }
 
 .sitebar::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
 .blog-post-sidebar > .sidebar-card:has(.authors)::-webkit-scrollbar {
 	width: 20px;
 }
 
 .sitebar::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
 .blog-post-sidebar > .sidebar-card:has(.authors)::-webkit-scrollbar-track {
 	margin-block: 20px;
 	background: transparent;
 }
 
 .sitebar::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
 .blog-post-sidebar > .sidebar-card:has(.authors)::-webkit-scrollbar-thumb {
 	border: 7px solid transparent;
 	border-radius: 999px;
@@ -740,12 +743,14 @@
 }
 
 .sitebar::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover,
 .blog-post-sidebar > .sidebar-card:has(.authors)::-webkit-scrollbar-thumb:hover {
 	background-color: color-mix(in srgb, currentColor 40%, transparent);
 }
 
 @supports not selector(::-webkit-scrollbar) {
 	.sitebar,
+	.sidebar,
 	.blog-post-sidebar > .sidebar-card:has(.authors) {
 		scrollbar-width: thin;
 		scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent;
