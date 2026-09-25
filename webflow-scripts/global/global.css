@@ -790,7 +790,7 @@
 	cursor: pointer;
 }
 
-@media screen and (min-width: 991px) {
+@media screen and (min-width: 992px) {
 	.footer-links {
 		max-height: none;
 		overflow: visible;
