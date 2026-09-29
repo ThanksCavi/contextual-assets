@@ -40,6 +40,10 @@
 	const SPOTLIGHT_EDGE_FADE_START = 0.84;
 	const SECTION_EDGE_FADE = 90;
 
+	// The canvas covers only the spotlight: its radius plus the largest ring and its stroke.
+	const MAX_RING_RADIUS = BASE_RADIUS + STATIC_RADIUS_BOOST + INTERACTIVE_RADIUS_BOOST;
+	const CANVAS_BLEED = 2;
+
 	// Edge behavior.
 	const LIMIT_FOCUS_TO_SAFE_AREA = true;
 	const FOCUS_SAFE_ZONE = 1;
@@ -99,7 +103,13 @@
 			viewportRight: 0,
 			viewportTop: 0,
 			viewportBottom: 0,
-			points: [],
+			gridXs: [],
+			gridYs: [],
+			// Canvas box inside the zone, in device pixels.
+			canvasLeft: 0,
+			canvasTop: 0,
+			canvasWidth: 0,
+			canvasHeight: 0,
 			field: null,
 			opacityMultiplier: getOpacityMultiplier(section),
 		};
@@ -138,9 +148,8 @@
 
 		Object.assign(canvas.style, {
 			position: 'absolute',
-			inset: '0',
-			width: '100%',
-			height: '100%',
+			left: '0',
+			top: '0',
 			display: canShowField() ? 'block' : 'none',
 			pointerEvents: 'none',
 			zIndex: '0',
@@ -251,13 +260,14 @@
 		state.width = width;
 		state.height = height;
 		state.dpr = dpr;
-
-		state.canvas.width = Math.round(width * dpr);
-		state.canvas.height = Math.round(height * dpr);
-		state.context.setTransform(dpr, 0, 0, dpr, 0, 0);
+		// Force the canvas box to be re-allocated and re-placed on the next draw.
+		state.canvasWidth = 0;
+		state.canvasHeight = 0;
+		state.canvasLeft = -1;
+		state.canvasTop = -1;
 
 		state.field = getAccentField(state.section, width, height);
-		state.points = buildGridPoints(state);
+		buildGrid(state);
 		manager.layoutDirty = true;
 
 		draw(state);
@@ -337,19 +347,27 @@
 		};
 	}
 
-	function buildGridPoints(state) {
+	function buildGrid(state) {
 		const {field} = state;
-		const startX = positiveModulo(-state.pageLeft, field.spacing);
-		const startY = positiveModulo(-state.pageTop, field.spacing);
-		const points = [];
 
-		for (let x = startX; x <= state.width; x += field.spacing) {
-			for (let y = startY; y <= state.height; y += field.spacing) {
-				points.push({x, y});
-			}
+		state.gridXs = buildGridAxis(positiveModulo(-state.pageLeft, field.spacing), state.width, field.spacing);
+		state.gridYs = buildGridAxis(positiveModulo(-state.pageTop, field.spacing), state.height, field.spacing);
+	}
+
+	function buildGridAxis(start, size, spacing) {
+		const axis = [];
+
+		for (let value = start; value <= size; value += spacing) {
+			axis.push(value);
 		}
 
-		return points;
+		return axis;
+	}
+
+	function getFirstGridIndex(axis, from, spacing) {
+		if (!axis.length) return 0;
+
+		return Math.max(0, Math.floor((from - axis[0]) / spacing) - 1);
 	}
 
 	function requestFrame() {
@@ -368,7 +386,7 @@
 		if (!canShowField()) {
 			zones.forEach(state => {
 				state.canvas.style.display = 'none';
-				state.context.clearRect(0, 0, state.width, state.height);
+				clearCanvas(state);
 			});
 			return;
 		}
@@ -404,57 +422,116 @@
 	}
 
 	function draw(state) {
-		const {context, width, height, points} = state;
-		if (!width || !height || !state.field) return;
+		const {context, width, height, field, gridXs, gridYs} = state;
+		if (!width || !height || !field) return;
 
 		if (!canShowField()) {
 			state.canvas.style.display = 'none';
-			context.clearRect(0, 0, width, height);
+			clearCanvas(state);
 			return;
 		}
 
-		context.clearRect(0, 0, width, height);
-
-		if (!isNearViewport(state)) return;
-
-		context.lineWidth = STROKE_WIDTH;
+		if (!isNearViewport(state)) {
+			clearCanvas(state);
+			return;
+		}
 
 		const isDynamic = canAnimate() && manager.hasPointer && state === manager.activeZone;
 		const focus = isDynamic
 			? getDynamicFocus(state)
 			: getSafeFocusFromPoint(state, getFieldCenter(state));
 
-		for (let index = 0; index < points.length; index += 1) {
-			const point = points[index];
-			const normalizedDistance = getNormalizedSpotlightDistance(state.field, point, focus.x, focus.y);
-			if (normalizedDistance > 1) continue;
+		placeCanvas(state, focus);
+		context.lineWidth = STROKE_WIDTH;
 
-			const falloff = 1 - smoothstep(0, 1, normalizedDistance);
-			const sizeLift = Math.pow(falloff, SIZE_FALLOFF_EXPONENT);
-			const opacityLift = Math.pow(falloff, OPACITY_FALLOFF_EXPONENT);
-			const edgeFade = 1 - smoothstep(SPOTLIGHT_EDGE_FADE_START, 1, normalizedDistance);
-			const influence = isDynamic ? falloff : 0;
+		// Same x-then-y order as a full-grid pass, so overlapping strokes blend identically.
+		const point = {x: 0, y: 0};
+		const firstX = getFirstGridIndex(gridXs, focus.x - field.radiusX, field.spacing);
+		const firstY = getFirstGridIndex(gridYs, focus.y - field.radiusY, field.spacing);
 
-			const radius = (
-				BASE_RADIUS +
-				sizeLift * STATIC_RADIUS_BOOST +
-				influence * INTERACTIVE_RADIUS_BOOST
-			);
-			const sectionEdgeFade = getSectionEdgeFade(state, point, radius);
+		for (let xIndex = firstX; xIndex < gridXs.length; xIndex += 1) {
+			point.x = gridXs[xIndex];
+			if (point.x - focus.x > field.radiusX) break;
+			if (focus.x - point.x > field.radiusX) continue;
 
-			const opacity = clamp((
-				BASE_OPACITY +
-				opacityLift * STATIC_OPACITY_BOOST +
-				influence * INTERACTIVE_OPACITY_BOOST
-			) * edgeFade * sectionEdgeFade * state.opacityMultiplier, 0, 1);
+			for (let yIndex = firstY; yIndex < gridYs.length; yIndex += 1) {
+				point.y = gridYs[yIndex];
+				if (point.y - focus.y > field.radiusY) break;
 
-			if (radius < 0.35 || opacity < 0.002) continue;
-
-			context.beginPath();
-			context.strokeStyle = `rgba(${STROKE_COLOR}, ${opacity})`;
-			context.arc(point.x, point.y, radius, 0, Math.PI * 2);
-			context.stroke();
+				drawRing(state, point, focus, isDynamic);
+			}
 		}
+	}
+
+	function drawRing(state, point, focus, isDynamic) {
+		const {context} = state;
+		const normalizedDistance = getNormalizedSpotlightDistance(state.field, point, focus.x, focus.y);
+		if (normalizedDistance > 1) return;
+
+		const falloff = 1 - smoothstep(0, 1, normalizedDistance);
+		const sizeLift = Math.pow(falloff, SIZE_FALLOFF_EXPONENT);
+		const opacityLift = Math.pow(falloff, OPACITY_FALLOFF_EXPONENT);
+		const edgeFade = 1 - smoothstep(SPOTLIGHT_EDGE_FADE_START, 1, normalizedDistance);
+		const influence = isDynamic ? falloff : 0;
+
+		const radius = (
+			BASE_RADIUS +
+			sizeLift * STATIC_RADIUS_BOOST +
+			influence * INTERACTIVE_RADIUS_BOOST
+		);
+		const sectionEdgeFade = getSectionEdgeFade(state, point, radius);
+
+		const opacity = clamp((
+			BASE_OPACITY +
+			opacityLift * STATIC_OPACITY_BOOST +
+			influence * INTERACTIVE_OPACITY_BOOST
+		) * edgeFade * sectionEdgeFade * state.opacityMultiplier, 0, 1);
+
+		if (radius < 0.35 || opacity < 0.002) return;
+
+		context.beginPath();
+		context.strokeStyle = `rgba(${STROKE_COLOR}, ${opacity})`;
+		context.arc(point.x, point.y, radius, 0, Math.PI * 2);
+		context.stroke();
+	}
+
+	function placeCanvas(state, focus) {
+		const {canvas, context, dpr, field} = state;
+		// Box around the focus, snapped to device pixels and kept inside the zone,
+		// so every ring lands on the same device pixels as on a full-zone canvas.
+		const reach = Math.max(field.radiusX, field.radiusY) + MAX_RING_RADIUS + CANVAS_BLEED;
+		const zoneWidth = Math.round(state.width * dpr);
+		const zoneHeight = Math.round(state.height * dpr);
+		const boxSize = Math.ceil(reach * 2 * dpr) + 1;
+		const width = Math.min(boxSize, zoneWidth);
+		const height = Math.min(boxSize, zoneHeight);
+		const left = clamp(Math.floor((focus.x - reach) * dpr), 0, zoneWidth - width);
+		const top = clamp(Math.floor((focus.y - reach) * dpr), 0, zoneHeight - height);
+
+		if (width !== state.canvasWidth || height !== state.canvasHeight) {
+			canvas.width = width;
+			canvas.height = height;
+			canvas.style.width = `${width / dpr}px`;
+			canvas.style.height = `${height / dpr}px`;
+			state.canvasWidth = width;
+			state.canvasHeight = height;
+		} else {
+			clearCanvas(state);
+		}
+
+		if (left !== state.canvasLeft || top !== state.canvasTop) {
+			canvas.style.transform = `translate(${left / dpr}px, ${top / dpr}px)`;
+			state.canvasLeft = left;
+			state.canvasTop = top;
+		}
+
+		// Draw in zone coordinates.
+		context.setTransform(dpr, 0, 0, dpr, -left, -top);
+	}
+
+	function clearCanvas(state) {
+		state.context.setTransform(1, 0, 0, 1, 0, 0);
+		state.context.clearRect(0, 0, state.canvas.width, state.canvas.height);
 	}
 
 	function isNearViewport(state) {
