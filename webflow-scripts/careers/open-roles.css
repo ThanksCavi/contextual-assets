@@ -137,15 +137,32 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
   height: 0;
   opacity: 0;
+  visibility: hidden;
   z-index: -999;
-  transition-duration: 0.1s;
+  transition:
+    opacity 0.1s,
+    visibility 0s 0.1s,
+    z-index 0s 0.1s;
 }
 
-.ctx-jobs__select .ctx-jobs__options,
-.ctx-jobs__filter-label:hover .ctx-jobs__options {
+/* Open by state; hover opens it only where a mouse can hover, so taps do not stick.
+   Visibility switches on at once, so a keyboard user can focus an option right away. */
+.ctx-jobs__select[aria-expanded="true"] + .ctx-jobs__options {
   height: auto;
   opacity: 1;
+  visibility: visible;
   z-index: 10;
+  transition-delay: 0s;
+}
+
+@media (hover: hover) {
+  .ctx-jobs__filter-label:hover .ctx-jobs__options {
+    height: auto;
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+    transition-delay: 0s;
+  }
 }
 
 .ctx-jobs__option {

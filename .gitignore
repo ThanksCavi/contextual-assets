@@ -14,6 +14,9 @@ webflow-scripts/versions/
 # Архив удалённого кода — сюда попадает и README, который иначе съел бы `*.md` выше.
 !/archive/**
 
+# Third-party originals: kept locally, not published.
+/archive/2026-10-06-careers-jobs-inline/
+
 # Contextual agent workflow and its reviewed project sources.
 #!AGENTS.md
 #!CLAUDE.md

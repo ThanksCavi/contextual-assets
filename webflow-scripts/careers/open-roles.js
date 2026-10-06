@@ -209,6 +209,12 @@
       options.hidden = true;
       options.setAttribute("role", "listbox");
 
+      function closeAndReturnFocus() {
+        trigger.setAttribute("aria-expanded", "false");
+        options.hidden = true;
+        if (options.contains(documentRef.activeElement)) trigger.focus();
+      }
+
       var allOption = element(documentRef, "button", "ctx-jobs__option");
       var allLabel = element(documentRef, "span", "ctx-jobs__option-label");
       var allValue = element(documentRef, "span", "ctx-jobs__option-value");
@@ -225,8 +231,7 @@
       allOption.addEventListener("click", function () {
         control.currentValue = "";
         control.valueText.textContent = config.allLabel;
-        trigger.setAttribute("aria-expanded", "false");
-        options.hidden = true;
+        closeAndReturnFocus();
         control.options.forEach(function (option) {
           option.setAttribute("aria-selected", "false");
         });
@@ -261,8 +266,7 @@
         option.addEventListener("click", function () {
           control.currentValue = value;
           control.valueText.textContent = value;
-          trigger.setAttribute("aria-expanded", "false");
-          options.hidden = true;
+          closeAndReturnFocus();
           control.options.forEach(function (item) {
             item.setAttribute(
               "aria-selected",
@@ -277,6 +281,31 @@
 
       label.appendChild(trigger);
       label.appendChild(options);
+
+      label.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          closeAndReturnFocus();
+          return;
+        }
+        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+        event.preventDefault();
+
+        var index = control.options.indexOf(documentRef.activeElement);
+        if (index < 0) {
+          if (trigger.getAttribute("aria-expanded") !== "true") trigger.click();
+          (options.querySelector('[aria-selected="true"]') || allOption).focus();
+          return;
+        }
+        var step = event.key === "ArrowDown" ? 1 : -1;
+        var count = control.options.length;
+        control.options[(index + step + count) % count].focus();
+      });
+
+      label.addEventListener("focusout", function (event) {
+        if (label.contains(event.relatedTarget)) return;
+        trigger.setAttribute("aria-expanded", "false");
+        options.hidden = true;
+      });
 
       return control;
     }
@@ -351,9 +380,6 @@
       function closeAllFilters(exceptKey) {
         Object.keys(controls).forEach(function (key) {
           if (key === exceptKey) return;
-          controls[key].options.forEach(function (option) {
-            option.setAttribute("aria-selected", "false");
-          });
           controls[key].trigger.setAttribute("aria-expanded", "false");
           controls[key].optionsParent =
             controls[key].optionsParent ||
