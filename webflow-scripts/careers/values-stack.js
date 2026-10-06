@@ -1,18 +1,11 @@
-/* Careers — «Our values» card stack.
-   Карточки собираются в стопку под фиксированным navbar и уезжают вместе с
-   секцией. Раньше этот код жил в page-embed страницы careers-new.
+/* Careers "Our values" card stack: cards stack under the fixed navbar and scroll
+   away with the section.
 
-   Контракт разметки (Designer — менять осторожно):
-     #wrapper        `.wraper-anim-tab`, секция-триггер и endTrigger
-     .card-wrapper   пиновый бокс каждой карточки
-     .card-tab       сама карточка, на неё вешается scale
+   #wrapper        section trigger and endTrigger
+   .card-wrapper   pinned box of each card
+   .card-tab       the card, scaled
 
-   Политика движения. Остальные эффекты сайта спрашивают
-   ContextualHomeMotion.shouldUseHeavyScrollEffects(), который выключает всё
-   тяжёлое на тач-устройствах. Здесь — сознательное исключение: клиент просил
-   стопку и на телефоне, а сам эффект — transform на пяти элементах, без
-   ScrollSmoother и без normalizeScroll. Ограничение поэтому не по типу ввода,
-   а по высоте экрана, см. MIN_VIEWPORT_QUERY. */
+   Runs on touch devices too, limited by viewport height (MIN_VIEWPORT_QUERY). */
 (() => {
 	// Careers markup keeps its classes; other pages opt in with data attributes.
 	const SECTION_SELECTOR = '#wrapper, [data-values-stack]';
@@ -20,33 +13,14 @@
 	const CARD_SELECTOR = '.card-tab, [data-values-stack-card]';
 	const NAVBAR_SELECTOR = '.navbar.w-nav';
 
-	// Сдвиг каждой следующей карточки в собранной стопке.
+	// Offset of each next card in the stack.
 	const STACK_STEP_PX = 10;
-	// Зазор между нижним краем navbar и верхом стопки.
+	// Gap between the navbar and the top of the stack.
 	const STACK_MARGIN_PX = 20;
 	const NAVBAR_FALLBACK_PX = 70;
 
-	// Эффект физически требует, чтобы самая высокая карточка целиком помещалась
-	// под navbar'ом: stackTop + высота карточки <= высота экрана. Критерий —
-	// высота, а не ширина: телефон в ландшафте (844x390) шире планшета, но не
-	// вмещает ни одной карточки, и любой `min-width` его пропустит.
-	//
-	// Но одним порогом не обойтись: на 992px раскладка переключается и карточка
-	// резко становится ниже. Замеры на staging 06.08.2026, «нужно» =
-	// stackTop + самая высокая карточка:
-	//     мобильная раскладка   320 -> 735, 375 -> 711, 390 и 412 -> 687, 768 -> 571
-	//     десктопная раскладка  992 -> 449, 1200 -> 404, 1440 -> 525, 1920+ -> 564
-	//
-	// Сначала здесь стояло `(min-height: 700px)` на все ширины. Порог был снят с
-	// мобильной раскладки и для десктопной оказался завышен на ~140px — ровно на
-	// столько, чтобы отсечь iPad в ландшафте: у iPad'а тулбар Safari не прячется,
-	// поэтому 1024x768 даёт вьюпорт 1024x694, а iPad mini 6 — 1133x670. Обе
-	// высоты с запасом вмещают карточку в 335px, но не проходили порог 700, и
-	// эффект молча выключался (06.08.2026, отчёт с устройства).
-	//
-	// В мобильных браузерах высота в media query — это большой вьюпорт (со
-	// спрятанной адресной строкой), и она не скачет при её показе/скрытии, так
-	// что matchMedia не будет включать и выключать эффект посреди скролла.
+	// The tallest card must fit under the navbar, so the limit is viewport height,
+	// per layout (cards get shorter at 992px).
 	const MIN_VIEWPORT_QUERY =
 		'(max-width: 991px) and (min-height: 700px),' +
 		'(min-width: 992px) and (min-height: 600px)';
@@ -62,7 +36,7 @@
 		const ScrollTrigger = window.ScrollTrigger;
 
 		if (!gsap || !ScrollTrigger) {
-			console.warn('[careers-values-stack] GSAP/ScrollTrigger недоступны.');
+			console.warn('[careers-values-stack] GSAP/ScrollTrigger is not available.');
 			return;
 		}
 
@@ -75,43 +49,23 @@
 		const cards = gsap.utils.toArray(CARD_SELECTOR, section);
 
 		if (!wrappers.length || wrappers.length !== cards.length) {
-			console.warn('[careers-values-stack] Разметка стопки не совпадает с ожидаемой.');
+			console.warn('[careers-values-stack] Stack markup does not match the expected structure.');
 			return;
 		}
 
 		const lastIndex = cards.length - 1;
 		const lastCard = cards[lastIndex];
 
-		// Пины снимаются ровно тогда, когда низ последней карточки в её слоте
-		// совпадает с низом #wrapper — только так стопка не наезжает на следующую
-		// секцию. Здесь стояла константа 550, подогнанная под десктопную карточку
-		// (435px); на мобильной (597px) стопке не хватало ~120px, и она въезжала
-		// в тёмную секцию.
+		// Unpin when the last card's bottom meets the bottom of #wrapper.
 		const stackEnd = () =>
 			'bottom ' + (stackTop() + STACK_STEP_PX * lastIndex + lastCard.offsetHeight);
 
-		// pinType не задаём НИГДЕ — ScrollTrigger определяет его сам, и оба
-		// значения, выставленные руками, делают хуже:
-		//
-		//   'fixed'     под ScrollSmoother прибивает карточку к
-		//               трансформированному `#smooth-content`, а не к экрану:
-		//               она улетает вместе с контентом (06.08.2026, десктоп);
-		//   'transform' на iOS двигает пин из JS на каждое событие скролла, а
-		//               iOS откладывает JS во время инерции — стопка отстаёт от
-		//               пальца (06.08.2026, отчёт с устройства).
+		// pinType is left to ScrollTrigger: 'fixed' breaks under ScrollSmoother, 'transform' lags on iOS.
 
 		gsap.matchMedia().add(MIN_VIEWPORT_QUERY, () => {
 			wrappers.forEach((wrapper, i) => {
 				const isLast = i === lastIndex;
 
-				// Здесь был ещё rotationX: -10. Perspective не задан ни на карточке,
-				// ни на родителе, поэтому поворот проецировался ортографически — весь
-				// его вклад сводился к вертикальному сжатию на ~1% (замер 06.08.2026:
-				// 0.9129 против 0.9215 у первой карточки, ~5px на 545px). За эту
-				// невидимую разницу каждая карточка получала matrix3d и отдельный
-				// 3D-слой, который iOS растрирует заново на каждом шаге scale.
-				// Если наклон всё-таки нужен — возвращать вместе с
-				// transformPerspective, иначе он ничего не рисует.
 				gsap.to(cards[i], {
 					scale: isLast ? 1 : 0.9 + 0.025 * i,
 					transformOrigin: 'top center',
@@ -150,8 +104,7 @@
 		return motion && typeof motion.getAnchorOffset === 'function' ? motion.getAnchorOffset() : 0;
 	}
 
-	// Стопка не должна уезжать под фиксированный navbar: его нижний край =
-	// --navbar-inset + --navbar-bar-height-sticky (контракт navbar.css).
+	// Navbar bottom edge: --navbar-inset + --navbar-bar-height-sticky.
 	function stackTop() {
 		const navbar = document.querySelector(NAVBAR_SELECTOR);
 		const style = navbar && getComputedStyle(navbar);

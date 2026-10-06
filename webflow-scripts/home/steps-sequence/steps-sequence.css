@@ -29,8 +29,7 @@
 	width: 100%;
 }
 
-/* An empty Description prop still renders the block and its flex gap;
-   drop it so the heading keeps the 60px rhythm to the rail (HWW §3). */
+/* An empty Description prop still renders its block and gap; hide it. */
 .process-slider .description:empty {
 	display: none;
 }
@@ -46,9 +45,7 @@
 	box-shadow: 0 1px 0 var(--_system-colors---dark);
 }
 
-/* Light variant sits on an ambient zone: keep the spacer clear so the rings show,
-   and draw the mobile scroll indicator for a light background. The root keeps
-   data-horizontal-scroll-dark because attributes cannot vary per variant. */
+/* Light variant on an ambient zone: transparent spacer, light scroll indicator. */
 [data-wf--our-process--variant="light"] .pin-spacer:has(> [data-steps-pin]) {
 	background: none;
 	box-shadow: none;
@@ -75,10 +72,7 @@
 	display: flex;
 }
 
-/* Three across, but min-width is deliberately left alone: it is the knob for the
-   card's minimum width and belongs to the Designer. Setting it here would win on
-   specificity and silently strike out whatever is set on the class. The track
-   scrolls horizontally, so a larger min-width just shows fewer, wider cards. */
+/* min-width is left to the Designer. */
 [data-steps-slider][data-steps-mode="static"] [data-steps-item] {
 	flex: 0 0 calc((100% - 40px) / 3);
 }
@@ -107,8 +101,7 @@
 }
 
 
-/* No border reset here: Webflow's normalize already zeroes it, and a reset at this
-   specificity would strike out the outline the Light variant sets in the Designer. */
+/* No border reset: it would override the Light variant outline set in the Designer. */
 [data-steps-slider]:not([data-steps-mode="static"]) [data-steps-toggle] {
 	appearance: none;
 	cursor: pointer;
@@ -155,12 +148,10 @@
 	opacity: 1;
 }
 
-/* Keep this breakpoint in sync with MOTION_BREAKPOINT_PX in process-slider.js. */
+/* Keep in sync with MOTION_BREAKPOINT_PX in steps-sequence.js. */
 @media (min-width: 992px) and (prefers-reduced-motion: no-preference) {
-	/* Figma card height at 1440 (5719:2243); content still grows past it. Applied
-	   to the used height, not --steps-card-min-height: the JS derives its fallback
-	   summary heights from that variable, and 689 there inflates the open card.
-	   The short-viewport block below redefines the height again. */
+	/* Design card height at 1440; content can still grow past it. Set on the used height,
+	   not --steps-card-min-height, which the JS uses for fallback heights. */
 	[data-steps-slider]:not([data-steps-mode="static"]) {
 		--steps-card-height: max(var(--steps-card-dynamic-height, var(--steps-card-min-height)), 689px);
 	}
@@ -195,12 +186,9 @@
 		--steps-intro-stage-gap: 48px;
 	}
 
-	/* Short viewports: tighten the open card so summary and reveal fit the capped
-	   height. Scoped from the card, not the slider: the JS measures a clone of the
-	   card in document.body, and these rules must apply to that clone too. */
-	/* Selectors carry a class so they match the three-class Designer combos
-	   (.card-grid.dark.steps-grid, .label.mw-310.steps-reveal-note) and win on
-	   source order. */
+	/* Short viewports: compact open card. Scoped to the card so the JS measuring clone
+	   in document.body gets it too. */
+	/* Extra class to match the three-class Designer combos. */
 	[data-steps-card] .steps-grid[data-steps-summary] {
 		padding-top: 24px;
 		padding-bottom: 24px;
@@ -252,8 +240,7 @@
 		min-height: 0;
 	}
 
-	/* Native-scroll strip: every card gets the measured height from the JS, same
-	   as desktop, so the row stays level while a step opens. */
+	/* Mobile strip: cards get the measured height from the JS, as on desktop. */
 	[data-steps-track] {
 		align-items: flex-start;
 	}
@@ -279,22 +266,19 @@
 		max-width: 100%;
 	}
 
-	/* Lower floor than desktop so the compact card is not padded back up. Still
-	   non-zero: it is the pre-measure height and the fallback without the JS. */
+	/* Lower floor than desktop; also the height before measuring and without JS. */
 	[data-steps-slider]:not([data-steps-mode="static"]) {
 		--steps-card-min-height: 480px;
 	}
 
-	/* Spacing lives in the Designer classes (medium). The open number stays here:
-	   it keys off the card state, which is all the measuring clone carries. */
+	/* Spacing lives in the Designer. The open number size keys off the card state. */
 	[data-steps-card].is-open .steps-number {
 		font-size: var(--_sizes---s--60);
 		line-height: 1.15;
 		margin-bottom: 12px;
 	}
 
-	/* Transition only inside the slider: on the clone it would freeze the number
-	   at its closed size while it is measured. */
+	/* Transition only inside the slider, so the measuring clone is not caught mid-transition. */
 	[data-steps-slider]:not([data-steps-mode="static"]) [data-steps-card] .steps-number {
 		transition: font-size 360ms cubic-bezier(0.16, 1, 0.3, 1),
 		margin-bottom 360ms cubic-bezier(0.16, 1, 0.3, 1);

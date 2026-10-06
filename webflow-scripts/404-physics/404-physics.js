@@ -1,7 +1,10 @@
 (function contextual404PhysicsInit() {
 	'use strict';
 
-	// ─── CONFIG ────────────────────────────────────────────────────────────────
+	// Shape images are served from the folder this script is loaded from.
+	var ASSETS_BASE_URL = document.currentScript ? new URL('.', document.currentScript.src).href : '';
+
+	// Config
 	var CONFIG = {
 		shapes: [
 			{
@@ -72,7 +75,7 @@
 				src: './assets/shape-large-blue-crescent.svg',
 				width: 428,
 				height: 214,
-				angle: 150, // arc opens downward at entry (matches the Figma reference)
+				angle: 150, // arc opens downward at entry
 				body: {type: 'rect', width: 428, height: 214, radius: 36},
 				mass: 6
 			},
@@ -123,7 +126,7 @@
 		},
 	};
 
-	// ─── MODULE STATE ──────────────────────────────────────────────────────────
+	// State
 	var ROOT_SELECTOR = '[data-ctx-404-physics]';
 	var STAGE_SELECTOR = '[data-ctx-404-physics-stage]';
 	var REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
@@ -137,7 +140,7 @@
 
 	onReady(init);
 
-	// ─── INIT ──────────────────────────────────────────────────────────────────
+	// Init
 	function init() {
 		var root = document.querySelector(ROOT_SELECTOR);
 		if (!root) return;
@@ -185,7 +188,7 @@
 		}
 	}
 
-	// ─── LAYOUT ────────────────────────────────────────────────────────────────
+	// Layout
 	function getGroundY(vh) {
 		var footer = document.querySelector('[data-ctx-404-footer]');
 		if (footer) return footer.getBoundingClientRect().top;
@@ -201,7 +204,7 @@
 		return {vw: vw, vh: vh, scale: scale, isMobile: isMobile, groundY: groundY};
 	}
 
-	// ─── STATIC RENDER (reduced-motion / ?static) ──────────────────────────────
+	// Static render (reduced motion or ?static)
 	function renderStatic(stage, layout) {
 		stage.replaceChildren();
 		var vw = layout.vw;
@@ -223,7 +226,7 @@
 		});
 	}
 
-	// ─── PHYSICS WORLD ─────────────────────────────────────────────────────────
+	// Physics world
 	function createWorld(stage) {
 		var Engine = Matter.Engine;
 		var Runner = Matter.Runner;
@@ -328,7 +331,7 @@
 		state = null;
 	}
 
-	// ─── SPAWN ─────────────────────────────────────────────────────────────────
+	// Spawn
 	function shapeById(id) {
 		for (var i = 0; i < CONFIG.shapes.length; i++) {
 			if (CONFIG.shapes[i].id === id) return CONFIG.shapes[i];
@@ -360,33 +363,28 @@
 
 		// crescent is always last so it gets the rightmost spawn zone on every breakpoint
 		if (vw >= 1920) {
-			// Explicit, hand-ordered 15-shape sequence (the designer's pattern made
-			// readable). Each index maps to a left→right spawn zone. Rules:
-			//   • colour and size alternate — no two big dark shapes sit adjacent;
-			//   • the centre indices (6–8, the zones above the button) hold only
-			//     small/light shapes, so the button-band guard in spawnShapes only ever
-			//     nudges unobtrusive shapes;
-			//   • the large blue crescent stays last (right anchor).
-			// Tune purely by reordering this list — no splice juggling.
+			// Hand-ordered sequence; each index maps to a left-to-right spawn zone.
+			// Colour and size alternate, the centre band (6-8, above the button) holds small
+			// light shapes, and the crescent stays last.
 			var navyWedge = shapeById('navy-wedge');
 			var navyCircle = shapeById('navy-circle');
 			var blueWedge = variantOf('navy-wedge', './assets/shape-navy-wedge-blue.svg');
 			return [
-				shapeById('left-navy-crescent'), // 0  dark, wide  — left anchor
+				shapeById('left-navy-crescent'), // 0  dark, wide, left anchor
 				shapeById('lavender-dome'),      // 1  lavender
 				blueWedge,                       // 2  blue (accent on the left half)
 				navyCircle,                      // 3  dark
 				shapeById('blue-arch'),          // 4  blue, large
 				extraDome,                       // 5  dark
-				extraBowl,                       // 6  lavender, small ┐ centre band
-				extraRing,                       // 7  dark, small     │ (above button)
-				shapeById('small-navy-bowl'),    // 8  dark, small     ┘
+				extraBowl,                       // 6  lavender, small (centre band, above the button)
+				extraRing,                       // 7  dark, small
+				shapeById('small-navy-bowl'),    // 8  dark, small
 				extraCres,                       // 9  blue, wide
 				navyWedge,                       // 10 dark
 				shapeById('blue-ring'),          // 11 blue, small
 				extraArch,                       // 12 dark, large
 				navyCircle,                      // 13 dark
-				crescent,                        // 14 blue, huge — right anchor
+				crescent,                        // 14 blue, huge, right anchor
 			];
 		}
 		if (vw >= 1760) return baseSans.concat([
@@ -397,7 +395,7 @@
 			crescent,
 		]); // 12, crescent last
 		if (vw >= 1441) return baseSans.concat([extraRing, extraBowl, crescent]); // 10, crescent last
-		return base; // 8 — exactly 1440 (and below) stays on the Figma reference layout
+		return base; // 8 at 1440 and below
 	}
 
 	// Horizontal x-span of the CTA button, read from the obstacle element. Used to
@@ -413,7 +411,7 @@
 	}
 
 	// Shapes drop from above the viewport in staggered left-to-right zones.
-	// Physics handles all settling — no pre-placed sleeping bodies.
+	// Physics handles all settling; no pre-placed sleeping bodies.
 	function spawnShapes(stage, Bodies, Body, Composite, engine, layout) {
 		var vw = layout.vw;
 		var scale = layout.scale;
@@ -423,8 +421,7 @@
 		var stagger = CONFIG.spawn.stagger;
 		var jitter = CONFIG.spawn.zoneJitter;
 		var aJitter = CONFIG.spawn.angleJitter;
-		// Desktop widths (>= buttonBandWidth): keep spawns out of the button's column
-		// so nothing can settle on the CTA (replaces the old angle/friction/splice hacks).
+		// From buttonBandWidth up: keep spawns out of the button's column so nothing rests on it.
 		var band = vw >= CONFIG.spawn.buttonBandWidth ? getButtonBand() : null;
 		var items = [];
 
@@ -482,7 +479,7 @@
 		return items;
 	}
 
-	// ─── WALLS & OBSTACLES ─────────────────────────────────────────────────────
+	// Walls and obstacles
 	function createWalls(Bodies, layout) {
 		var t = CONFIG.bounds.wallThickness;
 		var wb = CONFIG.bounds.wallBleed;
@@ -524,7 +521,7 @@
 		return result;
 	}
 
-	// ─── DOM SYNC ──────────────────────────────────────────────────────────────
+	// DOM sync
 	function createShapeElement(shape, sw, sh) {
 		var el = document.createElement('div');
 		var img = document.createElement('img');
@@ -535,8 +532,7 @@
 
 		var src = shape.src;
 		if (src.indexOf('./') === 0) {
-			var baseUrl = window.CTX_404_ASSETS_BASE_URL || 'https://thankscavi.github.io/contextual-assets/webflow-scripts/404-physics/';
-			src = baseUrl + src.substring(2);
+			src = (window.CTX_404_ASSETS_BASE_URL || ASSETS_BASE_URL) + src.substring(2);
 		}
 		img.src = src;
 		img.alt = '';
@@ -558,7 +554,7 @@
 		item.element.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0) rotate(' + item.body.angle + 'rad)';
 	}
 
-	// Soft ceiling: once a shape has entered the viewport, keep ≥35% visible below the top edge.
+	// Soft ceiling: once a shape has entered the viewport, keep at least 35% of it below the top edge.
 	// Entrance bodies (hasEntered=false) are exempt so they still fall in from above.
 	function enforceCeiling(item, Body) {
 		if (!item.hasEntered) return;
@@ -617,7 +613,7 @@
 		}
 	}
 
-	// ─── DRAG ──────────────────────────────────────────────────────────────────
+	// Drag
 	// Kinematic pin drag: body is moved to the target in the engine's beforeUpdate
 	// tick, not inside the pointer event. This decouples the pointer stream from
 	// the engine tick, eliminates forced reflows (no getBoundingClientRect in
@@ -656,10 +652,7 @@
 		Matter.Events.on(engine, 'beforeUpdate', beforeUpdateFn);
 
 		function onDown(event) {
-			// Safety: a previous drag that never released cleanly (lost pointer
-			// capture, released off-window, second pointer) would otherwise leave its
-			// body static/non-colliding and "stuck" mid-air. Restore it first so a
-			// body can never be orphaned in the pusher state.
+			// Restore a body left over from a drag that never released cleanly.
 			if (active) abortActive();
 
 			var shapeEl = event.target.closest && event.target.closest('.ctx404__shape');
@@ -674,7 +667,7 @@
 			}
 			if (!item) return;
 
-			// Cache stage rect once on pointerdown — never inside pointermove
+			// Cache the stage rect on pointerdown, never in pointermove
 			var stageRect = stage.getBoundingClientRect();
 			var ptX = event.clientX - stageRect.left;
 			var ptY = event.clientY - stageRect.top;
@@ -705,7 +698,7 @@
 					group: savedFilter.group,
 				};
 				// Wake the whole pile: a static body does not wake sleeping neighbours
-				// on its own — Matter only wakes sleepers on contact with a moving,
+				// on its own; Matter only wakes sleepers on contact with a moving,
 				// non-static body. Without this the pusher passes through settled shapes.
 				for (var w = 0; w < elements.length; w++) {
 					if (!elements[w].body.isStatic) {
@@ -760,7 +753,7 @@
 			active.targetX = clamp(ptX - active.offsetX, hw, vw - hw);
 			active.targetY = clamp(ptY - active.offsetY, hh, vh - hh);
 
-			// Trail for throw velocity — keep last 5 entries
+			// Trail for throw velocity, last 5 entries
 			var now = performance.now();
 			active.trail.push({x: ptX, y: ptY, t: now});
 			if (active.trail.length > 5) active.trail.shift();
@@ -784,8 +777,8 @@
 			if (active.isPusher) {
 				Body.setStatic(active.item.body, false);
 				// setStatic(false) restores from body._original which predates our custom
-				// setMass call — re-apply the saved mass explicitly to ensure throw feels
-				// correct and body isn't unexpectedly light.
+				// setMass call, so re-apply the saved mass explicitly to keep the throw weight
+				// correct.
 				Body.setMass(active.item.body, active.savedMass);
 			}
 
@@ -800,7 +793,7 @@
 				var oldPt = trail[Math.max(0, trail.length - 3)];
 				var dt = newPt.t - oldPt.t;
 				if (dt > 0) {
-					// Convert px/ms → px/frame (assuming 60 Hz = ~16.67 ms/frame)
+					// Convert px/ms to px/frame (60 Hz, about 16.67 ms/frame)
 					var msPerFrame = 1000 / 60;
 					vx = (newPt.x - oldPt.x) / dt * msPerFrame;
 					vy = (newPt.y - oldPt.y) / dt * msPerFrame;
@@ -865,7 +858,7 @@
 		return {cleanup: cleanup};
 	}
 
-	// ─── RESIZE ────────────────────────────────────────────────────────────────
+	// Resize
 	function bindResize(root, stage) {
 		window.addEventListener('resize', function () {
 			window.clearTimeout(resizeTimer);
@@ -946,7 +939,7 @@
 		state.cleanupDrag = dragResult.cleanup;
 	}
 
-	// ─── REDUCED-MOTION ────────────────────────────────────────────────────────
+	// Reduced motion
 	function bindReducedMotion(root, stage) {
 		if (!prefersReducedMotion.addEventListener) return;
 		prefersReducedMotion.addEventListener('change', function (event) {
@@ -960,7 +953,7 @@
 		});
 	}
 
-	// ─── UTILITIES ─────────────────────────────────────────────────────────────
+	// Utilities
 	function prepareSectionStage(root, stage) {
 		if (stage.parentElement !== root) root.insertBefore(stage, root.firstChild);
 		if (window.getComputedStyle(root).position === 'static') root.style.position = 'relative';

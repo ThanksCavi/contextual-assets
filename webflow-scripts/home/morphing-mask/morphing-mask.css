@@ -100,8 +100,8 @@ html:not(.wf-design-mode) [data-lottie-mask]:not([data-lottie-mask-ready="static
 	stroke-opacity: 1 !important;
 }
 
-/* Static/error fallback must match the masked photo (≈49.28% of the stage box, centered),
-   not fill the oversized stage box. Only applies once the stage exists AND we've fallen back. */
+/* The static fallback matches the masked photo (about 49.28% of the stage box, centred),
+   not the oversized stage box. Applies only once the stage exists and has fallen back. */
 [data-lottie-mask]:has(.lm-stage):is([data-lottie-mask-ready="static"], [data-lottie-mask-ready="error"])
   > .lottie-builder-placeholder {
 	position: absolute;

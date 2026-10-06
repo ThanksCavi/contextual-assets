@@ -1,25 +1,21 @@
-/* What We Do — page behaviour, one module per block.
+/* What We Do page behaviour.
 
-   Contract (Designer sets only data attributes, classes stay free to change):
-     [data-wwd-anchors]         §1 anchor row, rebuilt from the §3 cards
-     [data-wwd-anchor-label]    label in the first tile, which is the clone template
-     [data-values-stack-item]   §3 card; its id is derived from the card title
-     [data-wwd-solution-title]  §3 card title, source of the id and the tile label
-     [data-wwd-rich-list]       §3 rich text prop; each line becomes a list item
-     [data-wwd-assemble]        §4 empty slot; the assemble mark is injected into it
-     [data-wwd-abilities]       §5a wrapper of the family grid; hosts the connector svg
-     [data-wwd-family]          one column; [data-wwd-family-label] is its yellow label
-     [data-wwd-foundation]      §5b box every connector ends at
-     [data-wwd-point-word]      §6 display word, zooms in first
-     [data-wwd-point-copy]      §6 paragraph, fades up after the word
+   [data-wwd-anchors]         hero anchor row, built from the solution cards
+   [data-wwd-anchor-label]    label in the first tile (clone template)
+   [data-values-stack-item]   solution card; its id comes from the title
+   [data-wwd-solution-title]  solution card title
+   [data-wwd-rich-list]       rich text prop; each line becomes a list item
+   [data-wwd-assemble]        empty slot for the assemble mark
+   [data-wwd-abilities]       family grid wrapper; hosts the connector svg
+   [data-wwd-family]          column; [data-wwd-family-label] is its label
+   [data-wwd-foundation]      box the connectors end at
+   [data-wwd-point-word]      display word, zooms in first
+   [data-wwd-point-copy]      paragraph, fades up after the word
 
-   Scroll-driven motion follows the site policy (ContextualHomeMotion) and runs
-   only at desktop widths without reduced motion; otherwise the end state shows. */
+   Scroll motion runs only on desktop without reduced motion. */
 
-/* Solutions (§3 → §1): each card gets an id from its title and the hero row
-   gets one tile per card, so a duplicated card needs no id or link by hand.
-   Runs as the script executes: before values-stack.js starts on
-   DOMContentLoaded and before scroll-smoother.js resolves an incoming hash. */
+/* Solutions: each card gets an id from its title and a matching hero tile.
+   Runs immediately, before values-stack.js and scroll-smoother.js read the hash. */
 (() => {
 	const ITEM_SELECTOR = '[data-values-stack-item]';
 	const TITLE_SELECTOR = '[data-wwd-solution-title]';
@@ -28,8 +24,7 @@
 	const ID_PREFIX = 'wwd-solution-';
 	const RICH_LIST_SELECTOR = '[data-wwd-rich-list]';
 	const BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, blockquote';
-	// The rich text prop editor has no list button, so editors type one item per
-	// line; a leading dash or bullet from pasted text is dropped.
+	// One item per line (the prop editor has no lists); leading dashes are dropped.
 	const BULLET = /^\s*(?:[-–—•*]|&nbsp;)+\s*/;
 	// Cleared fields keep a zero-width joiner, which is not whitespace.
 	const INVISIBLE = /[\u200b-\u200d\ufeff]/g;
@@ -88,7 +83,7 @@
 	}
 })();
 
-/* Assemble (§4): pieces fly into the mark once the slot is fully in view. */
+/* Assemble: pieces fly into the mark once the slot is fully in view. */
 (() => {
 	const SLOT_SELECTOR = '[data-wwd-assemble]';
 	const STAGE_CLASS = 'wwd-assemble';
@@ -143,9 +138,8 @@
 	}
 })();
 
-/* Abilities connectors (§5a → §5b): one line per family into the Foundation box,
-   drawn on scroll. Geometry is read from the live DOM, so adding a card or a
-   family needs no change here. */
+/* Abilities connectors: one line per family into the Foundation box, drawn on scroll.
+   Geometry is read from the DOM. */
 (() => {
 	const WRAP_SELECTOR = '[data-wwd-abilities]';
 	const FAMILY_SELECTOR = '[data-wwd-family]';
@@ -156,10 +150,7 @@
 	const MOTION_QUERY = '(min-width: 992px) and (prefers-reduced-motion: no-preference)';
 	const POLICY_EVENT = 'contextual:motion-policy-change';
 
-	// Figma 5719:1896: the collector runs 56px above the box, the centre arrow
-	// ends 20px above it, turns are 60px arcs (tighter when a column reaches
-	// closer to the collector), each chevron starts at the edge of the column
-	// it points into.
+	// Collector 56px above the box, centre arrow ends 20px above it, 60px turns.
 	const COLLECTOR_OFFSET = 56;
 	const END_GAP = 20;
 	const TURN_RADIUS = 60;
@@ -184,8 +175,7 @@
 
 		build();
 
-		// The wrapper's size covers viewport changes, font swaps, added cards and
-		// the families' open transition, which is still running on first build.
+		// Covers viewport, font and content changes and the families' open transition.
 		new ResizeObserver(() => {
 			window.clearTimeout(resizeTimer);
 			resizeTimer = window.setTimeout(build, 200);
@@ -255,8 +245,7 @@
 			.sort((a, b) => a.x - b.x);
 		if (!stems.length) return null;
 
-		// Layout offsets, not rects: the Foundation's fade-up transform would
-		// shift every line by its offset until it plays.
+		// Layout offsets, not rects: they ignore the Foundation's fade-up transform.
 		const centerX = layoutLeft(foundation) + foundation.offsetWidth / 2 - layoutLeft(wrap);
 		const foundationTop = layoutTop(foundation) - layoutTop(wrap);
 		const collectorY = foundationTop - COLLECTOR_OFFSET;
@@ -296,10 +285,7 @@
 		return {lines, arrows};
 	}
 
-	// Stacked layout: one static centre arrow across the gap below the accordions.
-	// The svg starts at the wrapper's bottom edge (see CSS), so opening a
-	// family moves the arrow with it; the gap is read from layout offsets, which
-	// ignore the Foundation's fade-up transform.
+	// Stacked layout: one static centre arrow below the accordions.
 	function drawStackedArrow() {
 		const foundation = document.querySelector(FOUNDATION_SELECTOR);
 		const gap = layoutTop(foundation) - (layoutTop(wrap) + wrap.offsetHeight);
@@ -334,8 +320,7 @@
 		return path;
 	}
 
-	// Desktop shows every family open, so the accordion's hidden/toggle
-	// semantics only apply to the stacked layout.
+	// Desktop shows every family open; accordion semantics apply to the stacked layout only.
 	function syncAccordionSemantics() {
 		const desktop = window.matchMedia(LAYOUT_QUERY).matches;
 		wrap.querySelectorAll('[data-reveal-accordion-item]').forEach((item) => {
@@ -382,8 +367,7 @@
 	}
 })();
 
-/* The Point (§6): the display word zooms in from above (animate.css zoomInDown,
-   toned down to the site's motion policy), then the paragraph fades up. */
+/* The Point: the word zooms in, then the paragraph fades up. */
 (() => {
 	const WORD_SELECTOR = '[data-wwd-point-word]';
 	const COPY_SELECTOR = '[data-wwd-point-copy]';

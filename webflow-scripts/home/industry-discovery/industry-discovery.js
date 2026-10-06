@@ -1,6 +1,4 @@
-/**
- * Industry Panel - Interactive background crossfade & mobile accordion
- */
+/* Industry Panel: background crossfade and mobile accordion */
 (() => {
 	const CFG = {
 		sel: {
@@ -37,15 +35,9 @@
 		panels.set(panel, state);
 
 		cards.forEach((card) => {
-			// The card type is the presence of the link itself, not its href: the
-			// Expandable Card variant hides the <a> by conditional visibility, so it
-			// never reaches the DOM. Placeholder hrefs ("#") stay link cards — swap the
-			// variant in Webflow to bring the accordion back.
+			// Card type comes from the link's presence: the Expandable Card variant hides the <a>.
 			const isLinkCard = !!card.querySelector(CFG.sel.link);
-			// The Expandable Link Card carries both jobs. Desktop needs nothing extra —
-			// hover reveals the description, a click follows the link — but without hover
-			// mobile has to split them: the "+" opens the description, the rest of the
-			// card stays the link.
+			// Expandable Link Card on touch: the "+" opens the description, the rest of the card is the link.
 			const isHybrid = isLinkCard && card.getAttribute(CFG.variant) === 'expandable-link-card';
 
 			card.classList.add(isHybrid ? 'is-expandable-link-card' : isLinkCard ? 'is-link-card' : 'is-info-card');
@@ -109,8 +101,7 @@
 		const toggle = card.querySelector(CFG.sel.toggle);
 		if (!toggle) return;
 
-		// Webflow ships the "+" as decoration. Here it is the only way to reach the
-		// description, so it has to be an actual control.
+		// The "+" is the only way to the description on touch, so it becomes a real control.
 		toggle.removeAttribute('aria-hidden');
 		toggle.setAttribute('role', 'button');
 		toggle.setAttribute('tabindex', '0');
@@ -155,7 +146,7 @@
 		const nextLayer = state.layers[nextIdx];
 		const prevLayer = state.layers[state.activeIndex];
 
-		// Force reflow for smooth transition reset if needed
+		// Force reflow before resetting the transition
 		if (!nextLayer.classList.contains(CFG.cls.act)) {
 			nextLayer.style.transition = 'none';
 			void nextLayer.offsetHeight;

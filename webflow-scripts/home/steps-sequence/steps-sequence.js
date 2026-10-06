@@ -536,10 +536,8 @@
     state.root.style.setProperty('--steps-open-gap', `${openGap}px`);
   }
 
-  // The Designer spaces reveal and toggle with margin-top. The card clips its
-  // overflow, so those margins must come out of the summary height or the
-  // toggle's bottom edge is cut off. Closed, the zero-height reveal still keeps
-  // its margin; open, the toggle is hidden and only the reveal margin remains.
+  // The card clips overflow, so the Designer margins of reveal and toggle
+  // are subtracted from the summary height.
   function measureStackGaps(step) {
     const marginTop = element => (element ? parseFloat(getComputedStyle(element).marginTop) || 0 : 0);
     const revealGap = marginTop(step?.reveal);

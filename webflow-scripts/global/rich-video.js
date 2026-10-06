@@ -1,4 +1,4 @@
-/* Rich-text video embeds: YouTube/Vimeo iframe -> thumbnail + play, iframe injected on click. Styles: global.css */
+/* Rich text video embeds: YouTube/Vimeo iframe becomes a thumbnail with a play button; the iframe is injected on click. Styles: global.css */
 document.addEventListener('DOMContentLoaded', () => {
   const VIDEO_IFRAME_SELECTOR = [
     'iframe[src*="youtube.com"]',

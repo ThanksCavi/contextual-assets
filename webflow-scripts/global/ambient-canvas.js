@@ -1,4 +1,4 @@
-// Circle Canvas
+// Ambient circle canvas
 (() => {
 	// Use [data-circle-zone] on a single light section or on a shared wrapper
 	// around multiple light sections that should render as one seamless field.
@@ -497,7 +497,7 @@
 
 	function placeCanvas(state, focus) {
 		const {canvas, context, dpr, field} = state;
-		// Box around the focus, snapped to device pixels and kept inside the zone,
+		// Box around the focus, snapped to device pixels and clamped to the zone,
 		// so every ring lands on the same device pixels as on a full-zone canvas.
 		const reach = Math.max(field.radiusX, field.radiusY) + MAX_RING_RADIUS + CANVAS_BLEED;
 		const zoneWidth = Math.round(state.width * dpr);

@@ -1,11 +1,10 @@
-/* Values scroller — arrow buttons over a native horizontal scroll container.
-   The section works without this file: swipe and scroll are native. The arrows
-   are the desktop affordance on top.
-   Contract:
-     [data-values-scroller]        scroll container
-     [data-values-scroller-prev]   previous control
-     [data-values-scroller-next]   next control
-   State: `is-disabled` on a control that has reached its edge. */
+/* Values scroller: arrow buttons over a native horizontal scroll container.
+
+   [data-values-scroller]        scroll container
+   [data-values-scroller-prev]   previous control
+   [data-values-scroller-next]   next control
+
+   `is-disabled` marks a control at its edge. */
 (function () {
   var ROOT = '[data-values-scroller]';
   var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;

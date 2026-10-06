@@ -1,15 +1,13 @@
-/* Platform — page behaviour, one module per block.
+/* Platform page behaviour.
 
-   Contract (Designer sets only data attributes, classes stay free to change):
-     [data-plt-stages]       §4 selector root; exactly one stage is open
-     [data-plt-stage]        one stage; carries the `is-open` state class
-     [data-plt-stage-body]   title and description, shown only while open
-     [data-plt-stage-label]  closed label
+   [data-plt-stages]       stage selector root; exactly one stage is open
+   [data-plt-stage]        stage; carries `is-open`
+   [data-plt-stage-body]   title and description, shown while open
+   [data-plt-stage-label]  closed label
 
-   The initially open stage comes from Designer (`is-open`); without one the
-   first stage opens. Layout and transitions live in platform.css. */
+   The open stage is set in the Designer (`is-open`); otherwise the first one opens. */
 
-/* Stages (§4): click, Enter or Space opens a stage; the open one stays open. */
+/* Stages: click, Enter or Space opens a stage. */
 (() => {
 	const ROOT_SELECTOR = '[data-plt-stages]';
 	const STAGE_SELECTOR = '[data-plt-stage]';

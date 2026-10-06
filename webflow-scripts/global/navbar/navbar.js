@@ -1,17 +1,5 @@
-/**
- * Navbar runtime.
- *
- * Одна задача: держать класс .is-sticky в согласии с реальной прокруткой, в том
- * числе когда страницу листает ScrollSmoother — нативный window.scrollY при этом
- * не двигается.
- *
- * Мобильное подменю здесь НЕ обслуживается, и это осознанно. Раньше тут висел
- * обработчик, который добавлял .is-open на .mob-menu-item, — при том что сам пункт
- * является нативным Webflow Dropdown со своим открытием, а комбо-класса .is-open
- * в проекте не существовало вовсе. Два механизма на одном элементе, и работающий
- * из них — ни один. Оставлен нативный дропдаун Webflow: раскрытие, закрытие по
- * клику вне и класс .w--open он делает сам, оформление состояния — в navbar.css.
- */
+/* Navbar runtime: keeps .is-sticky in sync with the scroll position, including
+   ScrollSmoother scrolling. The mobile submenu is Webflow's native dropdown. */
 (() => {
 	const INIT_FLAG = '__contextualNavbarInit';
 	const NAVBAR_SELECTOR = '.navbar.w-nav';
@@ -61,7 +49,7 @@
 		window.addEventListener(POLICY_CHANGE_EVENT, startStickyMonitor);
 	}
 
-	/* ---------- залипание ---------- */
+	/* Sticky state */
 
 	function requestStickyUpdate() {
 		if (ticking) return;
@@ -107,17 +95,13 @@
 		}
 	}
 
-	// Класс живёт в одном месте — на .navbar. Раньше он дублировался ещё на двух
-	// элементах, причём один из селекторов (.navbar-container) не совпадал ни с чем
-	// на странице. Всё внутреннее оформление вешается селекторами от .navbar.
+	// The class lives on .navbar only; inner styles key off it.
 	function setStickyState(nextSticky) {
 		isSticky = nextSticky;
 		navbar.classList.toggle(STICKY_CLASS, nextSticky);
 	}
 
-	// Под ScrollSmoother нативная прокрутка и визуальная расходятся: на iOS нативная
-	// может стоять на нуле, пока контент уже уехал, а во время инерции — наоборот.
-	// Берём максимум, чтобы шапка залипала по любому из двух признаков.
+	// Native and visual scroll diverge under ScrollSmoother; use the larger.
 	function getScrollTop() {
 		return Math.max(getNativeScrollTop(), getVisualScrollTop());
 	}
@@ -152,11 +136,8 @@
 
 		if (stableMonitorFrames < MONITOR_STABLE_FRAME_COUNT) return true;
 
-		// У смузера экспоненциальный хвост: кадровая дельта падает ниже порога,
-		// когда визуальная прокрутка ещё не догнала нативную. Заснуть в этот момент —
-		// значит заклинить .is-sticky в промежуточном состоянии (белая полоса на самом
-		// верху после прыжка к якорю или fling'а). Пока значения расходятся — следим.
-		// Обратный случай (iOS: нативная стоит, визуальная уехала) ограничен MONITOR_MAX_MS.
+		// Keep watching while native and visual scroll differ, or .is-sticky can get stuck
+		// after an anchor jump or a fling. The reverse case is capped by MONITOR_MAX_MS.
 		return Math.abs(currentScrollTop - getNativeScrollTop()) > MONITOR_SETTLED_DELTA;
 	}
 

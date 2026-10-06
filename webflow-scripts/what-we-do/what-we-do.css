@@ -1,5 +1,4 @@
-/* What We Do — page styles. Markup contract: data attributes set in Designer,
-   see what-we-do.js for the behaviour that goes with each block. */
+/* What We Do page styles. Behaviour: what-we-do.js */
 
 /* Hero anchors: the arrow is an <img>, so the hover state recolours it here. */
 .wwd-hero-anchor-icon {
@@ -10,8 +9,8 @@
 	filter: brightness(0);
 }
 
-/* Assemble mark (§4). The slot box is sized by the WWD Promise Media class in
-   Webflow; --s only scales the stage inside it and must match those sizes. */
+/* Assemble mark. The slot is sized by the WWD Promise Media class;
+   --s scales the stage inside it and must match. */
 [data-wwd-assemble] {
 	--s: 1;
 	position: relative;
@@ -91,9 +90,8 @@
 	}
 }
 
-/* Abilities (§5a): connector lines drawn by what-we-do.js behind the grid.
-   Scoped to the wrapper to outrank Webflow's `svg:not(:root) { overflow: hidden }`:
-   the collector and arrows sit below the grid, outside the svg box. */
+/* Abilities: connector lines drawn by what-we-do.js behind the grid. Scoped to the
+   wrapper to override Webflow's svg overflow: hidden. */
 [data-wwd-abilities] > .wwd-abilities-lines {
 	position: absolute;
 	inset: 0;
@@ -104,8 +102,7 @@
 	pointer-events: none;
 }
 
-/* On desktop the families are static columns: the reveal accordion from
-   global.js stays wired for the stacked layout but is neutralised here. */
+/* Desktop: the families are static columns, the reveal accordion is neutralised. */
 @media (min-width: 992px) {
 	.wwd-abilities [data-reveal-accordion-detail] {
 		grid-template-rows: 1fr;
@@ -123,9 +120,8 @@
 	}
 }
 
-/* Stacked layout: the svg sits on the wrapper's bottom edge and holds only the
-   centre arrow, so it follows the accordions as they open. 1px, not 0: a
-   zero-height svg viewport is not rendered at all. */
+/* Stacked layout: the svg sits on the wrapper's bottom edge and holds the centre arrow.
+   1px, not 0: a zero-height svg is not rendered. */
 @media (max-width: 991px) {
 	[data-wwd-abilities] > .wwd-abilities-lines {
 		top: 100%;

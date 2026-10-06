@@ -125,7 +125,7 @@
 	transition: opacity 480ms var(--ip-ease);
 }
 
-/* Desktop Hover Interaction (769px+) */
+/* Desktop Hover Interaction (769px and up) */
 @media screen and (min-width: 769px) {
 	/* Global Fill Overlay */
 	[data-industry-panel]::before {
@@ -193,18 +193,17 @@
 		display: none !important;
 	}
 
-	/* Hybrid card: lift the "+" out from under the full-card link (z-index 4) so it
-	   can take the tap that opens the description. !important because Webflow's own
-	   .button.button-square.button-plus.ip-button outweighs this selector. */
+	/* Hybrid card: lift the "+" above the full-card link (z-index 4) so it takes the tap
+	   that opens the description. !important to beat Webflow's .button.button-square.button-plus.ip-button. */
 	.industry-card.is-expandable-link-card .ip-button {
 		z-index: 5 !important;
 		pointer-events: auto !important;
 	}
 
-	/* ...and mark the rest of the card as a link, so the split of roles is visible. */
+	/* The rest of the card reads as a link. */
 	.industry-card.is-expandable-link-card .ip-card-content::after {
 		content: '';
-		position: absolute; /* against .ip-card-grid — stays on the title's line as the card opens */
+		position: absolute; /* against .ip-card-grid, stays on the title's line as the card opens */
 		top: 30px;
 		right: 20px; /* matches the grid's own padding */
 		width: 14px;

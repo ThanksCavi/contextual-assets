@@ -1,29 +1,18 @@
-/**
- * Lottie Mask Component
- * ---------------------
- * Finds every [data-lottie-mask] element, builds the dual-Lottie SVG mask
- * structure inside it, and plays once when the element enters the viewport.
- *
- * Required data-attributes on each container:
- *   data-lottie-mask    – marker (value ignored)
- *   data-lottie-img-1   – URL to first image
- *   data-lottie-img-2   – URL to second image
- *   data-lottie-img-3   – URL to third image (also used as placeholder / fallback)
- *
- * Optional:
- *   data-lottie-img-4   – URL to fourth image; when present, replays the 1→2
- *                         transition once more so four images appear in sequence.
- *                         3-image instances are unaffected. Empty/whitespace is
- *                         treated as absent (safe with Webflow CMS empty fields).
- *   data-lottie-preset  – named animation preset ("single"). Selects a different
- *                         Lottie asset and its own fade timing; only
- *                         data-lottie-img-1 is used. Absent or unknown value
- *                         falls back to the default 3/4-image behaviour.
- *
- * Dependencies: lottie-web (bodymovin) must be loaded before this script.
- *
- * Supports multiple independent instances on one page.
- */
+/* Lottie mask component
+
+   Builds a dual-Lottie SVG mask inside every [data-lottie-mask] element and plays
+   it once when the element enters the viewport. Supports several instances per page.
+
+   data-lottie-mask    marker
+   data-lottie-img-1   first image URL
+   data-lottie-img-2   second image URL
+   data-lottie-img-3   third image URL, also the placeholder and fallback
+   data-lottie-img-4   optional fourth image; replays the 1-to-2 transition once more.
+                       Empty values are treated as absent.
+   data-lottie-preset  optional preset ("single"): own Lottie asset and timing,
+                       uses data-lottie-img-1 only.
+
+   Requires lottie-web (bodymovin) to be loaded first. */
 (function lottieMaskInit() {
   'use strict';
 
@@ -45,12 +34,12 @@
   ];
 
   // Segment splice constants for 4-image mode.
-  // Frames 100 and 266 are pixel-identical in the Lottie asset (0-channel diff verified).
-  // Playing [0, 266] then [100, 186] gives T1 anticlockwise → T2 clockwise → T1 anticlockwise.
+  // Frames 100 and 266 are pixel-identical in the Lottie asset.
+  // Playing [0, 266] then [100, 186] gives T1 anticlockwise, T2 clockwise, T1 anticlockwise.
   var SEG_A    = 100; // jump-to frame (start of T1 steady zone)
   var SEG_B    = 266; // jump-from frame (end of T2 steady zone, pixel-identical to SEG_A)
   var SEG_TAIL = 186; // end of replay segment (just past T1 transition)
-  var REPEAT_OFFSET = SEG_B - SEG_A; // 166 — added to actual frame to get virtual frame in segment 2
+  var REPEAT_OFFSET = SEG_B - SEG_A; // 166, added to the actual frame to get the virtual frame in segment 2
 
   // Virtual-timeline fade rules for 4-image mode (total virtual length = 266 + 86 = 352 frames).
   // img1/img2 windows are the same as the 3-image FADE_RULES (T1 + T2 play in full first).
@@ -62,17 +51,10 @@
     { idx: 3, inStart: 306, inEnd: 331, outStart: Infinity, outEnd: Infinity }
   ];
 
-  // Named presets. A different Lottie asset needs its own fade timing, so the
-  // asset URL and its rules live together.
-  // "single" = careers-morph.json — frames 120..180 of the default asset re-timed
-  // to 24 fps (60 frames, 2.5s). One image, revealed through the morphing mask.
-  //
-  // A preset renders data-lottie-img-1 once per rule, so the same photo can play
-  // both halves of a crossfade. That is what "single" does: the asset is the
-  // default one's frames 120..180, where FADE_RULES has image 1 leaving over
-  // 120→140 and image 2 arriving over 140→165 — minus 120, the windows below.
-  // Coverage therefore dips to nothing around frame 20, which is what exposes
-  // the blue ring underneath, and is back to fully opaque by frame 45.
+  // Named presets: a different Lottie asset needs its own fade timing.
+  // "single" = careers-morph.json: frames 120..180 of the default asset at 24 fps.
+  // One image, revealed through the morphing mask.
+  // Image 1 plays both halves of the crossfade; the windows are the default ones minus 120.
   // containerFade softens the first few frames so the block does not pop in.
   var PRESETS = {
     single: {

@@ -1,32 +1,13 @@
-/* Drag lane — grab-and-drag for a natively scrollable horizontal row.
-   The lane works without this file: touch swipe and trackpad scroll are native.
-   This adds the desktop affordance the client asks for as "draggable".
+/* Drag lane: mouse drag for a natively scrollable horizontal row.
+   Touch and trackpad scrolling stay native.
 
-   Contract: [data-drag-lane] on the row. On init the script adds `is-lane`,
-   and global.css turns the row into a scroll container behind that class.
-   Optional desktop pager contract, scoped to the same section:
-     [data-drag-lane-controls]  pager wrapper
-     [data-drag-lane-prev]      previous control
-     [data-drag-lane-next]      next control
-   The pager appears only when more than three cards exist and the viewport is
-   at least 992px wide. It uses the lane's native scroll position, so arrows,
-   mouse drag, touch swipe, and trackpad scrolling never maintain separate
-   carousel state.
-   Lane mode is deliberately script-owned: the Designer canvas runs no custom
-   code, so there the row stays a plain wrapping grid and every card — including
-   the fourth one — is visible and editable. Card widths, dividers and the grid
-   itself stay in the Designer.
+   [data-drag-lane]           row; the script adds `is-lane` (styles in global.css)
+   [data-drag-lane-controls]  optional pager, shown from 992px with more than three cards
+   [data-drag-lane-prev]      previous control
+   [data-drag-lane-next]      next control
 
-   Applying it to another section:
-     1. build the row as a grid whose column tracks are percentages of the
-        container, e.g. `grid-template-columns: 32.35% 35.3% 32.35%` with
-        `grid-auto-columns` set to the width an extra card should take. Cards
-        then keep their design width no matter how many are added: the ones
-        beyond the container simply sit outside it;
-     2. add `data-drag-lane` on the row — do NOT set overflow in the Designer;
-     3. if the cards carry a divider, set it as border-left on the card class
-        and zero it on the `first-child` pseudo state — so the line follows
-        card order instead of a hand-placed class. */
+   Lane mode is added by the script, so the Designer canvas shows a plain grid.
+   Do not set overflow on the row in the Designer. */
 (function () {
   var ROOT = '[data-drag-lane]';
   var THRESHOLD = 4; // px of travel before a press counts as a drag, not a click
@@ -77,9 +58,7 @@
       var isDesktop = !desktop || desktop.matches;
       var active = lane.children.length > 3 && isDesktop;
 
-      // A focused control can disappear on a responsive resize. Move focus out
-      // before hiding its parent so assistive technology never retains a hidden
-      // focus target.
+      // Move focus out before hiding a control's parent on resize.
       if (!active && controls.contains(document.activeElement)) {
         document.activeElement.blur();
       }
@@ -225,8 +204,7 @@
     bindControl(next, 1);
 
     if (window.ResizeObserver) new ResizeObserver(paint).observe(lane);
-    // The breakpoint class change can settle a frame after matchMedia fires,
-    // so paint again on the viewport's next frame as well.
+    // The breakpoint class can settle a frame after matchMedia fires, so paint again next frame.
     window.addEventListener('resize', function () {
       window.requestAnimationFrame(paint);
     });

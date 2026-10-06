@@ -1,10 +1,5 @@
-/**
- * Hero Lottie Intro
- * -----------------
- * Runs only for the marked Home hero: .hero-spotlight[data-hero-intro="home"].
- * Existing lottie-mask.js remains responsible for Lottie setup, image slots,
- * and viewport-triggered playback for every [data-lottie-mask] instance.
- */
+/* Hero Lottie intro for .hero-spotlight[data-hero-intro="home"].
+   morphing-mask.js handles Lottie setup, image slots and playback. */
 (function heroLottieIntroInit() {
 	'use strict';
 
@@ -197,9 +192,7 @@
 	}
 
 	function getRevealGroups(hero) {
-		// Анимируем полосу внутри шапки, а не саму .navbar: у .navbar есть fixed-потомок
-		// (.offcanvas-menu), и transform/will-change на ней делает её containing block'ом —
-		// мобильное меню уезжает на инсет шапки. Контракт описан в navbar.css.
+		// Animate the bar inside the header, not .navbar: see the contract in navbar.css.
 		var nav = document.querySelector('.navbar.w-nav .navbar-sticky');
 		var markedItems = Array.prototype.slice.call(hero.querySelectorAll('[data-hero-intro-reveal]'));
 		var after = Array.prototype.slice.call(document.querySelectorAll('[data-hero-intro-after]'));

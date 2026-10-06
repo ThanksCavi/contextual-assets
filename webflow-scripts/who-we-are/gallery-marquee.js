@@ -1,27 +1,10 @@
-/* Gallery marquee — slow infinite loop for a static image row, draggable by hand.
-   The track is duplicated at runtime rather than in the Designer, so editors keep
-   add / delete / reorder on the original images.
+/* Gallery marquee: slow infinite loop for an image row, draggable by hand.
+   The track is duplicated at runtime, so editors work with the original images.
+   One frame loop owns the offset; a throw adds speed that decays into the drift.
+   Reduced motion keeps the drag and drops the drift.
 
-   The row is not a scroll container, so the shared drag-lane.js — which drags
-   scrollLeft — does not apply here: the loop lives in a transform, and the drag
-   moves that same offset. One frame loop owns the offset in every state — drifting,
-   held, dragged, gliding — so nothing else ever writes the transform and the drag
-   cannot outrun the display. Reduced motion keeps the drag and drops only the
-   automatic movement.
-
-   A throw does not get its own animation either: the release speed is added to the
-   marquee speed and decays away, so the lane glides down into its own slow drift
-   with nothing to see at the hand-off.
-   The hand grabs the strip, not the row. The row rides the transform, so its own
-   box slides out from under the visible strip: the images past its edge are only
-   children of it, and the 20px gaps between them belong to nothing — a press
-   landing in one of those did nothing at all. Pointer events and the pointer
-   capture therefore live on the element that clips the row, which is exactly the
-   strip. The transform stays on the row.
-
-   Contract: [data-gallery-marquee] on the row; the script adds `is-marquee-strip`
-   / `is-dragging` to the clipping element, and global.css hangs the cursor,
-   touch-action and user-select off them. */
+   [data-gallery-marquee] on the row. The script adds `is-marquee-strip` and
+   `is-dragging` to the clipping element; styles live in global.css. */
 (function () {
   var ROOT = '[data-gallery-marquee]';
   var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,7 +12,7 @@
   var THRESHOLD = 4; // px of travel before a press counts as a drag
   var GLIDE = 0.42; // seconds for a throw to shed ~63% of its speed
   var MAX_THROW = 2400; // px per second: a flick coasts, it does not launch
-  var STALE_RELEASE = 0.09; // s — a hand that paused before letting go throws nothing
+  var STALE_RELEASE = 0.09; // s, a hand that paused before letting go throws nothing
 
   // The nearest ancestor-or-self that clips overflow: the strip the row shows through.
   function clipHost(row) {
@@ -52,9 +35,7 @@
 
     originals.forEach(function (node) {
       if (node.tagName !== 'IMG') return;
-      // A lane carries images in from the side, and lazy loading only watches the
-      // page scroll — a lazy photo reaches the edge still empty. The copies load
-      // eagerly regardless, so the original may as well fetch the same bytes.
+      // Lazy loading only watches page scroll, so load the original eagerly like its copies.
       node.loading = 'eager';
       node.addEventListener('load', measure); // its width decides the loop length
     });
@@ -96,11 +77,7 @@
 
     function measure() {
       distance = firstClone.offsetLeft - originals[0].offsetLeft;
-      // The wrap jumps the lane back by one loop, so the lane has to be one loop
-      // longer than the row — otherwise the far end runs out and bare background
-      // shows at the right edge for part of every cycle. Half-loaded photos are
-      // narrower than they will be, so wait for their real widths or the lane
-      // ends up with copies it does not need.
+      // The lane must be one loop longer than the row; wait for real image widths.
       if (loaded()) {
         while (distance > 0 && row.scrollWidth < row.clientWidth + distance) appendSet();
       }
@@ -124,9 +101,7 @@
 
       var next = offset;
       if (pointerId !== null) {
-        // Under the hand the lane follows travel and nothing else: held without
-        // moving, it stands still; dragged, it lands once per frame rather than
-        // once per pointer event, which is what made the drag feel choppy.
+        // Under the hand the lane follows travel only, once per frame.
         if (dragging) next = wrap(startOffset - travel);
       } else if (distance > 0) {
         if (throwSpeed) {
@@ -201,8 +176,8 @@
       var idle = (e.timeStamp - moveTime) / 1000;
       throwSpeed = (RM || idle > STALE_RELEASE) ? 0 :
         Math.max(-MAX_THROW, Math.min(MAX_THROW, handSpeed - SPEED));
-      // minus SPEED: the tick adds the marquee speed back, so a lane released at
-      // walking pace keeps exactly that pace instead of a step up.
+      // Minus SPEED: the tick adds the marquee speed back, so a release at walking
+      // pace keeps that pace.
 
       if (visible) start();
     }
@@ -220,9 +195,7 @@
     window.addEventListener('load', measure); // images may settle after decode
 
     if (window.IntersectionObserver) {
-      // Watch the section, not the row: the row travels under its own transform
-      // and once the offset passes the viewport width it stops intersecting —
-      // which used to park the marquee for good on narrow screens.
+      // Observe the section, not the row: the row moves out of view under its own transform.
       new IntersectionObserver(function (entries) {
         visible = entries[0].isIntersecting;
         if (visible) start();

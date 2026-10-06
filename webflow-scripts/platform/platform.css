@@ -1,8 +1,6 @@
-/* Platform — page styles. Markup contract: data attributes set in Designer,
-   see platform.js for the behaviour that goes with each block. */
+/* Platform page styles. Behaviour: platform.js */
 
-/* Stages (§4). Designer holds the closed layout; the open state lives here
-   because platform.js toggles it at runtime. */
+/* Stages. The Designer holds the closed layout; platform.js toggles the open state. */
 [data-plt-stage] {
 	transition: flex-grow 0.5s ease, background-color 0.3s ease;
 }
@@ -72,8 +70,7 @@
 	}
 }
 
-/* Case cards (§10): "Read more" replaces the summary on hover and keyboard
-   focus; touch screens show both. */
+/* Case cards: "Read more" replaces the summary on hover and focus; touch shows both. */
 @media (hover: hover) {
 	.plt-case-card:hover .plt-case-body {
 		display: none;

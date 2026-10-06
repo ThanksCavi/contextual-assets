@@ -1,6 +1,5 @@
 /* FOCUS RING
-   Keyboard focus only. Webflow's base CSS zeroes the outline on its own
-   dropdown, nav, tab and slider controls, so those are restored explicitly. */
+   Keyboard focus only. Webflow zeroes the outline on its own controls, so those are restored. */
 :focus-visible,
 .w-dropdown-toggle:focus-visible,
 .w-dropdown-link:focus-visible,
@@ -192,7 +191,7 @@
 	transition: none;
 }
 
-/* RICH TEXT VIDEO — runtime classes created by rich-video.js */
+/* RICH TEXT VIDEO: runtime classes created by rich-video.js */
 .rich-video {
 	position: absolute;
 	top: 0;
@@ -265,18 +264,8 @@
 }
 
 /* HORIZONTAL SCROLLBAR
-   The rows below 992px are excluded on purpose: there the bar under them is the
-   one we draw (SCROLL INDICATOR below), and styling the native one is not merely
-   redundant — it is what put a second bar on the client's iPad. Touch WebKit
-   leaves the native bar as a transient overlay only while nothing styles it; a
-   single ::-webkit-scrollbar rule makes it swap that overlay for a classic bar it
-   paints permanently, and the iPadOS versions before 17 ignore `display: none` on
-   the very same pseudo-element, so the bar we meant to hide stayed sitting under
-   ours. Newer iPadOS drops these rules on touch altogether — hence the same page
-   reading clean on an 11" Air and doubled on every iPad before it.
-
-   Above 992px nothing changes: the classic bar is permanent there anyway, so it
-   is ours to style. */
+   Styled native bar from 992px. Below that the scroll indicator draws the bar:
+   styling the native one on touch WebKit makes it permanent and doubles it. */
 :root {
 	--horizontal-scrollbar-size: 16px;
 	--horizontal-scrollbar-track: #f8f7f3;
@@ -340,8 +329,7 @@
 	}
 }
 
-/* An article table is the one scroller nobody draws a bar for, so the styled
-   native bar is all it has and it keeps it at every width. One bar, never two. */
+/* Article tables keep the styled native bar at every width. */
 :where(.article .w-embed:has(> table)) {
 	scrollbar-color: var(--horizontal-scrollbar-thumb) var(--horizontal-scrollbar-track);
 	scrollbar-width: thin;
@@ -377,18 +365,8 @@
 }
 
 /* SCROLL INDICATOR
-   Touch browsers draw the scrollbar as a transient overlay: it fades in while a
-   finger is moving and is gone the rest of the time — and on iOS the rules above
-   are ignored outright, so nothing up there can hold it open. A row of cards then
-   reads as a row that ends at the screen edge. This is the same bar drawn by us,
-   below 992px only, so it can simply stay visible.
-
-   The element is script-owned (scroll-indicator in global.js), which pins it to
-   the bottom edge of its scroll container; the gap below that edge is the offset
-   below. Absolute positioning keeps it out of the parent's flow, so it costs the
-   layout nothing and no section had to make room for it.
-   Above 992px nothing changes: desktop keeps the classic native bar, which is
-   permanent already, and a drag lane keeps hiding it on purpose. */
+   Below 992px touch browsers hide the native scrollbar, so global.js draws one
+   that stays visible. Absolutely positioned, so it takes no layout space. */
 :root {
 	--scroll-indicator-size: 6px;
 	--scroll-indicator-offset: 10px;
@@ -396,9 +374,7 @@
 	--scroll-indicator-thumb: var(--_system-colors---dark, #1b1923);
 }
 
-/* The offset rides on margin-top rather than the script's `top`, so a single
-   section can breathe differently by overriding the variable and nothing has to
-   be recomputed in JS. */
+/* Offset via margin-top so a section can override the variable without JS. */
 [data-scroll-indicator] {
 	position: absolute;
 	z-index: 2;
@@ -413,15 +389,8 @@
 	pointer-events: none;
 }
 
-/* Set by the script when the row reaches the viewport, so the bar arrives with
-   its section instead of being the one solid thing on an otherwise fading page.
-
-   The delay is measured, not decorative: on /own-your-ai and /private-equity the
-   reveal sits on the row itself and slides it ~20px over about a second. The bar
-   is placed where the row lands, not where it currently is (see place() in
-   global.js), so it waits out that slide instead of hanging above a row still on
-   its way up. Elsewhere the row never moves and the delay just lets the cards
-   lead. */
+/* Set by the script when the row enters the viewport. The delay lets rows with
+   their own fade-up reveal settle first. */
 [data-scroll-indicator].is-revealed {
 	opacity: 1;
 	transform: none;
@@ -450,14 +419,8 @@
 		display: block;
 	}
 
-	/* The indicator replaces the native bar, it does not join it. Nothing styles
-	   the native bar down here any more, but a desktop browser at this width
-	   still draws its own classic one, which would sit right underneath ours.
-
-	   Zero size next to `display: none` because the two are not the same claim:
-	   older WebKit ignores display on a scrollbar pseudo-element and lays the bar
-	   out anyway, and then honours the size. Whichever of the two an engine
-	   listens to, the bar has nothing left to occupy. */
+	/* The indicator replaces the native bar below 992px. Zero size as well as
+	   display: none, since older WebKit ignores display on scrollbar pseudo-elements. */
 	.is-scroll-indicated {
 		scrollbar-width: none;
 	}
@@ -471,26 +434,19 @@
 	}
 }
 
-/* Set by the script while the row has nowhere to scroll — a three-card row that
-   fits the tablet width should show no bar at all. */
+/* Set while the row has nothing to scroll. */
 [data-scroll-indicator][hidden] {
 	display: none !important;
 }
 
 /* DRAG LANE
-   A card row that turns into a horizontal lane. The lane mode lives here and is
-   switched on by drag-lane.js, never by a Webflow class — the Designer canvas
-   runs no custom code, so on the canvas the row stays a plain wrapping grid and
-   every card, including the fourth one, is visible and editable.
-   Without the script the published row also just wraps: readable, not broken. */
+   Lane mode is switched on by drag-lane.js, so the Designer canvas shows a plain grid. */
 [data-drag-lane].is-lane {
 	grid-auto-flow: column;
 	overflow: auto hidden;
 }
 
-/* The grab affordance is script-owned like lane mode itself: drag-lane.js adds
-   `is-grabbable` only while the lane has somewhere to scroll. A class and not an
-   inline style, so the look stays here with the rest of the cursor rules. */
+/* Added by drag-lane.js only while the lane can scroll. */
 [data-drag-lane].is-grabbable {
 	cursor: grab;
 }
@@ -499,15 +455,12 @@
 	cursor: grabbing;
 }
 
-/* Optional pager state for a drag lane. The controls themselves stay visible
-   in Designer (where scripts do not run) and are hidden only by the runtime
-   `hidden` attribute when the published lane has three or fewer cards. */
+/* Pager controls get the `hidden` attribute when there are three cards or fewer. */
 [data-drag-lane-controls][hidden] {
 	display: none !important;
 }
 
-/* A fourth card can begin exactly at the visible right edge. Its separator is
-   still between cards, but should not look like an extra rule after card three. */
+/* Hide the separator of a card that starts exactly at the right edge. */
 [data-drag-lane] > .is-lane-edge {
 	border-left-color: transparent;
 }
@@ -517,8 +470,7 @@
 	opacity: 0.35;
 }
 
-/* Pager hover (brief 4.8): the arrow nudges in its own direction with a soft
-   overshoot. A disabled end stays still and does not read as clickable. */
+/* Pager hover: the arrow nudges in its direction. Disabled ends stay still. */
 [data-drag-lane-prev] img,
 [data-drag-lane-next] img {
 	transition: translate 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -538,8 +490,7 @@
 	cursor: default;
 }
 
-/* Desktop drags the lane by the cursor, so the bar is noise there. Below 992 the
-   lane is a touch strip and keeps the site scrollbar — see data-horizontal-scroll. */
+/* Desktop drags the lane with the cursor, so the scrollbar is hidden there. */
 @media screen and (min-width: 992px) {
 	[data-drag-lane].is-lane {
 		scrollbar-width: none;
@@ -551,20 +502,12 @@
 }
 
 /* GALLERY MARQUEE
-   The looping image row of the Who We Are and Careers galleries. Keyed on the
-   contract rather than on a page class: both galleries run gallery-marquee.js,
-   but only one of the two pages loads who-we-are.css, where these rules used to
-   live — so Careers had neither the grab affordance nor `pan-y`, and its
-   horizontal gesture competed with the page scroll on touch. */
+   Keyed on the data attribute: used on Who We Are and Careers. */
 [data-gallery-marquee] {
 	will-change: transform;
 }
 
-/* The strip, not the row: gallery-marquee.js adds `is-marquee-strip` to the
-   element that clips the row, because the row rides a transform and slides out
-   from under what the hand is actually over. The class is script-owned, so a row
-   never advertises a drag before the loop is running. `pan-y` hands the
-   horizontal gesture to the script and leaves the vertical one to the page. */
+/* Script-owned class on the clipping element. pan-y leaves vertical scroll to the page. */
 .is-marquee-strip {
 	cursor: grab;
 	touch-action: pan-y;
@@ -577,25 +520,15 @@
 }
 
 /* REVEAL ACCORDION
-   Cards that swap their content instead of growing: one card open at a time, and
-   the card's height is the same in both states, so the row — and everything below
-   the section — never moves. The height itself is measured by the module in
-   global.js and arrives as --rv-card-h; nothing here is a hard-coded pixel size.
-
-   Only the mechanism lives here. Colours, padding and the per-section choreography
-   stay in each section's own stylesheet, so two sections can share the behaviour
-   and still look nothing alike.
-
-   Contract: see the doc comment above the module in global.js. */
+   One card open at a time; the card height stays the same in both states.
+   The height comes from global.js as --rv-card-h. Section styles live in page CSS. */
 [data-reveal-accordion] {
 	--rv-duration: 0.42s;
 	--rv-ease: cubic-bezier(0.4, 0, 0.2, 1);
 	--rv-fade: 0.26s;
 }
 
-/* The two collapsing regions are mirror images: the closed copy shrinks away
-   while the detail opens. Both need exactly one child — a grid row only collapses
-   what it explicitly sizes. */
+/* Both collapsing regions need exactly one child: a grid row only collapses what it sizes. */
 [data-reveal-accordion-summary],
 [data-reveal-accordion-detail] {
 	display: grid;
@@ -617,8 +550,7 @@
 	opacity: 1;
 }
 
-/* The detail never gives up height: mid-transition the slack belongs to the
-   card's absorbing box, not to the copy that is currently arriving. */
+/* Mid-transition the slack goes to the card's absorbing box, not to the detail. */
 [data-reveal-accordion-detail] {
 	flex: 0 0 auto;
 	grid-template-rows: 0fr;
@@ -632,10 +564,7 @@
 	pointer-events: none;
 }
 
-/* Open, the detail takes the card's spare height. The locked height is the
-   tallest state across the row, so on wide screens the closed state can be the
-   tall one and the open card has slack to place — it belongs at the bottom of
-   the detail, not as a gap under the card's header. */
+/* Open, the detail takes the card's spare height. */
 [data-reveal-accordion-item].is-open [data-reveal-accordion-detail] {
 	flex: 1 1 auto;
 	grid-template-rows: 1fr;
@@ -643,9 +572,7 @@
 	pointer-events: auto;
 }
 
-/* The "read more" strip has two children and its own border, so it collapses by
-   height rather than by a grid row. --rv-more-h is measured alongside the card
-   height; until it arrives the strip is simply auto, which is its closed size. */
+/* The read-more strip collapses by height (--rv-more-h), not by a grid row. */
 [data-reveal-accordion-more] {
 	flex: 0 0 auto;
 	height: var(--rv-more-h, auto);
@@ -660,11 +587,7 @@
 	opacity var(--rv-fade) linear;
 }
 
-/* border-box floors the strip at its own padding, so the padding has to go with
-   the height; at height 0 a horizontal border would still draw a line. The seam
-   margin goes too: sections overlap the strip onto the box above it by -1px so
-   their borders merge, and a collapsed strip that keeps pulling up hides the
-   last pixel of the block it now sits under — its bottom border. */
+/* Padding, border and the -1px seam margin collapse with the height. */
 [data-reveal-accordion-item].is-open [data-reveal-accordion-more] {
 	height: 0;
 	margin-top: 0;
@@ -685,9 +608,7 @@
 	height: var(--rv-card-h, auto);
 }
 
-/* Measuring pass: heights are released and the card is taken out of the row's
-   stretch, so each card reports its own content height in each state. Silencing
-   the transitions keeps the pass invisible. */
+/* Measuring pass: heights and stretch released, transitions off. */
 [data-reveal-accordion-measuring] [data-reveal-accordion-item] {
 	align-self: flex-start !important;
 	height: auto !important;
@@ -698,9 +619,7 @@
 	transition: none !important;
 }
 
-/* The choreography is spread over the section's own rules too (a shrinking icon,
-   a fading subtitle), so reduced motion is answered for the whole component
-   rather than for the three regions this file happens to know about. */
+/* Reduced motion covers the whole component, including section-specific transitions. */
 @media (prefers-reduced-motion: reduce) {
 	[data-reveal-accordion] * {
 		transition: none !important;
@@ -708,10 +627,7 @@
 }
 
 /* STICKY SIDEBAR SCROLL
-   Webflow caps the sticky filter card (.sidebar) and the article sidebar
-   (.blog-post-sidebar) to the viewport; in the article the authors card is the
-   part that grows, so it alone gives up height and scrolls. The thumb is inset
-   from the card edge and clear of its 20px corners, tinted from the card text. */
+   Capped sticky cards scroll inside themselves with an inset thumb. */
 @media screen and (min-width: 992px) {
 	.blog-post-sidebar > .sidebar-card:has(.authors) {
 		min-height: 0;
@@ -757,8 +673,7 @@
 	}
 }
 
-/* FOOTER — ScrollSmoother rounds the body height up to a whole pixel, which can
-   leave a sub-pixel gap under the content; extend the footer colour into it. */
+/* FOOTER: fill the sub-pixel gap ScrollSmoother leaves under the content. */
 .site-footer,
 .site-footer-extended {
 	position: relative;
@@ -775,7 +690,7 @@
 	background: inherit;
 }
 
-/* FOOTER — link groups collapse into accordions below 992px, see global.js */
+/* FOOTER: link groups collapse into accordions below 992px, see global.js */
 .footer-links {
 	overflow: hidden;
 	max-height: 0;

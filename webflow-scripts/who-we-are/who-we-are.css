@@ -1,9 +1,8 @@
-/* Who We Are (/who-we-are) — page-scoped interaction styles.
-   Only `.wwa-*` selectors. Rules live here (not in the Designer) when they need a
-   parent-state or pseudo-element selector that the Webflow style panel cannot express. */
+/* Who We Are page styles: rules the Webflow style panel cannot express
+   (parent states, pseudo-elements). Only .wwa-* selectors. */
 
-/* ---------------------------------------------------------------- Trust (2.6)
-   The card drives the CTA: the button has no hover of its own by design. */
+/* Trust
+   The card drives the CTA hover. */
 .wwa-trust-card,
 .wwa-trust-card-button {
 	transition: background-color 0.25s ease, color 0.25s ease;
@@ -15,13 +14,9 @@
 	color: var(--_colors---body);
 }
 
-/* ------------------------------------------------------------- Playbook (2.2)
-   The card is a two-row grid: the closed face and the revealed detail share the
-   top row, the +/× control owns the bottom one. Both faces stay in flow — the
-   hidden one is `visibility: hidden`, which still occupies its cell — so the row
-   is always as tall as the taller of the two and the card never changes height
-   when it opens. Cards stretch to the grid row, so all three match the tallest.
-   Longer or shorter copy just resizes the row; nothing clips, nothing jumps. */
+/* Playbook
+   Two-row grid: both faces share the top row (the hidden one keeps its space),
+   so the card height never changes on open. */
 .wwa-playbook-card {
 	display: grid;
 	grid-template-columns: 100%;
@@ -37,9 +32,7 @@
 	transition: opacity 0.3s ease, visibility 0.3s;
 }
 
-/* The yellow panel is inset 10px from the card edge and has to sit behind the
-   control as well as the copy, so it is a layer of its own rather than the
-   detail's own background. */
+/* The inset yellow panel is its own layer so it sits behind the control and the copy. */
 .wwa-playbook-card:before {
 	content: "";
 	z-index: 1;
@@ -55,8 +48,7 @@
 	opacity: 1;
 }
 
-/* The card's own 40px padding already places the detail copy where the design
-   wants it, and the control's 33px padding-top keeps the last line clear of it. */
+/* The card padding places the detail; the control's padding-top keeps it clear. */
 .wwa-playbook-card-detail {
 	position: static;
 	padding: 0;
@@ -83,11 +75,8 @@
 	transform: rotate(0deg);
 }
 
-/* --------------------------------------------------------------- Values (2.4)
-   The row is a slider over a native scroll container. The card takes a share of
-   the track instead of the fixed 440px the Designer can express, so the same
-   markup shows three cards, then two, then one with the next peeking in. The
-   20px subtracted here is the `gap` the Designer sets on .wwa-values-grid. */
+/* Values
+   Native scroll slider. Cards take a share of the track; 20px is the grid gap. */
 .wwa-values-card {
 	flex: 0 0 calc((100% - 40px) / 3);
 	scroll-snap-align: start;
@@ -99,8 +88,7 @@
 	}
 }
 
-/* One card and a peek of the next. It never grows past the 440px the design
-   gives a card, and the side padding drops so the text keeps its measure. */
+/* One card plus a peek of the next, max 440px. */
 @media (max-width: 767px) {
 	.wwa-values-card {
 		flex-basis: min(100% - 56px, 440px);
@@ -109,9 +97,7 @@
 	}
 }
 
-/* The design shows no scrollbar: the arrows and the peeking card are the
-   affordance at every width. Snapping stops a swipe on a card edge, so the
-   slider never comes to rest mid-card. */
+/* No scrollbar: arrows and the peeking card are the affordance. Snap to card edges. */
 .wwa-values-grid {
 	height: auto;
 	align-items: stretch;
@@ -123,8 +109,7 @@
 	display: none;
 }
 
-/* Disabled dims the arrow, not the button: the design keeps both pills visible,
-   and a `soft` pill at 35% opacity on the dark section disappears entirely. */
+/* Disabled dims the arrow, not the button. */
 .wwa-values-pager-icon,
 .wwa-values-pager-icon-prev {
 	transition: opacity 0.2s ease;
@@ -139,11 +124,8 @@
 	opacity: 0.35;
 }
 
-/* ----------------------------------------------------------------- News (2.7)
-   The hover choreography mirrors Related Blogs on /news/news-template: the title
-   lifts, the chips sink away behind a blur, and the CTA rises into their place.
-   The lift is 10px — the value the design shows (Figma 4120-2642), not the 4px
-   Related Blogs uses. */
+/* News
+   Hover: the title lifts 10px, the chips fade behind a blur, the CTA rises in their place. */
 .wwa-news-card {
 	--wwa-news-hover-duration: 520ms;
 	--wwa-news-hover-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -184,9 +166,7 @@
 	transform: translate(-50%, 0);
 }
 
-/* The head stays a row down to 479px. The label must not break across two lines
-   — the underline would follow it under both — and the button must not shrink
-   below that width either, because .text-button clips its own overflow. */
+/* The head stays a row down to 479px so the label and button do not wrap. */
 .wwa-news-head .text-button {
 	flex: none;
 }
@@ -195,8 +175,8 @@
 	white-space: nowrap;
 }
 
-/* Both arrows are the same glyph: the card CTA draws it on a 14×11 box, the
-   section link on the 1em square the design system gives .text-button. */
+/* Same arrow glyph: the card CTA draws it on a 14x11 box, the section link on
+   the 1em square the design system gives .text-button. */
 .wwa-news-card-cta-icon,
 .wwa-news-head .text-button-icon-before {
 	background-color: currentColor;
@@ -210,13 +190,10 @@
 	mask-position: center;
 }
 
-/* Gallery (2.8) — the row's own rules live in global.css under the
-   `[data-gallery-marquee]` contract: the Careers page runs the same marquee and
-   does not load this stylesheet, so a class-keyed rule here reached only one of
-   the two galleries. */
+/* Gallery: row styles live in global.css under [data-gallery-marquee]. */
 
-/* --------------------------------------------------------- Focus visibility
-   Brief §4.13: every interactive element needs a visible keyboard focus state. */
+/* Focus visibility
+   Visible keyboard focus on every interactive element. */
 .wwa-playbook-card:focus-visible,
 .wwa-team-card:focus-visible,
 .wwa-news-card:focus-visible,
@@ -225,7 +202,7 @@
 	outline-offset: 4px;
 }
 
-/* ------------------------------------------------------------ Reduced motion */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
 	.wwa-trust-card,
 	.wwa-trust-card-button,

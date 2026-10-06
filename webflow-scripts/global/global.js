@@ -250,29 +250,20 @@
   }
 })();
 
-/* Reveal accordion — one card open at a time, and the card is the same height in
-   both states, so opening one never moves the rest of the page.
+/* Reveal accordion: one card open at a time, same card height in both states.
 
-   Contract (data attributes only, so every section keeps its own class names):
-     [data-reveal-accordion]              root; one open item at a time
-     [data-reveal-accordion-lock-height]  on the root: pin the cards to a measured
-                                          height so the section can never jump
-     [data-reveal-accordion-open-first]   on the root: open the first item on load
-                                          when none is marked `is-open`
-     [data-reveal-accordion-item]         card; carries the `is-open` state class
-     [data-reveal-accordion-toggle]       click / keyboard target, one or more per card
-     [data-reveal-accordion-summary]      closed copy, collapses on open (one child)
-     [data-reveal-accordion-detail]       revealed copy, expands on open (one child)
-     [data-reveal-accordion-more]         "read more" strip, collapses on open
-     [data-reveal-accordion-icon]         +/- glyph
+   [data-reveal-accordion]              root
+   [data-reveal-accordion-lock-height]  on the root: lock cards to the measured height
+   [data-reveal-accordion-open-first]   on the root: open the first item when none is `is-open`
+   [data-reveal-accordion-item]         card; carries `is-open`
+   [data-reveal-accordion-toggle]       click and keyboard target
+   [data-reveal-accordion-summary]      closed copy (one child)
+   [data-reveal-accordion-detail]       open copy (one child)
+   [data-reveal-accordion-more]         read-more strip
+   [data-reveal-accordion-icon]         +/- glyph
 
-   JS owns state and the two measured numbers; CSS owns everything visible. The
-   height is the tallest of every card in the row across both of its states, read
-   from the live DOM, so longer copy or a rewrap at another viewport just produces
-   a different number — there is no baked-in pixel size anywhere.
-
-   Re-measured on resize and once webfonts land. Copy that changes after load
-   (a CMS swap, an inline edit) needs ContextualRevealAccordion.refreshAll(). */
+   Re-measured on resize and after fonts load. Call
+   ContextualRevealAccordion.refreshAll() after changing copy at runtime. */
 (() => {
   const ROOT_SELECTOR = '[data-reveal-accordion]';
   const ITEM_SELECTOR = '[data-reveal-accordion-item]';
@@ -320,8 +311,7 @@
     measureRoot(root);
   }
 
-  // Items built from a Webflow component cannot carry their own `is-open`
-  // class, so the root can ask for the first item to start open instead.
+  // Component instances cannot carry `is-open`, so the root can open the first item.
   function openFirstIfNone(root) {
     if (!root.hasAttribute(OPEN_FIRST_ATTR)) return;
 
@@ -401,7 +391,7 @@
 
     const toggle = target.closest(TOGGLE_SELECTOR);
     if (!toggle || !event.currentTarget.contains(toggle)) return null;
-    // A whole region can be a toggle — the link inside it still has to work.
+    // A whole region can be a toggle; a link inside it still works.
     if (isInteractiveDescendant(target, toggle)) return null;
 
     return toggle.closest(ITEM_SELECTOR) ? toggle : null;
@@ -420,11 +410,8 @@
     return false;
   }
 
-  /* Reads each card twice — closed and open — with the pinned heights released
-     and the cards taken out of the row's stretch, then gives every card in a row
-     the tallest of those readings. Cards are grouped by their top edge, so a
-     single column gets a per-card height and a multi-column row gets a shared one
-     without this file knowing a thing about the section's breakpoints. */
+  /* Measure each card closed and open, then give each row its tallest height.
+     Cards are grouped into rows by their top edge. */
   function measureRoot(root) {
     if (!root || !root.hasAttribute(LOCK_HEIGHT_ATTR)) return;
 
@@ -512,7 +499,7 @@
 
   function getToggles(item) {
     const inner = Array.from(item.querySelectorAll(TOGGLE_SELECTOR));
-    // A card can be its own toggle — querySelectorAll never returns the element itself.
+    // A card can be its own toggle: querySelectorAll never returns the element itself.
     return item.matches(TOGGLE_SELECTOR) ? [item, ...inner] : inner;
   }
 
@@ -530,13 +517,7 @@
   }
 })();
 
-/* Placeholder links — an `href="#"` means "not wired up yet", not "scroll the page
-   back to the top". Cancel just the navigation and leave everything else alone: no
-   stopPropagation, so Webflow's own click handlers and ours still run as before.
-
-   Site-wide on purpose. On /industries the industry cards are Link Card variants
-   whose CMS URL the client has not filled in, and the same placeholder sits in the
-   footer legal links and on the /templates/* pages. */
+/* Placeholder links (href="#"): cancel the jump to the top, nothing else. */
 (() => {
   document.addEventListener('click', (event) => {
     const target = event.target;
@@ -545,32 +526,15 @@
   });
 })();
 
-/* Scroll indicator — a scrollbar for the horizontal rows that stays visible on
-   touch. Below 992px the native bar is a transient overlay that only appears
-   under a moving finger, and on iOS our styling of it is ignored entirely, so a
-   row of cards reads as a row that simply ends at the screen edge. The client
-   asked for the bar to always show; the only way to hold one open is to draw it.
-
-   Contract: none to author. The module reuses the existing [data-horizontal-scroll]
-   and [data-horizontal-scroll-dark] attributes — every row that already asked for
-   a styled scrollbar gets the indicator, and a row that stops overflowing loses it.
-
-   The attribute sits on the scroll container itself on most pages, but on a few
-   it sits on the section around it (careers `.section-delivary`, the industry
-   `.process-slider`) — hence the descendant sweep. The bar is only built once a
-   candidate actually overflows, so a section that never scrolls is left untouched,
-   its parent included.
-
-   Geometry: the bar is absolutely positioned in the container's parent, which
-   keeps it out of that parent's grid or flex flow, and is laid over the bottom
-   edge of the container the way a native overlay bar is. Nothing reserves space
-   for it, so no layout shifts when it appears. */
+/* Scroll indicator: a visible scrollbar for horizontal rows below 992px, where
+   touch browsers hide the native one. Applies to [data-horizontal-scroll] and
+   [data-horizontal-scroll-dark], on the container or on a section around it. */
 (() => {
   const ROOT_SELECTOR = '[data-horizontal-scroll], [data-horizontal-scroll-dark]';
   const DARK_SELECTOR = '[data-horizontal-scroll-dark]';
   const INIT_FLAG = 'scrollIndicatorReady';
   const EDGE = 2; // px tolerance for fractional scroll widths
-  const MIN_THUMB = 24; // px — a thumb thinner than this stops reading as a thumb
+  const MIN_THUMB = 24; // px, minimum thumb width
 
   const entries = [];
   let resizeTimer = null;
@@ -585,16 +549,14 @@
     candidates(root).forEach(track);
   }
 
-  // The row itself first, then anything inside it that scrolls on its own. Swept
-  // again on resize and load: a descendant can start scrolling only below a
-  // breakpoint (the process-slider track is pinned, not scrolled, on desktop).
+  // The row itself, then scrolling descendants. Re-swept on resize and load.
   function candidates(root) {
     const inner = Array.from(root.querySelectorAll('*')).filter(scrollsHorizontally);
     return [root, ...inner];
   }
 
   function scrollsHorizontally(el) {
-    // Cheap test first — getComputedStyle on every descendant of a section is not.
+    // Cheap test first.
     if (el.scrollWidth - el.clientWidth <= EDGE) return false;
     return isScrollable(el);
   }
@@ -621,8 +583,7 @@
     const el = entry.el;
     const canScroll = el.scrollWidth - el.clientWidth > EDGE && isScrollable(el);
 
-    // Build on first use only: an element that never scrolls should not have its
-    // parent turned into a positioning context for a bar nobody will see.
+    // Build lazily, so non-scrolling rows leave their parent untouched.
     if (canScroll && !entry.indicator) build(entry);
     if (!entry.indicator) return;
 
@@ -657,13 +618,7 @@
     reveal(entry);
   }
 
-  // Every card on these pages arrives on a fade, so a bar that is already solid
-  // while the cards around it are still transparent reads as a leftover. It fades
-  // in with its row instead — on the row entering the viewport, not on load, so a
-  // section further down the page still gets the entrance.
-  // An observer rather than a ScrollTrigger: GSAP is on these pages, but this
-  // needs one boolean per row, not a timeline, and IntersectionObserver costs no
-  // scroll handler and no dependency on load order.
+  // Fade in with the row when it enters the viewport.
   function reveal(entry) {
     const show = () => entry.indicator.classList.add('is-revealed');
     if (!window.IntersectionObserver) {
@@ -680,17 +635,8 @@
     observer.observe(entry.el);
   }
 
-  // Offsets, not rects. A row can carry its own reveal transform — /private-equity
-  // puts `fade-up` on the row itself rather than on the panel around it — and a
-  // rect read mid-flight is the shifted one. The bar would then be placed against
-  // a position the row is about to leave, and sit that far too low once the
-  // transform settled. offsetLeft/offsetTop ignore transforms and are already
-  // measured against the positioned parent we insert into, which is the box
-  // absolute positioning resolves against; clientLeft/clientTop are that parent's
-  // border, so the bar lines up with the row's padding box either way.
-  //
-  // Pinned to the row's bottom edge; the gap below it is the CSS offset, which
-  // rides on the bar's own margin-top and so needs no arithmetic here.
+  // Offsets, not rects: they ignore the row's reveal transform.
+  // Pinned to the row's bottom edge; the gap is the CSS margin-top.
   function place(entry) {
     const el = entry.el;
     const indicator = entry.indicator;
@@ -727,8 +673,7 @@
       resizeTimer = window.setTimeout(refreshAll, 150);
     });
 
-    // A late web font can be the difference between a row that fits and one that
-    // does not, and images settle after load — both change the overflow amount.
+    // Late fonts and images can change the overflow.
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(refreshAll).catch(() => {});
     }
@@ -748,7 +693,7 @@
   }
 })();
 
-/* FOOTER — copyright year and mobile link accordions */
+/* FOOTER: copyright year and mobile link accordions */
 (() => {
   document.addEventListener('DOMContentLoaded', () => {
     const year = document.getElementById('copyright-year');

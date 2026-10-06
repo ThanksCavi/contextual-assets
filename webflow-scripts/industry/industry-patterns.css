@@ -1,11 +1,6 @@
-/* Industry Patterns — the section's half of the reveal accordion.
-   The mechanism (locked card height, the two collapsing regions, the read-more
-   strip) lives in global.css; this file is only what the swap looks like here.
-   Contract and measuring: see the module doc comment in global.js. */
+/* Industry Patterns: section styles for the reveal accordion (mechanism in global.css). */
 
-/* The white box is the card's slack. It holds the closed copy and, on open,
-   hands its height to the detail — everything else in the card keeps its own
-   size, which is why the card total never moves. */
+/* The white box absorbs the card's slack; on open it gives its height to the detail. */
 .industry-pattern-card-summary {
   flex: 1 1 auto;
   min-height: 0;
@@ -16,14 +11,12 @@
   min-height: 0;
 }
 
-/* Open, it stops absorbing: the blue header keeps the tight Figma inset and the
-   detail below takes whatever height is left. */
+/* Open: the blue header keeps a tight inset, the detail takes the remaining height. */
 [data-reveal-accordion-item].is-open .industry-pattern-card-summary {
   flex: 0 1 auto;
 }
 
-/* Figma draws the blue header 200px tall closed and 136px open
-   (4132:5555 / 4132:5898); the padding is the whole difference. */
+/* Blue header: 200px closed, 136px open; the padding makes the difference. */
 .industry-pattern-card-header {
   transition:
     padding-top var(--rv-duration) var(--rv-ease),
@@ -35,9 +28,7 @@
   padding-bottom: clamp(10px, 100vw * 16 / 1440, 16px);
 }
 
-/* Figma leaves 40px between the two copy blocks of the open card and 50 before
-   the button (4132:5898). The shared mb-30 utility plus the detail's own 20px
-   row gap makes the first of those 50 as well. */
+/* 40px between the open copy blocks, 50px before the button. */
 .industry-pattern-details-inner > .description + .badge {
   margin-top: -10px;
 }

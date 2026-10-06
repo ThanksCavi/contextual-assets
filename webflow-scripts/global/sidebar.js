@@ -1,14 +1,10 @@
-/**
- * Generic sticky sidebar pinning for ScrollSmoother pages.
- *
- * Required markup:
- * - [data-sticky-layout] on the shared layout row/container
- * - [data-sticky-sidebar] on the sidebar element to pin
- * - [data-sticky-content] on the main content column
- *
- * Legacy [data-sticky-sidebar-layout] / [data-sticky-sidebar-content] are still
- * accepted as a fallback for pages not yet renamed. See docs/tech-debt.md.
- */
+/* Sticky sidebar pinning for ScrollSmoother pages.
+
+   [data-sticky-layout]   shared layout row
+   [data-sticky-sidebar]  sidebar to pin
+   [data-sticky-content]  main content column
+
+   Legacy [data-sticky-sidebar-layout] / [data-sticky-sidebar-content] are also accepted. */
 (() => {
   const INIT_FLAG = '__contextualStickySidebarInit';
   const LAYOUT_SELECTOR = '[data-sticky-layout], [data-sticky-sidebar-layout]';

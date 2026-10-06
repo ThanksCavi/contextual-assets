@@ -1,8 +1,5 @@
-/**
- * ScrollSmoother runtime
- * Uses the Webflow-provided GSAP plugins and the Designer-defined
- * #smooth-wrapper > #smooth-content structure.
- */
+/* ScrollSmoother runtime. Uses the Webflow GSAP plugins and the
+   #smooth-wrapper > #smooth-content structure from the Designer. */
 (() => {
 	const WRAPPER_SELECTOR = '#smooth-wrapper';
 	const CONTENT_SELECTOR = '#smooth-content';
@@ -185,16 +182,10 @@
 				wrapper,
 				content,
 				smooth: 2,
-				// Temporarily disabled while diagnosing the freeze: effects:true rescans
-				// [data-speed]/[data-lag] elements and recalculates their positions on every
-				// refresh, which is a plausible source of runaway work.
 				effects: true,
-				//effectsPrefix: 'smoother-',
 				smoothTouch: false,
 				normalizeScroll: policy.allowNormalizeScroll,
-				// A fractional translateY lands section edges between device pixels and
-				// their anti-aliased edges let the body background bleed through as a
-				// hairline seam while the content is still easing.
+				// Whole pixels: fractional offsets leave hairline seams between sections.
 				wholePixels: true,
 			});
 		}
@@ -245,9 +236,7 @@
 		);
 		const allowSmoother = allowDesktopMotion;
 		const allowHeavyScrollEffects = allowDesktopMotion;
-		// Temporarily disabled on desktop: normalizeScroll's internal layout recalculation
-		// can toggle the document scrollbar, which fires 'resize', which re-triggers a
-		// refresh, which can re-toggle the scrollbar -- an unbounded loop that freezes the page.
+		// Off: normalizeScroll can toggle the scrollbar and cause a resize/refresh loop.
 		const allowNormalizeScroll = false;
 		const allowIntroScrollLock = Boolean(allowDesktopMotion && !isTouchCapable);
 
@@ -414,18 +403,11 @@
 		});
 	}
 
-	// --- Anchor links -------------------------------------------------------
-	// With the smoother active the page lives inside a fixed, overflow:hidden
-	// #smooth-wrapper, so the browser has nothing left to scroll for a URL
-	// fragment: `/page#id` lands at the very top, and a later hash change drags
-	// the wrapper's hidden overflow instead, leaving the smoother desynced.
-	// Same-page link clicks are ours too: Webflow's handler offsets only by a
-	// fixed `header` / `body > .w-nav`, and our navbar lives inside
-	// #smooth-wrapper, so it parked every target under the bar.
+	// Anchor links
+	// The page scrolls inside the fixed #smooth-wrapper, so URL fragments and
+	// same-page links are handled here, offset by the navbar.
 
-	// Runs after Webflow's modules are ready, so its handler is already bound.
-	// If the unbind ever stops matching, Webflow's handler runs first and
-	// prevents default, and handleAnchorClick steps aside.
+	// Runs after Webflow is ready, so its anchor handler can be unbound.
 	function bindAnchorClicks() {
 		if (window.jQuery) window.jQuery(document).off('click.wf-scroll');
 		document.addEventListener('click', handleAnchorClick);
@@ -446,8 +428,7 @@
 		initialHashAttemptsLeft = 0;
 		resetWrapperOverflowScroll();
 		if (window.location.hash !== link.hash) window.history.pushState(null, '', link.hash);
-		// No focus move to the target: ScrollSmoother answers focusin by jumping
-		// the element to the viewport centre, cutting this scroll short.
+		// No focus() on the target: ScrollSmoother would jump it to the viewport centre.
 		scrollToAnchor(target);
 	}
 
@@ -455,8 +436,7 @@
 		userTookOverScroll = true;
 	}
 
-	// Runs after each settled refresh: the first one lands the target once layout
-	// has settled, the second one corrects it after window 'load'.
+	// Runs after each settled refresh: once after layout, again after window load.
 	function applyInitialHash() {
 		if (initialHashAttemptsLeft <= 0) return;
 
@@ -505,9 +485,7 @@
 			return;
 		}
 
-		// Write the position every frame, as Webflow's handler did: a smooth
-		// smoother.scrollTo() gives way to wheel momentum still arriving from the
-		// user's own scroll, and the page rolls back short of the target.
+		// Write the position every frame: smoother.scrollTo() yields to wheel momentum.
 		const from = getScrollTop();
 		const state = {top: from};
 		anchorTween = window.gsap.to(state, {
@@ -533,9 +511,7 @@
 		const style = window.getComputedStyle(navbar);
 		if (style.position !== 'fixed') return 0;
 
-		// Приезжаем всегда в залипшем состоянии, поэтому считаем по сжатой полосе:
-		// инсет сверху + её высота (контракт navbar.css). Замер по боксу дал бы
-		// высоту в покое и промах на разницу состояний.
+		// Targets are reached with the bar sticky: inset plus the sticky bar height.
 		const inset = parseFloat(style.getPropertyValue('--navbar-inset'));
 		const barHeight = parseFloat(style.getPropertyValue('--navbar-bar-height-sticky'));
 

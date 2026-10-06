@@ -1,6 +1,6 @@
-/* Read More on /news and /resources: the featured panel and the list cards.
+/* Read More on /news and /resources: featured panel and list cards.
    Static by default (touch, narrow windows): the button sits above the meta chips.
-   Hover mode (mouse and 768px+): the button takes the chips' place on hover. */
+   Hover mode (mouse, 768px and up): the button takes the chips' place on hover. */
 
 .card-link {
   z-index: 10;
